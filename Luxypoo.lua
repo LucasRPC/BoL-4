@@ -1,20 +1,20 @@
-
-
 if myHero.charName ~= "Lux" then return end
 
 --Requirements
 require 'VPrediction'
 require 'SourceLib'
-require 'SOW'
-require "AoE_Skillshot_Position"
 
 --Variable Declarations
-local version = 0.1
+local version = 0.2
+local mTarget
+local qColl
+local qLCColl
 local VP = VPrediction()
 local TS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
 local DrawHandler = DrawManager()
 local DamageCalculator = DamageLib()
 local Config = nil
+local isRecalling = false
 local jungleMinions = minionManager(MINION_JUNGLE, 1100, myHero, MINION_SORT_MAXHEALTH_DEC)
 local enemyMinions = minionManager(MINION_ENEMY, 1100, myHero, MINION_SORT_HEALTH_ASC)
 local SpellData = { 
@@ -33,8 +33,7 @@ local SpellData = {
 		range = 1000,
 		width = 275,
 		speed = math.huge,
-		delay = 1.1,
-		lastCast = 0
+		delay = 0.8,
 	},
 	
 	[_R] = {
@@ -98,9 +97,11 @@ Config:addSubMenu("Lane Clear", "LClearSub")
 	Config.LClearSub:addParam("useElclear", "Use E", SCRIPT_PARAM_ONOFF, true)
 
 --KS
---Config:addSubMenu("KS", "KS")
---	Config.KS:addParam("useQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
---	Config.KS:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)
+Config:addSubMenu("Kill Secure", "KS")
+	Config.KS:addParam("active", "Kill Secure On/Off", SCRIPT_PARAM_ONOFF, true) 	
+	Config.KS:addParam("useQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
+	Config.KS:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)
+	Config.KS:addParam("useR", "Use R", SCRIPT_PARAM_ONOFF, true)
 	
 -- Simple Target Selector
 Config:addSubMenu("Simple Target Selector", "sts")
@@ -114,7 +115,7 @@ E = Spell(_E, SpellData[_E].range)
 R = Spell(_R, SpellData[_R].range)
 
 --Skillshots
-Q:SetSkillshot(VP, SKILLSHOT_LINEAR, SpellData[_Q].width, SpellData[_Q].delay, SpellData[_Q].speed, true)
+Q:SetSkillshot(VP, SKILLSHOT_LINEAR, SpellData[_Q].width, SpellData[_Q].delay, SpellData[_Q].speed, false)
 E:SetSkillshot(VP, SKILLSHOT_CIRCULAR, SpellData[_E].width, SpellData[_E].delay, SpellData[_E].speed, false)
 R:SetSkillshot(VP, SKILLSHOT_LINEAR, SpellData[_R].width, SpellData[_R].delay, SpellData[_R].speed, false)
 Q:TrackCasting(SpellData[_Q].name)
@@ -131,9 +132,12 @@ function OnTick()
 	if Loaded then
 		jungleMinions:update()
 		enemyMinions:update()
-		--KillSteal()
+		KillSteal()
 		CDHandler()
-			
+		
+		mTarget = TS:GetTarget(SpellData[_Q].range)--Targets
+		qColl = CountObjectsOnLineSegment(myHero, Vector(mTarget), (SpellData[_Q].width + 50), enemyMinions.objects)
+	
 		if Config.ComboSub.Combo then
 			Combo()
 		end
@@ -154,18 +158,24 @@ end
 
 function OnDraw()
 	local onDtarget = TS:GetTarget(SpellData[_Q].range)
+		if qColl and qColl <= 1 then
+			onDqCollcolor = ARGB(100, 35, 250, 11)
+		end		
+		if qColl and qColl > 1 then
+			onDqCollcolor = ARGB(100, 124, 4, 4)
+		end
 	
-	if myHero.dead then return end
+	if myHero.dead then return end	
 				
 	if onDtarget and Config.TargetSub.drawTarget then
-		DrawLine3D(myHero.x, myHero.y, myHero.z, onDtarget.x, onDtarget.y, onDtarget.z, 1, ARGB(141, 124, 4, 4))
-		DrawLine3D(myHero.x, myHero.y, myHero.z, onDtarget.x, onDtarget.y, onDtarget.z, 70, ARGB(200, 124, 4, 4))
+		DrawLine3D(myHero.x, myHero.y, myHero.z, onDtarget.x, onDtarget.y, onDtarget.z, 1, onDqCollcolor)
+		DrawLineBorder3D(myHero.x, myHero.y, myHero.z, onDtarget.x, onDtarget.y, onDtarget.z, 80, onDqCollcolor, 8)
 		if onDtarget.visible and not onDtarget.dead then			
 			for j=1, 25 do
 				local ycircle = (j*(120/25*2)-120)
 				local r = math.sqrt(120^2-ycircle^2)
 				ycircle = ycircle/1.3
-				DrawCircle(onDtarget.x, onDtarget.y+100+ycircle, onDtarget.z, r, ARGB(141, 124, 4, 4))				
+				DrawCircle(onDtarget.x, onDtarget.y+100+ycircle, onDtarget.z, r, onDqCollcolor)				
 			end		 
 		end	
 	end
@@ -179,10 +189,8 @@ function CDHandler()
 	SpellData[_R].ready = (myHero:CanUseSpell(_R) == READY)
 end
 
-function Combo()	
-	local mTarget = TS:GetTarget(SpellData[_Q].range)--Targets 
-
-	if mTarget and Q:IsReady() and Config.ComboSub.useQ then --Q 
+function Combo()
+	if mTarget and Q:IsReady() and Config.ComboSub.useQ and qColl <= 1 then --Q 
 		Q:Cast(mTarget)
 	end 
 
@@ -197,13 +205,12 @@ function Combo()
 	if mTarget and (os.clock() - Q:GetLastCastTime()) <= 5 and (os.clock() - Q:GetLastCastTime()) >= 1 and (not IsBinded(mTarget)) and E:IsReady() and Config.ComboSub.useE then --E Bind miss
 		E:Cast(mTarget)
 	end
-
 end 
 
 function Harass()
 		local mTarget = TS:GetTarget(SpellData[_Q].range)--Targets 
 
-		if mTarget and Q:IsReady() and Config.HarassSub.useQ then --Q 
+		if mTarget and Q:IsReady() and Config.HarassSub.useQ and qColl <= 1 then --Q 
 			Q:Cast(mTarget)
 		end 
 		
@@ -218,11 +225,11 @@ end
 
 function JungleClear()
 	for i, jungleMinion in pairs(jungleMinions.objects) do 
-		if jungleMinion ~= nil then 
+		if jungleMinion ~= nil then		
 			if Config.JungleSub.useQjclear and SpellData[_Q].ready and ValidTarget(jungleMinion, SpellData[_Q].range) then
 				Q:Cast(jungleMinion)
 			end
-			
+	
 			if Config.JungleSub.useEjclear and SpellData[_E].ready and ValidTarget(jungleMinion, SpellData[_E].range) then
 				local jObj = CountObjectsNearPos(Vector(jungleMinion), nil, SpellData[_E].width, jungleMinions.objects)
 				local jtObj = CountObjectsNearPos(Vector(jungleMinion), nil, 600, jungleMinions.objects)
@@ -235,12 +242,12 @@ function JungleClear()
 end
 
 function LaneClear()
---	Q:SetHitChance(Config.hChanceSub.hitChance)
---	E:SetHitChance(Config.hChanceSub.hitChance)
+
+
 	for i, enemyMinion in pairs(enemyMinions.objects) do
 		if enemyMinion ~= nil then
-			if Config.LClearSub.useQlclear and SpellData[_Q].ready and ValidTarget(enemyMinion, SpellData[_Q].range) and getDmg("Q", enemyMinion, myHero) > enemyMinion.health and (not enemyMinion.dead) then
-
+			qLCColl = CountObjectsOnLineSegment(myHero, Vector(enemyMinion), (SpellData[_Q].width + 50), enemyMinions.objects)	
+			if Config.LClearSub.useQlclear and SpellData[_Q].ready and ValidTarget(enemyMinion, SpellData[_Q].range) and getDmg("Q", enemyMinion, myHero) > enemyMinion.health and qLCColl == 2 then
 				Q:Cast(enemyMinion)
 			end
 			
@@ -256,6 +263,26 @@ function LaneClear()
 	end
 end
 
+function KillSteal()
+	if isRecalling or (not Config.KS.active) then return end
+	
+	for _,enemy in pairs(GetEnemyHeroes()) do
+		if Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and (not SpellData[_E].ready) and (not SpellData[_Q].ready) and ValidTarget(enemy, SpellData[_R].range) then
+			R:Cast(enemy)
+		elseif Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and GetDistance(myHero, enemy) > (SpellData[_E].range - 300) and ValidTarget(enemy, SpellData[_R].range) then
+			R:Cast(enemy)
+		elseif Config.KS.useE and SpellData[_E].ready and enemy.health <= getDmg("E", enemy, myHero) and GetDistance(enemy) < SpellData[_E].range and ValidTarget(enemy, SpellData[_E].range) then
+			E:Cast(enemy)
+		elseif Config.KS.useQ and SpellData[_Q].ready and enemy.health <= getDmg("Q", enemy, myHero) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
+			Q:Cast(enemy)
+		elseif Config.KS.useQ and Config.KS.useE and SpellData[_Q].ready and SpellData[_E].ready and enemy.health <= (getDmg("Q", enemy, myHero) + getDmg("E", enemy, myHero)) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
+			Q:Cast(enemy)
+			E:Cast(enemy)
+		end
+	end
+	
+end
+
 function IsBinded(target)
 	if target ~= nil then
 	return HasBuff(target, "LuxLightBindingMis")
@@ -263,12 +290,16 @@ function IsBinded(target)
 end
 
 function OnGainBuff(unit, buff)
-	if unit and unit.valid and buff.name == 'LuxLightStrikeKugel' and unit.team == myHero.team then 
+	if unit and unit.valid and buff.name == 'LuxLightStrikeKugel' and unit == myHero then 
 		CastSpell(_E)
 	end
 	
+	if unit and unit == myHero and buff.name == 'Recall' then
+		isRecalling = true
+	end
+	
 	if unit and unit.valid and unit.type == myHero.type and GetDistance(myHero, unit) <= SpellData[_Q].range and (buff.type == BUFF_STUN or buff.type == BUFF_ROOT or buff.type == BUFF_KNOCKUP or buff.type == BUFF_SUPPRESS) then 
-		if Q:IsReady() and Config.chainSub.useQchain then
+		if Q:IsReady() and Config.chainSub.useQchain and qColl <= 1 then
 			Q:Cast(unit)
 		end
 		
@@ -278,10 +309,8 @@ function OnGainBuff(unit, buff)
 	end
 end
 
-
-
-
-
-
-
-
+function OnLoseBuff(unit, buff)
+	if unit and unit == myHero and buff.name == 'Recall' then
+		isRecalling = false
+	end
+end
