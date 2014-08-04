@@ -5,7 +5,7 @@ require 'VPrediction'
 require 'SourceLib'
 
 --Variable Declarations
-local version = 0.2
+local version = 0.3
 local mTarget
 local qColl
 local qLCColl
@@ -32,8 +32,8 @@ local SpellData = {
 		ready = false,
 		range = 1000,
 		width = 275,
-		speed = math.huge,
-		delay = 0.8,
+		speed = 1300,
+		delay = 0.5,
 	},
 	
 	[_R] = {
@@ -51,15 +51,16 @@ local SpellData = {
 function OnLoad()
 	ScriptSetUp()
 	Init()
-	PrintChat("<font color=\"#FF6600\">[Luxypoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..version.."</font>")
+	PrintChat("<font color=\"#FF6600\">[Luxypoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..version.."vp.</font>")
 end
 
 function ScriptSetUp()
-Config = scriptConfig("Luxypoo", "Luxypoo")
+Config = scriptConfig("Luxypoo v"..version.."vp", "Luxypoo v"..version.."vp")
 
 --Set HitChance
 Config:addSubMenu("Hit Chance", "hChanceSub")
 	Config.hChanceSub:addParam("hitChance", "Set Hit Chance", SCRIPT_PARAM_SLICE, 2, 1, 2, 0)
+	Config.hChanceSub:addParam("hcInfo", "1 - Low Hitchance  2 - High Hitchance", SCRIPT_PARAM_INFO, " ")
 
 
 --Chain CC
@@ -106,6 +107,9 @@ Config:addSubMenu("Kill Secure", "KS")
 -- Simple Target Selector
 Config:addSubMenu("Simple Target Selector", "sts")
 	TS:AddToMenu(Config.sts)
+
+--Minion Buffer
+Config:addParam("mBuff", "Minion Q Buffer", SCRIPT_PARAM_SLICE, 65, 50, 100, 0)
 end
 
 function Init()
@@ -121,9 +125,9 @@ R:SetSkillshot(VP, SKILLSHOT_LINEAR, SpellData[_R].width, SpellData[_R].delay, S
 Q:TrackCasting(SpellData[_Q].name)
 Q:RegisterCastCallback(CDHandler)
 
-Q:SetHitChance(Config.hChanceSub.hitChance)	
-E:SetHitChance(Config.hChanceSub.hitChance)
-R:SetHitChance(Config.hChanceSub.hitChance)
+Q:SetHitChance(Config.hChanceSub.hitChance or 3 or 4 or 5)	
+E:SetHitChance(Config.hChanceSub.hitChance or 3 or 4 or 5)
+R:SetHitChance(Config.hChanceSub.hitChance or 4 or 5 or 5)
 
 Loaded = true
 end
@@ -136,7 +140,7 @@ function OnTick()
 		CDHandler()
 		
 		mTarget = TS:GetTarget(SpellData[_Q].range)--Targets
-		qColl = CountObjectsOnLineSegment(myHero, Vector(mTarget), (SpellData[_Q].width + 50), enemyMinions.objects)
+		qColl = CountObjectsOnLineSegment(myHero, Vector(mTarget), (SpellData[_Q].width + Config.mBuff), enemyMinions.objects)
 	
 		if Config.ComboSub.Combo then
 			Combo()
@@ -190,37 +194,29 @@ function CDHandler()
 end
 
 function Combo()
-	if mTarget and Q:IsReady() and Config.ComboSub.useQ and qColl <= 1 then --Q 
+	if mTarget and Q:IsReady() and Config.ComboSub.useQ and qColl <= 1 and GetDistance(myHero, mTarget) < (SpellData[_Q].range - 75) then --Q 
 		Q:Cast(mTarget)
 	end 
 
-	if IsBinded(mTarget) and E:IsReady() and Config.ComboSub.useE then --E Bind hit
+	if E:IsReady() and Config.ComboSub.useE and GetDistance(myHero, mTarget) < SpellData[_E].range then 
 		E:Cast(mTarget)
 	end
 		
-	if IsBinded(mTarget) and R:IsReady() and Config.ComboSub.useR then --R Bind hit
-		R:Cast(mTarget)
-	end
-		
-	if mTarget and (os.clock() - Q:GetLastCastTime()) <= 5 and (os.clock() - Q:GetLastCastTime()) >= 1 and (not IsBinded(mTarget)) and E:IsReady() and Config.ComboSub.useE then --E Bind miss
-		E:Cast(mTarget)
+	for _,enemy in pairs(GetEnemyHeroes()) do
+		if enemy and mTarget and enemy.name == mTarget.name and R:IsReady() and IsBinded(mTarget) and Config.ComboSub.useR and (100 + enemy.health) <= getDmg("R", enemy, myHero) and GetDistance(myHero, mTarget) < SpellData[_R].range then 
+			R:Cast(mTarget)
+		end	
 	end
 end 
 
 function Harass()
-		local mTarget = TS:GetTarget(SpellData[_Q].range)--Targets 
-
-		if mTarget and Q:IsReady() and Config.HarassSub.useQ and qColl <= 1 then --Q 
-			Q:Cast(mTarget)
-		end 
-		
-		if IsBinded(mTarget) and E:IsReady() and Config.HarassSub.useE then --E Bind hit
-			E:Cast(mTarget)
-		end
-		
-		if mTarget and (os.clock() - Q:GetLastCastTime()) <= 5 and (os.clock() - Q:GetLastCastTime()) >= 1 and (not IsBinded(mTarget)) and E:IsReady() and Config.HarassSub.useE then --E Bind miss
-			E:Cast(mTarget)
-		end
+	if mTarget and Q:IsReady() and Config.HarassSub.useQ and qColl <= 1 and GetDistance(myHero, mTarget) < (SpellData[_Q].range - 75) then --Q 
+		Q:Cast(mTarget)
+	end 
+	
+	if E:IsReady() and mTarget and Config.HarassSub.useE and GetDistance(myHero, mTarget) < SpellData[_E].range then
+		E:Cast(mTarget)
+	end
 end 
 
 function JungleClear()
@@ -247,7 +243,7 @@ function LaneClear()
 	for i, enemyMinion in pairs(enemyMinions.objects) do
 		if enemyMinion ~= nil then
 			qLCColl = CountObjectsOnLineSegment(myHero, Vector(enemyMinion), (SpellData[_Q].width + 50), enemyMinions.objects)	
-			if Config.LClearSub.useQlclear and SpellData[_Q].ready and ValidTarget(enemyMinion, SpellData[_Q].range) and getDmg("Q", enemyMinion, myHero) > enemyMinion.health and qLCColl == 2 then
+			if Config.LClearSub.useQlclear and SpellData[_Q].ready and ValidTarget(enemyMinion, SpellData[_Q].range) and getDmg("Q", enemyMinion, myHero) > enemyMinion.health and qLCColl >= 2 then
 				Q:Cast(enemyMinion)
 			end
 			
@@ -255,7 +251,7 @@ function LaneClear()
 				local eObj = CountObjectsNearPos(enemyMinion, nil, SpellData[_E].width, enemyMinions.objects)
 				local tObj = CountObjectsNearPos(enemyMinion, nil, 550, enemyMinions.objects)	
 				
-				if eObj >= tObj*0.5 and eObj > 2 then
+				if eObj >= tObj*0.55 and eObj > 2 then
 					E:Cast(enemyMinion)	
 				end
 			end
@@ -314,3 +310,7 @@ function OnLoseBuff(unit, buff)
 		isRecalling = false
 	end
 end
+
+
+
+
