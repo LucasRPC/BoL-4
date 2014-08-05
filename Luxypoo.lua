@@ -5,10 +5,11 @@ require 'VPrediction'
 require 'SourceLib'
 
 --Variable Declarations
-local version = 0.3
+local version = 0.4
 local mTarget
 local qColl
 local qLCColl
+local orbActive
 local VP = VPrediction()
 local TS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
 local DrawHandler = DrawManager()
@@ -16,7 +17,7 @@ local DamageCalculator = DamageLib()
 local Config = nil
 local isRecalling = false
 local jungleMinions = minionManager(MINION_JUNGLE, 1100, myHero, MINION_SORT_MAXHEALTH_DEC)
-local enemyMinions = minionManager(MINION_ENEMY, 1100, myHero, MINION_SORT_HEALTH_ASC)
+local enemyMinions = minionManager(MINION_ENEMY, 1500, myHero, MINION_SORT_HEALTH_ASC)
 local SpellData = { 
 	[_Q] = {
 		name = "LuxLightBinding",
@@ -42,7 +43,7 @@ local SpellData = {
 		range = 3340,
 		width = 190,
 		speed = 3000,
-		delay = 1.75
+		delay = 1.0
 	}
 }
 
@@ -110,6 +111,9 @@ Config:addSubMenu("Simple Target Selector", "sts")
 
 --Minion Buffer
 Config:addParam("mBuff", "Minion Q Buffer", SCRIPT_PARAM_SLICE, 65, 50, 100, 0)
+
+--Passive 
+Config:addParam("usePass", "Check target for Passive", SCRIPT_PARAM_ONOFF, true)
 end
 
 function Init()
@@ -138,6 +142,7 @@ function OnTick()
 		enemyMinions:update()
 		KillSteal()
 		CDHandler()
+		ReactivateE()
 		
 		mTarget = TS:GetTarget(SpellData[_Q].range)--Targets
 		qColl = CountObjectsOnLineSegment(myHero, Vector(mTarget), (SpellData[_Q].width + Config.mBuff), enemyMinions.objects)
@@ -195,11 +200,23 @@ end
 
 function Combo()
 	if mTarget and Q:IsReady() and Config.ComboSub.useQ and qColl <= 1 and GetDistance(myHero, mTarget) < (SpellData[_Q].range - 75) then --Q 
-		Q:Cast(mTarget)
+		if Config.usePass then
+			if not HasPassive(mTarget) then
+				Q:Cast(mTarget)
+			end
+		else
+			Q:Cast(mTarget)
+		end
 	end 
 
 	if E:IsReady() and Config.ComboSub.useE and GetDistance(myHero, mTarget) < SpellData[_E].range then 
-		E:Cast(mTarget)
+		if Config.usePass then
+			if not HasPassive(mTarget) then
+				E:Cast(mTarget)
+			end
+		else
+			E:Cast(mTarget)
+		end
 	end
 		
 	for _,enemy in pairs(GetEnemyHeroes()) do
@@ -211,11 +228,23 @@ end
 
 function Harass()
 	if mTarget and Q:IsReady() and Config.HarassSub.useQ and qColl <= 1 and GetDistance(myHero, mTarget) < (SpellData[_Q].range - 75) then --Q 
-		Q:Cast(mTarget)
+		if Config.usePass then
+			if not HasPassive(mTarget) then
+				Q:Cast(mTarget)
+			end
+		else
+			Q:Cast(mTarget)
+		end
 	end 
 	
 	if E:IsReady() and mTarget and Config.HarassSub.useE and GetDistance(myHero, mTarget) < SpellData[_E].range then
-		E:Cast(mTarget)
+		if Config.usePass then
+			if not HasPassive(mTarget) then
+				E:Cast(mTarget)
+			end
+		else
+			E:Cast(mTarget)
+		end
 	end
 end 
 
@@ -249,9 +278,9 @@ function LaneClear()
 			
 			if Config.LClearSub.useElclear and SpellData[_E].ready and ValidTarget(enemyMinion, SpellData[_E].range) then
 				local eObj = CountObjectsNearPos(enemyMinion, nil, SpellData[_E].width, enemyMinions.objects)
-				local tObj = CountObjectsNearPos(enemyMinion, nil, 550, enemyMinions.objects)	
+				local tObj = CountObjectsNearPos(enemyMinion, nil, 800, enemyMinions.objects)	
 				
-				if eObj >= tObj*0.55 and eObj > 2 then
+				if eObj >= tObj*0.60 and eObj > 2 then
 					E:Cast(enemyMinion)	
 				end
 			end
@@ -263,20 +292,38 @@ function KillSteal()
 	if isRecalling or (not Config.KS.active) then return end
 	
 	for _,enemy in pairs(GetEnemyHeroes()) do
-		if Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and (not SpellData[_E].ready) and (not SpellData[_Q].ready) and ValidTarget(enemy, SpellData[_R].range) then
-			R:Cast(enemy)
-		elseif Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and GetDistance(myHero, enemy) > (SpellData[_E].range - 300) and ValidTarget(enemy, SpellData[_R].range) then
-			R:Cast(enemy)
+		if Config.KS.useQ and SpellData[_Q].ready and enemy.health <= getDmg("Q", enemy, myHero) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
+			Q:Cast(enemy)
 		elseif Config.KS.useE and SpellData[_E].ready and enemy.health <= getDmg("E", enemy, myHero) and GetDistance(enemy) < SpellData[_E].range and ValidTarget(enemy, SpellData[_E].range) then
 			E:Cast(enemy)
-		elseif Config.KS.useQ and SpellData[_Q].ready and enemy.health <= getDmg("Q", enemy, myHero) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
+		elseif ETarget and Config.KS.useQ and Config.KS.useE and SpellData[_Q].ready and SpellData[_E].ready and enemy.health <= (getDmg("Q", enemy, myHero) + getDmg("E", enemy, myHero)) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
 			Q:Cast(enemy)
-		elseif Config.KS.useQ and Config.KS.useE and SpellData[_Q].ready and SpellData[_E].ready and enemy.health <= (getDmg("Q", enemy, myHero) + getDmg("E", enemy, myHero)) and GetDistance(enemy) < SpellData[_Q].range and ValidTarget(enemy, SpellData[_Q].range) and qColl <= 1 then
-			Q:Cast(enemy)
-			E:Cast(enemy)
+			E:Cast(enemy)	
+		elseif Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and (not SpellData[_E].ready) and (not SpellData[_Q].ready) and ValidTarget(enemy, SpellData[_R].range) then
+			R:Cast(enemy)
+		elseif Config.KS.useR and SpellData[_R].ready and enemy.health <= getDmg("R", enemy, myHero) and GetDistance(myHero, enemy) < SpellData[_R].range and GetDistance(myHero, enemy) > (SpellData[_E].range) and ValidTarget(enemy, SpellData[_R].range) then
+			R:Cast(enemy)
 		end
 	end
 	
+end
+
+function ReactivateE() 
+	if ActivateE(myHero) or orbActive then
+		if Config.usePass then
+			if not HasPassive(mTarget) then
+				CastSpell(_E)
+			end
+		else
+			CastSpell(_E)
+		end
+	end
+end
+
+function ActivateE(unit)
+	if unit and unit.isMe then
+		return HasBuff(unit, "LuxLightStrikeKugel")
+	end
 end
 
 function IsBinded(target)
@@ -288,6 +335,10 @@ end
 function OnGainBuff(unit, buff)
 	if unit and unit.valid and buff.name == 'LuxLightStrikeKugel' and unit == myHero then 
 		CastSpell(_E)
+	end
+		
+	if unit and unit == myHero and buff.name == 'LuxLightStrikeKugel' then
+		orbActive = true
 	end
 	
 	if unit and unit == myHero and buff.name == 'Recall' then
@@ -309,8 +360,33 @@ function OnLoseBuff(unit, buff)
 	if unit and unit == myHero and buff.name == 'Recall' then
 		isRecalling = false
 	end
+	
+	if unit and unit == myHero and buff.name == 'LuxLightStrikeKugel' then
+		orbActive = false
+	end
+end
+
+function HasPassive(target)
+	if target ~= nil then
+		return HasBuff(target, "luxilluminatingfraulein")
+	end
 end
 
 
+		
+		
 
-
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
