@@ -199,7 +199,7 @@ function Combo()
 	local QTarget, Qinfo = ProdictionQ:GetPrediction(mTarget)
 	local ETarget, Einfo = ProdictionE:GetPrediction(mTarget)
 	
-	if SpellData[_Q].ready and QTarget and Qinfo.hitchance >= Config.ComboSub.coQChance and Config.ComboSub.useQ then
+	if SpellData[_Q].ready and QTarget and Qinfo.hitchance >= Config.ComboSub.coQChance and qColl <= 1 and Config.ComboSub.useQ then
 		if Config.ComboSub.coPass then
 			if not HasPassive(mTarget) then
 				CastSpell(_Q, QTarget.x, QTarget.z)
