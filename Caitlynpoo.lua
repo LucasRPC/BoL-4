@@ -1,20 +1,44 @@
 --[[                                                               ------------------------Script Core------------------------]]
-
 if myHero.charName ~= "Caitlyn" then return end
 
-require "SourceLib"
 require "Prodiction"
 require "VPrediction"
 require "SOW"
 
-local TS = SimpleTS(NEAR_MOUSE)
 local QAble, EAble, RAble = false, false
 local rDmg
 local rRange = nil
 local Prodiction = ProdictManager.GetInstance()
 local ProdictionQ
 local VP = nil
-local version = 0.1
+
+--[[		Auto Update		]]
+local sversion = "0.1"
+local AUTOUPDATE = true
+local UPDATE_HOST = "raw.github.com"
+local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
+local UPDATE_FILE_PATH = SCRIPT_PATH.."Caitlynpoo.lua"
+local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
+
+function AutoupdaterMsg(msg) print("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">"..msg..".</font>") end
+if AUTOUPDATE then
+	local ServerData = GetWebResult(UPDATE_HOST, "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.version")
+	if ServerData then
+		ServerVersion = type(tonumber(ServerData)) == "number" and tonumber(ServerData) or nil
+		if ServerVersion then
+			if tonumber(sversion) < ServerVersion then
+				AutoupdaterMsg("New version available"..ServerVersion)
+				AutoupdaterMsg("Updating, please don't press F9")
+				DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..sversion.." => "..ServerVersion.."), press F9 twice to load the updated version.") end) end, 3)
+			else
+				AutoupdaterMsg("You have got the latest version ("..ServerVersion..")")
+			end
+		end
+	else
+		AutoupdaterMsg("Error downloading version info")
+	end
+end
+
 
 function Menu()
 Config = scriptConfig("Caitlynpoo", "Caitlynpoo")
@@ -30,35 +54,28 @@ Config:addParam("minM", "Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 Config:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
 Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 Config:addParam("sacmode", "SaC Mode", SCRIPT_PARAM_ONOFF, false)
+Config:addParam("mmamode", "MMA Mode", SCRIPT_PARAM_ONOFF, false)
 Config:addSubMenu("Simple OrbWalker", "sow")
-Orbwalker:LoadToMenu(Config.sow)
+Orbwalker:LoadToMenu(Config.sow, true)
 end
 
 function OnLoad()
 	ProdictionQ = Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 90)
 	VP = VPrediction()
 	Orbwalker = SOW(VP)
-	PrintChat("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..version..".</font>")
+	PrintChat("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..sversion..".</font>")
 	Menu()	
 end
 
 function OnTick()
 	Checks()
 	
-	if Config.usepro and Config.pmaker then
-		PeacemakerPRO()
-	end
-	
-	if (not Config.usepro) and Config.pmaker then
-		Peacemaker()
-	end
-	
-	if Config.usepro and Config.pmaker2 and myManaPct() > Config.minM then
-		PeacemakerPRO()
-	end
-	
-	if (not Config.usepro) and Config.pmaker2 and myManaPct() > Config.minM then
-		Peacemaker()
+	if (Config.pmaker or (Config.pmaker2 and myManaPct() > Config.minM)) then
+		if (not Config.usepro) then
+			Peacemaker()
+		elseif Config.usepro then
+			PeacemakerPRO()
+		end
 	end
 	
 	if Config.onoff then 
@@ -73,7 +90,7 @@ function OnTick()
 		AceintheHole()
 	end	
 	
-	if (not Config.pmaker) and Config.net then
+	if Config.net then
 		NetToMouse()
 	end
 	
@@ -100,8 +117,10 @@ function Checks()
 	
     if Config.sacmode and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair.target and _G.AutoCarry.Crosshair.Attack_Crosshair.target.type == myHero.type then 		
 		mTarget = _G.AutoCarry.Crosshair.Attack_Crosshair.target
-	else
-		mTarget = TS:GetTarget(1300) 
+	elseif Config.mmamode and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
+		mTarget = _G.MMA_Target	
+	elseif Config.sow.Enabled then
+		mTarget = Orbwalker:GetTarget(true)
 	end
 end
 
@@ -150,13 +169,7 @@ function PeacemakerPRO()
 	end
 end
 
-function HasPassive(unit)
-	if unit and unit.isMe then
-		return HasBuff(unit, "caitlynheadshot")
-	end
-end
-
-function HeadShot()
+function HeadShot() --SAC MODE ONLY(not working atm)
 	if HasPassive(myHero) and _G.AutoCarry.Plugins then
 		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(PassiveDmg())
 	elseif _G.AutoCarry and _G.AutoCarry.Plugins and (not HasPassive(myHero)) then
@@ -164,182 +177,65 @@ function HeadShot()
 	end
 end
 
+function HasPassive(unit)
+	if unit and unit.isMe then
+		return HasBuff(unit, "caitlynheadshot")
+	end
+end
+
 function myManaPct() return (myHero.mana * 100) / myHero.maxMana end
 function PassiveDmg() return ((_G.AutoCarry.MyHero:GetTotalAttackDamageAgainstTarget(_G.AutoCarry.Minions.EnemyMinions)) * 1.7) end
 function NoPassive() return 0 end
 
---[[                                                               ------------------------Not So Simple AutoTrap------------------------
+--[[                                                               ------------------------Not So Simple AutoTrap------------------------ HELP FROM BILBAO- THANKS
 AutoTrap CC support for: Amumu, Elise, J4, Jax, Nautilus, Pantheon, Warwick, Udyr, Vi, Ahri, Anivia, Lissandra, Sion, Syndra, Swain, Viktor, Vel'Koz, Veigar, TwistedFate, Xerath, Yasuo, Blitzcrank, Braum,
 Karma, Leona, Morganna, Nami, Taric, Thresh, Zyra, Alistar, Brand, Aatrox, Cho'Gath, Irelia, Maokai, Shen, Ryze, Riven, Renekton, Janna, Gragas, Rammus]]
 
+local CCBUFFS = {
+	["aatroxqknockup"] = true,
+	["ahriseducedoom"] = true,
+	["powerfistslow"] = true,
+	["braumstundebuff"] = true,
+	["rupturetarget"] = true,
+	["EliseHumanE"] = true,
+	["Flee"] = true,
+	["HowlingGaleSpell"] = true,
+	["jarvanivdragonstrikeph2"] = true,
+	["karmaspiritbindroot"] = true,	
+	["LuxLightBindingMis"] = true,
+	["lissandrawfrozen"] = true,
+	["maokaiunstablegrowthroot"] = true,
+	["DarkBindingMissile"] = true,
+	["namiqdebuff"] = true,
+	["nautilusanchordragroot"] = true,
+	["RunePrison"] = true,
+	["Taunt"] = true,
+	["Stun"] = true,
+	["swainshadowgrasproot"] = true,
+	["threshqfakeknockup"] = true,
+	["velkozestun"] = true,
+	["virdunkstun"] = true,
+	["viktorgravitonfieldstun"] = true,
+	["supression"] = true,
+	["yasuoq3mis"] = true,
+	["zyragraspingrootshold"] = true,
+}
+
 function CastW()
-	if mTarget and (AhriE(mTarget) or BlitzE(mTarget) or BraumP(mTarget) or ChoGathQ(mTarget) or EliseE(mTarget) or FiddleQ(mTarget) or JannaQ(mTarget) or KarmaW(mTarget) or LuxQ(mTarget) or LissandraW(mTarget) or MaokaiW(mTarget)
-	or MorgQ(mTarget) or NamiQ(mTarget) or NautilusQ(mTarget) or RyzeW(mTarget) or ShenE(mTarget) or StunALL(mTarget) or SwainW(mTarget) or ThreshQ(mTarget) or VelKozE(mTarget) or ViR(mTarget) or ViktorW(mTarget) or WarwickR(mTarget) 
-	or YasuoQ(mTarget) or ZyraE(mTarget)) then
+	if mTarget and ValidTarget(mTarget, 800) and IsOnCC(mTarget) then
 		CastSpell(_W, mTarget.x, mTarget.z)
 	end
 end
 
-function AatroxQ(target)
-	if target ~= nil then
-	return HasBuff(target, "aatroxqknockup")
+function IsOnCC(target)
+	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
+	for i = 1, target.buffCount do
+		tBuff = target:getBuff(i)
+		if BuffIsValid(tBuff) and CCBUFFS[tBuff.name] then
+			return true
+		end	
 	end
-end
-
-function AhriE(target)
-	if target ~= nil then
-	return HasBuff(target, "ahriseducedoom")
-	end
-end
-
-function BlitzE(target)
-	if target ~= nil then
-	return HasBuff(target, "powerfistslow")
-	end
-end
-
-function BraumP(target)
-	if target ~= nil then
-	return HasBuff(target, "braumstundebuff")
-	end
-end
-
-function ChoGathQ(target)
-	if target ~= nil then
-	return HasBuff(target, "rupturetarget")
-	end
-end
-
-function EliseE(target)
-	if target ~= nil then
-	return HasBuff(target, "EliseHumanE")
-	end
-end
-
-function FiddleQ(target)
-	if target ~= nil then
-	return HasBuff(target, "Flee")
-	end
-end
-
-function JannaQ(target)
-	if target ~= nil then
-	return HasBuff(target, "HowlingGaleSpell")
-	end
-end
-
-function JarvanEQ(target)
-	if target ~= nil then
-	return HasBuff(target, "jarvanivdragonstrikeph2")
-	end
-end
-
-function KarmaW(target)
-	if target ~= nil then
-	return HasBuff(target, "karmaspiritbindroot")
-	end
-end
-
-function LuxQ(target)
-	if target ~= nil then
-	return HasBuff(target, "LuxLightBindingMis")
-	end
-end
-
-function LissandraW(target)
-	if target ~= nil then
-	return HasBuff(target, "lissandrawfrozen")
-	end
-end
-
-function MaokaiW(target)
-	if target ~= nil then
-	return HasBuff(target, "maokaiunstablegrowthroot")
-	end
-end
-
-function MorgQ(target)
-	if target ~= nil then
-	return HasBuff(target, "DarkBindingMissile")
-	end
-end
-
-function NamiQ(target)
-	if target ~= nil then
-	return HasBuff(target, "namiqdebuff")
-	end
-end
-
-function NautilusQ(target)
-	if target ~= nil then
-	return HasBuff(target, "nautilusanchordragroot")
-	end
-end
-
-function RyzeW(target)
-	if target ~= nil then
-	return HasBuff(target, "RunePrison")
-	end
-end
-
-function ShenE(target) -- RammusE
-	if target ~= nil then
-	return HasBuff(target, "Taunt")
-	end
-end
-
-function StunALL(target) -- LeonaQ, TaricE, AlistarQ, BrandQ, AmumuQ, JaxE, UdyrE, PantheonW, AniviaQ, SionQ, VeigarE, IreliaE, RenektonW, SyndraQE, TwistedFateGoldCard, XerathE, AnnieP, RivenW, Gragas E, MorgannaR + more..
-	if target ~= nil then
-	return HasBuff(target, "Stun")
-	end
-end
-
-function SwainW(target)
-	if target ~= nil then
-	return HasBuff(target, "swainshadowgrasproot")
-	end
-end	
-
-function ThreshQ(target)
-	if target ~= nil then
-	return HasBuff(target, "threshqfakeknockup")
-	end
-end
-
-function VelKozE(target)
-	if target ~= nil then
-	return HasBuff(target, "velkozestun")
-	end
-end
-
-function ViR(target)
-	if target ~= nil then
-	return HasBuff(target, "virdunkstun")
-	end
-end
-
-function ViktorW(target)
-	if target ~= nil then
-	return HasBuff(target, "viktorgravitonfieldstun")
-	end
-end
-
-function WarwickR(target)
-	if target ~= nil then
-	return HasBuff(target, "suppression")
-	end
-end
-
-function YasuoQ(target)
-	if target ~= nil then
-	return HasBuff(target, "yasuoq3mis")
-	end
-end
-
-function ZyraE(target)
-	if target ~= nil then
-	return HasBuff(target, "zyragraspingrootshold")
-	end
+	return false
 end
 
 
@@ -347,128 +243,71 @@ end
 AntiGapClose support for: Aatrox, Alistar, Ahri, Corki, Fiora, Graves, Leblanc, Gragas, J4, LeeSin, Malphite, Yasuo, Diana, Hecarim, Riven, Shen, Volibear, Quinn, Zac, Sejuani, Renekton, Vi, Wukong, Ezreal, Leona, 
 Khazix, Lucian, Nautilus, Tryndamere, Nidalee, XinZhao, Yasuo, Maokai, Poppy, Jax, Pantheon, Thresh, Irelia]]
 
-function OnProcessSpell(unit, spell)
-	if unit.charName == ("Ezreal") and spell.name == ("EzrealArcaneShift") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, spell.endPos.x, spell.endPos.z)
-	end
-	
-	if unit.charName == ("Alistar") and spell.name == ("Headbutt") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
+local AGCNAMES = {
+	["Ezreal"] = true,
+	["Alistar"] = true,
+	["Yasuo"] = true,
+	["Malphite"] = true,
+	["Diana"] = true,
+	["Hecarim"] = true,
+	["Leona"] = true,
+	["Khazix"] = true,
+	["Lucian"] = true,
+	["Nautilus"] = true,	
+	["Tryndamere"] = true,
+	["Nidalee"] = true,
+	["XinZhao"] = true,
+	["Maokai"] = true,
+	["Poppy"] = true,
+	["Jax"] = true,
+	["Pantheon"] = true,
+	["Thresh"] = true,
+	["Irelia"] = true,
+}
+local AGCSPELLS = {
+	["EzrealArcaneShift"] = true,
+	["Headbutt"] = true,
+	["YasuoDashWrapper"] = true,
+	["UFSlash"] = true,
+	["DianaTeleport"] = true,
+	["HecarimUlt"] = true,
+	["LeonaZenithBlade"] = true,
+	["KhazixE"] = true,
+	["LucianE"] = true,
+	["NautilusAnchorDrag"] = true,	
+	["slashCast"] = true,
+	["Pounce"] = true,
+	["XenZhaoSweep"] = true,
+	["MaokaiUnstableGrowth"] = true,
+	["PoppyHeroicCharge"] = true,
+	["JaxLeapStrike"] = true,
+	["PantheonW"] = true,
+	["threshqleap"] = true,
+	["IreliaGatotsu"] = true,
+}
+local AGCBUFFS = {
+	["aatroxqdescent"] = true,
+	["AhriTumble"] = true,
+	["valkyriesound"] = true,
+	["fiorqcd"] = true,
+	["gravesmovesteroid"] = true,
+	["LeblancSlide"] = true,
+	["GragasE"] = true,
+	["jarvanivdragonstrikeph"] = true,
+	["blindmonkqtwodash"] = true,
+	["RivenTriCleave"] = true,	
+	["ShenShadowDash"] = true,
+	["VolibearQ"] = true,
+	["QuinnE"] = true,
+	["ZacE"] = true,
+	["SejuaniArcticAssault"] = true,
+	["renektonsliceanddicedelay"] = true,
+	["viqdash"] = true,
+	["monkeykingnimbuskick"] = true,
+}
 
-	if unit.charName == ("Yasuo") and spell.name == ("YasuoDashWrapper") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == ("Malphite") and spell.name == ("UFSlash") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == ("Diana") and spell.name == ("DianaTeleport") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == ("Hecarim") and spell.name == ("HecarimUlt") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == ("Leona") and spell.name == ("LeonaZenithBlade") and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end	
-	
-	if unit.charName == "Khazix" and spell.name == "KhazixE" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end	
-	
-	if unit.charName == "Lucian" and spell.name == "LucianE" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, spell.endPos.x, spell.endPos.z)
-	end	
-	
-	if unit.charName == "Nautilus" and spell.name == "NautilusAnchorDrag" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Tryndamere" and spell.name == "slashCast" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Nidalee" and spell.name == "Pounce" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "XinZhao" and spell.name == "XenZhaoSweep" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Maokai" and spell.name == "MaokaiUnstableGrowth" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Poppy" and spell.name == "PoppyHeroicCharge" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-		
-	if unit.charName == "Jax" and spell.name == "JaxLeapStrike" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Pantheon" and spell.name == "PantheonW" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Thresh" and spell.name == "threshqleap" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
-		end
-	end
-	
-	if unit.charName == "Irelia" and spell.name == "IreliaGatotsu" and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
+function OnProcessSpell(unit, spell)
+	if Config.AGConoff and AGCNAMES[unit.charName] and AGCSPELLS[spell.name] and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
 		CastSpell(_E, unit.x, unit.z)
 		if Config.AGCtrap then
 			CastSpell(_W, spell.endPos.x, spell.endPos.z)
@@ -477,123 +316,25 @@ function OnProcessSpell(unit, spell)
 end
 	
 function AGCCastE()
-	if mTarget and (AGCAatroxQ(mTarget) or AGCAhriR(mTarget) or AGCCorkiW(mTarget) or AGCFioraQ(mTarget) or AGCGragasE(mTarget) or AGCGravesE(mTarget) or AGCJ4EQ(mTarget) or AGCLeblancW(mTarget) 
-	or AGCLeeSinQ(mTarget) or AGCQuinnE(mTarget) or AGCRenektonE(mTarget) or AGCRiven(mTarget) or AGCSejuaniQ(mTarget) or AGCShenE(mTarget) or AGCViQ(mTarget) or AGCVolibearQ(mTarget) or AGCWukongE(mTarget) 
-	or AGCZacE(mTarget)) and GetDistanceSqr(myHero, mTarget) <= 250000 then
+	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) then
 		CastSpell(_E, mTarget.x, mTarget.z)
 		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+			CastSpell(_W, mTarget.x, mTarget.z)
 		end
 	end
 end
 
-function AGCAatroxQ(target)
-	if target ~= nil then
-	return HasBuff(target, "aatroxqdescent")
+function IsGapClosing(target)
+	assert(type(target) == 'userdata', "IsGapClosing: Wrong type. Expected userdata got: "..tostring(type(target)))
+	for i = 1, target.buffCount do
+		tBuff = target:getBuff(i)
+		if BuffIsValid(tBuff) and AGCBUFFS[tBuff.name] then
+			return true
+		end	
 	end
+	return false
 end
 
-function AGCAhriR(target)
-	if target ~= nil then
-	return HasBuff(target, "AhriTumble")
-	end
-end
-
-function AGCCorkiW(target)
-	if target ~= nil then
-	return HasBuff(target, "valkyriesound")
-	end
-end
-
-function AGCFioraQ(target)
-	if target ~= nil then
-	return HasBuff(target, "fiorqcd")
-	end
-end
-
-function AGCGravesE(target)
-	if target ~= nil then
-	return HasBuff(target, "gravesmovesteroid")
-	end
-end
-
-function AGCLeblancW(target)
-	if target ~= nil then
-	return HasBuff(target, "LeblancSlide")
-	end
-end
-
-function AGCGragasE(target)
-	if target ~= nil then
-	return HasBuff(target, "GragasE")
-	end
-end
-
-function AGCJ4EQ(target)
-	if target ~= nil then
-	return HasBuff(target, "jarvanivdragonstrikeph")
-	end
-end
-
-function AGCLeeSinQ(target)
-	if target ~= nil then
-	return HasBuff(target, "blindmonkqtwodash")
-	end
-end
-
-function AGCRiven(target)
-	if target ~= nil then
-	return HasBuff(target, "RivenTriCleave")
-	end
-end
-
-function AGCShenE(target)
-	if target ~= nil then
-	return HasBuff(target, "ShenShadowDash")
-	end
-end
-
-function AGCVolibearQ(target)
-	if target ~= nil then
-	return HasBuff(target, "VolibearQ")
-	end
-end
-
-function AGCQuinnE(target)
-	if target ~= nil then
-	return HasBuff(target, "QuinnE")
-	end
-end
-
-function AGCZacE(target)
-	if target ~= nil then
-	return HasBuff(target, "ZacE")
-	end
-end
-
-function AGCSejuaniQ(target)
-	if target ~= nil then
-	return HasBuff(target, "SejuaniArcticAssault")
-	end
-end
-
-function AGCRenektonE(target)
-	if target ~= nil then
-	return HasBuff(target, "renektonsliceanddicedelay")
-	end
-end
-
-function AGCViQ(target)
-	if target ~= nil then
-	return HasBuff(target, "viqdash")
-	end
-end
-
-function AGCWukongE(target)
-	if target ~= nil then
-	return HasBuff(target, "monkeykingnimbuskick")
-	end
-end
 
 
 
