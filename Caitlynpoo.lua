@@ -13,7 +13,7 @@ local ProdictionQ
 local VP = nil
 
 --[[		Auto Update		]]
-local sversion = "0.1"
+local sversion = "0.2"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
