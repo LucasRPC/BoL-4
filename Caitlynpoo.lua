@@ -56,7 +56,7 @@ Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "L
 Config:addParam("sacmode", "SaC Mode", SCRIPT_PARAM_ONOFF, false)
 Config:addParam("mmamode", "MMA Mode", SCRIPT_PARAM_ONOFF, false)
 Config:addSubMenu("Simple OrbWalker", "sow")
-Orbwalker:LoadToMenu(Config.sow, true)
+Orbwalker:LoadToMenu(Config.sow, STS)
 end
 
 function OnLoad()
