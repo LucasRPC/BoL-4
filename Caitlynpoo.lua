@@ -5,6 +5,7 @@ if myHero.charName ~= "Caitlyn" then return end
 require "SourceLib"
 require "Prodiction"
 require "VPrediction"
+require "SOW"
 
 local TS = SimpleTS(NEAR_MOUSE)
 local QAble, EAble, RAble = false, false
@@ -29,13 +30,16 @@ Config:addParam("minM", "Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 Config:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
 Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 Config:addParam("sacmode", "SaC Mode", SCRIPT_PARAM_ONOFF, false)
+Config:addSubMenu("Simple OrbWalker", "sow")
+Orbwalker:LoadToMenu(Config.sow)
 end
 
 function OnLoad()
-	Menu()
 	ProdictionQ = Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 90)
 	VP = VPrediction()
-	PrintChat("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..version..".</font>")	
+	Orbwalker = SOW(VP)
+	PrintChat("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..version..".</font>")
+	Menu()	
 end
 
 function OnTick()
