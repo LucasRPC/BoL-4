@@ -1,19 +1,17 @@
 --[[                                                               ------------------------Script Core------------------------]]
 if myHero.charName ~= "Caitlyn" then return end
 
-require "Prodiction"
 require "VPrediction"
-require "SOW"
 
 local QAble, EAble, RAble = false, false
 local rDmg
 local rRange = nil
-local Prodiction = ProdictManager.GetInstance()
+local Prodiction
 local ProdictionQ
 local VP = nil
 
---[[		Auto Update		]]
-local sversion = "0.2"
+--[[		Auto Update		Pretty well ripped from Fantastik Sivir - Fantastik]] 
+local sversion = "0.21"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -31,14 +29,13 @@ if AUTOUPDATE then
 				AutoupdaterMsg("Updating, please don't press F9")
 				DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..sversion.." => "..ServerVersion.."), press F9 twice to load the updated version.") end) end, 3)
 			else
-				AutoupdaterMsg("You have got the latest version ("..ServerVersion..")")
+				AutoupdaterMsg("Script loaded.  You have got the latest version ("..ServerVersion..")")
 			end
 		end
 	else
 		AutoupdaterMsg("Error downloading version info")
 	end
 end
-
 
 function Menu()
 Config = scriptConfig("Caitlynpoo", "Caitlynpoo")
@@ -47,37 +44,55 @@ Config:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
 Config:addParam("agptrap", "Use trap with AGP", SCRIPT_PARAM_ONOFF, false)
 Config:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
 Config:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
-Config:addParam("usepro", "Use Prodiction Q", SCRIPT_PARAM_ONOFF, false)
-Config:addParam("pmaker", "Q Not Mana-Managed", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("W"))
-Config:addParam("pmaker2", "Q Mana-Managed", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("Q"))
-Config:addParam("minM", "Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
-Config:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
-Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
-Config:addParam("sacmode", "SaC Mode", SCRIPT_PARAM_ONOFF, false)
-Config:addParam("mmamode", "MMA Mode", SCRIPT_PARAM_ONOFF, false)
-Config:addSubMenu("Simple OrbWalker", "sow")
-Orbwalker:LoadToMenu(Config.sow, STS)
+Config:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
+Config:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
+if (not Config.usepro) then
+	Config:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
+end
+if Config.usepro then
+	Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
+end
+Config:addSubMenu("Orbwalk Options", "sow")
+Config.sow:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
+	if Config.sow.orbchoice == 1 then
+		require "SOW"
+		Orbwalker = SOW(VP)
+		Orbwalker:LoadToMenu(Config.sow, STS)
+	end
+	if Config.sow.orbchoice == 4 then
+		require "SxOrbWalk"
+		SxOrb = SxOrbWalk()
+		SxOrb:LoadToMenu(Config.sow)
+	end
+	if Config.usepro then
+		require "Prodiction"
+		Prodiction = ProdictManager.GetInstance()
+		ProdictionQ = Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 90)
+	end
 end
 
 function OnLoad()
-	ProdictionQ = Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 90)
 	VP = VPrediction()
-	Orbwalker = SOW(VP)
-	PrintChat("<font color=\"#FF6600\">[Caitlynpoo!]</font> <font color=\"#FFFFFF\">Script loaded. Running version v"..sversion..".</font>")
 	Menu()	
 end
 
 function OnTick()
 	Checks()
 	
-	if (Config.pmaker or (Config.pmaker2 and myManaPct() > Config.minM)) then
+	if Config.sow.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.HotKeys.Fight) then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
 			PeacemakerPRO()
 		end
-	end
-	
+	elseif Config.sow.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.HotKeys.Harass) and myManaPct() > Config.minM then
+		if (not Config.usepro) then
+			Peacemaker()
+		elseif Config.usepro then
+			PeacemakerPRO()
+		end
+	end	
+		
 	if Config.onoff then 
 		CastW()
 	end
@@ -94,14 +109,14 @@ function OnTick()
 		NetToMouse()
 	end
 	
-	if Config.sacmode then
+	if Config.orbchoice == 2 then
 		HeadShot()
 	end
 end
 
 --[[                                                               ------------------------Game Functions------------------------]]
-function NetToMouse()
-         if EAble and Config.net then
+function NetToMouse() --From SAC Plugin - Caitlyn - jbman
+         if EAble and Config.net and (not IsKeyDown(17)) then
          MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
          HeroPos = Vector(myHero.x, myHero.y, myHero.z)
          DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
@@ -115,23 +130,25 @@ function Checks()
 	EAble = (myHero:CanUseSpell(_E) == READY)
 	RAble = (myHero:CanUseSpell(_R) == READY)
 	
-    if Config.sacmode and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair.target and _G.AutoCarry.Crosshair.Attack_Crosshair.target.type == myHero.type then 		
+    if Config.sow.orbchoice == 2 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair.target and _G.AutoCarry.Crosshair.Attack_Crosshair.target.type == myHero.type then 		
 		mTarget = _G.AutoCarry.Crosshair.Attack_Crosshair.target
-	elseif Config.mmamode and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
+	elseif Config.sow.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
 		mTarget = _G.MMA_Target	
-	elseif Config.sow.Enabled then
+	elseif Config.sow.orbchoice == 4 and SxOrb then
+		mTarget = SxOrb:GetTarget()
+	elseif Config.sow.orbchoice == 1 and Orbwalker then
 		mTarget = Orbwalker:GetTarget(true)
 	end
 end
 
-function CheckRLevel()
+function CheckRLevel() --From SAC Plugin - Caitlyn - jbman
         if myHero:GetSpellData(_R).level == 1 then rRange = 2000
         elseif myHero:GetSpellData(_R).level == 2 then rRange = 2500
         elseif myHero:GetSpellData(_R).level == 3 then rRange = 3000
         end
 end
 
-function AceintheHole()
+function AceintheHole()--From SAC Plugin - Caitlyn - jbman
     CheckRLevel()
 	for i = 1, heroManager.iCount do
         local Enemy = heroManager:getHero(i)
@@ -147,9 +164,13 @@ function Peacemaker()
 	if mTarget then
 		CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.632, 90, 1300, 2225, myHero)
 		if QAble and HitChance >= Config.vphit and GetDistanceSqr(CastPosition) < 1690000 then
-			if Config.sacmode and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
+			if Config.sow.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif (not Config.sacmode) then
+			elseif Config.sow.orbchoice == 3 and (not _G.MMA_AttackAvailable) then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			elseif  Config.sow.orbchoice == 1 and Config.sow.Enabled then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
+			elseif  Config.sow.orbchoice == 4 and (not SxOrb:CanAttack()) then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
 		end
@@ -160,10 +181,14 @@ function PeacemakerPRO()
 	if mTarget then
         local QTarget, Qinfo = ProdictionQ:GetPrediction(mTarget)
         if QAble and Qinfo.hitchance >= Config.prohit and GetDistanceSqr(QTarget) < 1690000 then 
-			if Config.sacmode and _G.AutoCarry.Orbwalker:IsAfterAttack() then
+			if Config.sow.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
 				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif (not Config.sacmode) then
+			elseif Config.sow.orbchoice == 3 and (not _G.MMA_AttackAvailable) then
 				CastSpell(_Q, QTarget.x, QTarget.z)
+			elseif Config.sow.orbchoice == 1 and Config.sow.Enabled then
+				CastSpell(_Q, QTarget.x, QTarget.z)
+			elseif  Config.sow.orbchoice == 4 and (not SxOrb:CanAttack()) then
+				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
     	end
 	end
@@ -188,13 +213,14 @@ function PassiveDmg() return ((_G.AutoCarry.MyHero:GetTotalAttackDamageAgainstTa
 function NoPassive() return 0 end
 
 --[[                                                               ------------------------Not So Simple AutoTrap------------------------ HELP FROM BILBAO- THANKS
-AutoTrap CC support for: Amumu, Elise, J4, Jax, Nautilus, Pantheon, Warwick, Udyr, Vi, Ahri, Anivia, Lissandra, Sion, Syndra, Swain, Viktor, Vel'Koz, Veigar, TwistedFate, Xerath, Yasuo, Blitzcrank, Braum,
-Karma, Leona, Morganna, Nami, Taric, Thresh, Zyra, Alistar, Brand, Aatrox, Cho'Gath, Irelia, Maokai, Shen, Ryze, Riven, Renekton, Janna, Gragas, Rammus]]
+AutoTrap CC support for: AmumuQ&R, Elise, J4, Jax, Nautilus, Pantheon, Warwick, Udyr, Vi, Ahri, Anivia, Lissandra, Sion, Syndra, Swain, Viktor, Vel'Koz, Veigar, TwistedFate, Xerath, Yasuo, Blitzcrank,
+ BraumP&R, Karma, LeonaQ&R, Morganna, Nami, Taric, Thresh, Zyra, Alistar, Brand, Aatrox, Cho'Gath, Irelia, Maokai, Shen, Ryze, SejuaniR Riven, Renekton, Janna, Gragas, Rammus]]
 
 local CCBUFFS = {
 	["aatroxqknockup"] = true,
 	["ahriseducedoom"] = true,
 	["powerfistslow"] = true,
+	["caitlynyordletrapdebuff"] = true,
 	["braumstundebuff"] = true,
 	["rupturetarget"] = true,
 	["EliseHumanE"] = true,
@@ -219,6 +245,12 @@ local CCBUFFS = {
 	["supression"] = true,
 	["yasuoq3mis"] = true,
 	["zyragraspingrootshold"] = true,
+	["CurseoftheSadMummy"] = true,
+	["braumpulselineknockup"] = true,
+	["lissandraenemy2"] = true,
+	["sejuaniglacialprison"] = true,
+	["SonaR"] = true,
+	["zyrabramblezoneknockup"] = true,
 }
 
 function CastW()
@@ -238,16 +270,17 @@ function IsOnCC(target)
 	return false
 end
 
-
 --[[                                                               ------------------------Not So Simple AGC------------------------
-AntiGapClose support for: Aatrox, Alistar, Ahri, Corki, Fiora, Graves, Leblanc, Gragas, J4, LeeSin, Malphite, Yasuo, Diana, Hecarim, Riven, Shen, Volibear, Quinn, Zac, Sejuani, Renekton, Vi, Wukong, Ezreal, Leona, 
-Khazix, Lucian, Nautilus, Tryndamere, Nidalee, XinZhao, Yasuo, Maokai, Poppy, Jax, Pantheon, Thresh, Irelia]]
+AntiGapClose support for: Aatrox, Alistar, Ahri, Corki, Fiora, Graves, Leblanc, Gragas, J4, Fizz, LeeSin, Malphite, Diana, Hecarim, Riven, Shen, Volibear, Quinn, Zac, Sejuani, Renekton, Vi, 
+Wukong, Ezreal, Leona, Khazix, Lucian, Nautilus, Tryndamere, Nidalee, XinZhao, Yasuo, Maokai, Poppy, Jax, Pantheon, Thresh, Irelia, Tristana]]
 
 local AGCNAMES = {
 	["Ezreal"] = true,
+	["Aatrox"] = true,
 	["Alistar"] = true,
 	["Yasuo"] = true,
 	["Malphite"] = true,
+	["Tristana"] = true,
 	["Diana"] = true,
 	["Hecarim"] = true,
 	["Leona"] = true,
@@ -263,13 +296,48 @@ local AGCNAMES = {
 	["Pantheon"] = true,
 	["Thresh"] = true,
 	["Irelia"] = true,
+	["MonkeyKing"] = true,
+	["Vi"] = true,
+	["Sejuani"] = true,
+	["Quinn"] = true,
+	["LeeSin"] = true,
+	["JarvanIV"] = true,
+	["Renekton"] = true,
+	["Gragas"] = true,
+	["Ahri"] = true,
+	["Graves"] = true,
+	["Corki"] = true,
+	["LeBlanc"] = true,
+	["Fizz"] = true,
+	["Fiora"] = true,
+	["Riven"] = true,
+	["Shen"] = true,
 }
 local AGCSPELLS = {
 	["EzrealArcaneShift"] = true,
+	["AhriTumble"] = true,
+	["RivenTriCleave"] = true,
+	["AatroxQ"] = true,
+	["GravesMove"] = true,
+	["FioraQ"] = true,
+	["CarpetBomb"] = true,
+	["ShenShadowDash"] = true,
+	["QuinnValorE"] = true,
+	["QuinnE"] = true,
+	["FizzPiercingStrike"] = true,
+	["BlindMonkQTwo"] = true,
+	["GragasE"] = true,
+	["SejuaniArcticAssault"] = true,
+	["RenektonSliceAndDice"] = true,
+	["LeblancSlide"] = true,
+	["LeblancSlideM"] = true,
+	["JarvanIVDragonStrike"] = true,
+	["MonkeyKingNimbus"] = true,
 	["Headbutt"] = true,
 	["YasuoDashWrapper"] = true,
 	["UFSlash"] = true,
 	["DianaTeleport"] = true,
+	["RocketJump"] = true,
 	["HecarimUlt"] = true,
 	["LeonaZenithBlade"] = true,
 	["KhazixE"] = true,
@@ -283,7 +351,9 @@ local AGCSPELLS = {
 	["JaxLeapStrike"] = true,
 	["PantheonW"] = true,
 	["threshqleap"] = true,
+	["ViQ"] = true,
 	["IreliaGatotsu"] = true,
+	["SummonerFlash"] = true,
 }
 local AGCBUFFS = {
 	["aatroxqdescent"] = true,
