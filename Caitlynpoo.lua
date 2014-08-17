@@ -11,7 +11,7 @@ local ProdictionQ
 local VP = nil
 
 --[[		Auto Update		Pretty well ripped from Fantastik Sivir - Fantastik]] 
-local sversion = "0.21"
+local sversion = "0.22"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -63,6 +63,7 @@ Config.sow:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PA
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
 		SxOrb:LoadToMenu(Config.sow)
+		SxOrb:RegisterAfterAttackCallback(PeacemakerReset)
 	end
 	if Config.usepro then
 		require "Prodiction"
@@ -79,13 +80,13 @@ end
 function OnTick()
 	Checks()
 	
-	if Config.sow.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.HotKeys.Fight) then
+	if Config.sow.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
 			PeacemakerPRO()
 		end
-	elseif Config.sow.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.HotKeys.Harass) and myManaPct() > Config.minM then
+	elseif Config.sow.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.minM then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
@@ -170,7 +171,7 @@ function Peacemaker()
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			elseif  Config.sow.orbchoice == 1 and Config.sow.Enabled then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif  Config.sow.orbchoice == 4 and (not SxOrb:CanAttack()) then
+			elseif  Config.sow.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
 		end
@@ -187,7 +188,7 @@ function PeacemakerPRO()
 				CastSpell(_Q, QTarget.x, QTarget.z)
 			elseif Config.sow.orbchoice == 1 and Config.sow.Enabled then
 				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif  Config.sow.orbchoice == 4 and (not SxOrb:CanAttack()) then
+			elseif  Config.sow.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
     	end
