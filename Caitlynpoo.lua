@@ -3,15 +3,16 @@ if myHero.charName ~= "Caitlyn" then return end
 
 require "VPrediction"
 
-local QAble, EAble, RAble = false, false
+local QAble, WAble, EAble, RAble = false, false, false
 local rDmg
 local rRange = nil
+local trapCount = 0
 local Prodiction
 local ProdictionQ
 local VP = nil
 
 --[[		Auto Update		Pretty well ripped from Fantastik Sivir - Fantastik]] 
-local sversion = "0.22"
+local sversion = "0.23"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -39,30 +40,32 @@ end
 
 function Menu()
 Config = scriptConfig("Caitlynpoo", "Caitlynpoo")
-Config:addParam("onoff", "AutoTrap", SCRIPT_PARAM_ONOFF, true)
+orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
+Config:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
+Config:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 Config:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
-Config:addParam("agptrap", "Use trap with AGP", SCRIPT_PARAM_ONOFF, false)
+Config:addParam("AGCtrap", "Use trap with AGP", SCRIPT_PARAM_ONOFF, false)
 Config:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
 Config:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
 Config:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
 Config:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
+Config:addParam("printCount", "Count Traps Set", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("L"))
 if (not Config.usepro) then
 	Config:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
 end
 if Config.usepro then
 	Config:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 end
-Config:addSubMenu("Orbwalk Options", "sow")
-Config.sow:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
-	if Config.sow.orbchoice == 1 then
+orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
+	if orbConfig.orbchoice == 1 then
 		require "SOW"
 		Orbwalker = SOW(VP)
-		Orbwalker:LoadToMenu(Config.sow, STS)
+		Orbwalker:LoadToMenu(orbConfig)
 	end
-	if Config.sow.orbchoice == 4 then
+	if orbConfig.orbchoice == 4 then
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
-		SxOrb:LoadToMenu(Config.sow)
+		SxOrb:LoadToMenu(orbConfig)
 		SxOrb:RegisterAfterAttackCallback(PeacemakerReset)
 	end
 	if Config.usepro then
@@ -80,13 +83,13 @@ end
 function OnTick()
 	Checks()
 	
-	if Config.sow.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
+	if orbConfig.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
 			PeacemakerPRO()
 		end
-	elseif Config.sow.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.minM then
+	elseif orbConfig.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.minM then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
@@ -110,34 +113,47 @@ function OnTick()
 		NetToMouse()
 	end
 	
-	if Config.orbchoice == 2 then
-		HeadShot()
+	--if Config.orbchoice == 2 then
+	--	HeadShot()
+	--end
+	
+	if Config.printCount then
+		print("Traps Set - "..trapCount.."")
 	end
 end
 
 --[[                                                               ------------------------Game Functions------------------------]]
 function NetToMouse() --From SAC Plugin - Caitlyn - jbman
-         if EAble and Config.net and (not IsKeyDown(17)) then
-         MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
-         HeroPos = Vector(myHero.x, myHero.y, myHero.z)
-         DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
-          myHero:MoveTo(mousePos.x,mousePos.z)
-          CastSpell(_E,DashPos.x,DashPos.z)
-         end
+	if EAble and Config.net and (not IsKeyDown(17)) then
+		MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
+		HeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
+		myHero:MoveTo(mousePos.x,mousePos.z)
+		CastSpell(_E,DashPos.x,DashPos.z)
+	end
 end
 
 function Checks()
 	QAble = (myHero:CanUseSpell(_Q) == READY)
+	WAble = (myHero:CanUseSpell(_W) == READY)	
 	EAble = (myHero:CanUseSpell(_E) == READY)
 	RAble = (myHero:CanUseSpell(_R) == READY)
 	
-    if Config.sow.orbchoice == 2 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair and _G.AutoCarry.Crosshair.Attack_Crosshair.target and _G.AutoCarry.Crosshair.Attack_Crosshair.target.type == myHero.type then 		
-		mTarget = _G.AutoCarry.Crosshair.Attack_Crosshair.target
-	elseif Config.sow.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
+--/////////////////////////////////////////////////////////////////////////////SAC\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\	
+	if orbConfig.orbchoice == 2 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Skills_Crosshair 
+	and _G.AutoCarry.Crosshair.Skills_Crosshair.target and _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type then 		
+			mTarget = _G.AutoCarry.Crosshair.Skills_Crosshair.target
+--/////////////////////////////////////////////////////////////////////////////MMA\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+	elseif orbConfig.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
 		mTarget = _G.MMA_Target	
-	elseif Config.sow.orbchoice == 4 and SxOrb then
-		mTarget = SxOrb:GetTarget()
-	elseif Config.sow.orbchoice == 1 and Orbwalker then
+--/////////////////////////////////////////////////////////////////////////////SxOrbwalk\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+	elseif orbConfig.orbchoice == 4 and SxOrb then
+		sxTarget = SxOrb:GetTarget()
+		if sxTarget and sxTarget.type == myHero.type then
+			mTarget = sxTarget
+		end
+--/////////////////////////////////////////////////////////////////////////////SOW\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+	elseif orbConfig.orbchoice == 1 and Orbwalker then
 		mTarget = Orbwalker:GetTarget(true)
 	end
 end
@@ -165,13 +181,13 @@ function Peacemaker()
 	if mTarget then
 		CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.632, 90, 1300, 2225, myHero)
 		if QAble and HitChance >= Config.vphit and GetDistanceSqr(CastPosition) < 1690000 then
-			if Config.sow.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
+			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif Config.sow.orbchoice == 3 and (not _G.MMA_AttackAvailable) then
+			elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove and (not _G.MMA_AttackAvailable) then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif  Config.sow.orbchoice == 1 and Config.sow.Enabled then
+			elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() and (not Orbwalker:CanAttack()) then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif  Config.sow.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() then
+			elseif orbConfig.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() and (not SxOrb:CanAttack()) then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
 		end
@@ -182,13 +198,13 @@ function PeacemakerPRO()
 	if mTarget then
         local QTarget, Qinfo = ProdictionQ:GetPrediction(mTarget)
         if QAble and Qinfo.hitchance >= Config.prohit and GetDistanceSqr(QTarget) < 1690000 then 
-			if Config.sow.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
+			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
 				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif Config.sow.orbchoice == 3 and (not _G.MMA_AttackAvailable) then
+			elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove and (not _G.MMA_AttackAvailable) then
 				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif Config.sow.orbchoice == 1 and Config.sow.Enabled then
+			elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() and (not Orbwalker:CanAttack()) then
 				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif  Config.sow.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() then
+			elseif  orbConfig.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() and (not SxOrb:CanAttack()) then
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			end
     	end
@@ -255,8 +271,14 @@ local CCBUFFS = {
 }
 
 function CastW()
-	if mTarget and ValidTarget(mTarget, 800) and IsOnCC(mTarget) then
-		CastSpell(_W, mTarget.x, mTarget.z)
+	for i = 1, heroManager.iCount do
+		local Enemy = heroManager:getHero(i)
+		if WAble and ValidTarget(Enemy, 800, true) and IsOnCC(Enemy) then
+			CastSpell(_W, Enemy.x, Enemy.z)
+			if Config.Qonoff then
+				CastSpell(_Q, Enemy.x, Enemy.z)
+			end
+		end
 	end
 end
 
@@ -378,11 +400,15 @@ local AGCBUFFS = {
 }
 
 function OnProcessSpell(unit, spell)
-	if Config.AGConoff and AGCNAMES[unit.charName] and AGCSPELLS[spell.name] and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
+	if Config.AGConoff and AGCNAMES[unit.charName] and AGCSPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
 		CastSpell(_E, unit.x, unit.z)
 		if Config.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+			CastSpell(_W, unit.x, unit.z)
 		end
+	end
+	
+	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
+		trapCount = trapCount + 1
 	end
 end
 	
@@ -405,8 +431,6 @@ function IsGapClosing(target)
 	end
 	return false
 end
-
-
 
 
 
