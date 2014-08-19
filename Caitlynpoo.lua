@@ -12,7 +12,7 @@ local ProdictionQ
 local VP = nil
 
 --[[		Auto Update		Pretty well ripped from Fantastik Sivir - Fantastik]] 
-local sversion = "0.23"
+local sversion = "0.24"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -44,7 +44,7 @@ orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
 Config:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
 Config:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 Config:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
-Config:addParam("AGCtrap", "Use trap with AGP", SCRIPT_PARAM_ONOFF, false)
+Config:addParam("AGCtrap", "Use trap with AntiGapClose", SCRIPT_PARAM_ONOFF, false)
 Config:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
 Config:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
 Config:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
@@ -62,11 +62,14 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		Orbwalker = SOW(VP)
 		Orbwalker:LoadToMenu(orbConfig)
 	end
+	if orbConfig.orbchoice == 3 then
+		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
+	end
 	if orbConfig.orbchoice == 4 then
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
 		SxOrb:LoadToMenu(orbConfig)
-		SxOrb:RegisterAfterAttackCallback(PeacemakerReset)
 	end
 	if Config.usepro then
 		require "Prodiction"
@@ -83,13 +86,13 @@ end
 function OnTick()
 	Checks()
 	
-	if orbConfig.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
+	if orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
 			PeacemakerPRO()
 		end
-	elseif orbConfig.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.minM then
+	elseif orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.minM then
 		if (not Config.usepro) then
 			Peacemaker()
 		elseif Config.usepro then
@@ -402,7 +405,7 @@ local AGCBUFFS = {
 function OnProcessSpell(unit, spell)
 	if Config.AGConoff and AGCNAMES[unit.charName] and AGCSPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
 		CastSpell(_E, unit.x, unit.z)
-		if Config.AGCtrap then
+		if (not EAble) and Config.AGCtrap then
 			CastSpell(_W, unit.x, unit.z)
 		end
 	end
@@ -415,7 +418,7 @@ end
 function AGCCastE()
 	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) then
 		CastSpell(_E, mTarget.x, mTarget.z)
-		if Config.AGCtrap then
+		if (not EAble) and Config.AGCtrap then
 			CastSpell(_W, mTarget.x, mTarget.z)
 		end
 	end
