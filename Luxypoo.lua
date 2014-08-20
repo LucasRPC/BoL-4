@@ -4,7 +4,7 @@ require "SourceLib"
 require "VPrediction"
 
 --/////////////////////////////////////////////////////////////////////////////AUTOUPDATE\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-local sversion = "1.0"
+local sversion = "1.01"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Luxypoo.lua".."?rand="..math.random(1,10000)
@@ -37,8 +37,8 @@ local lastQCast, lastAA = 0, 0
 local orbActive
 local mTarget, sxTarget = nil
 local TS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
-local collTime, collEndTime, qColl = nil, 0, 0
 local ultPos 
+local onDqCollcolor = ARGB(100, 124, 4, 4)
 local hCollision = {}
 local Config = nil
 local isRecalling = false
@@ -82,10 +82,6 @@ local SpellData = {
 function OnLoad()
 	VP = VPrediction()
 	Menu()
-	qCollduration = (Config.mBuff * 20)
-	Q = Spell(_Q, SpellData[_Q].range)
-	E = Spell(_E, SpellData[_E].range)
-	R = Spell(_R, SpellData[_R].range)	
 	Loaded = true
 end
 
@@ -153,20 +149,16 @@ Config:addSubMenu("Lane Clear", "LClearSub")
 
 -- KS
 Config:addSubMenu("Kill Secure", "KS")
-	Config.KS:addParam("active", "Kill Secure On/Off", SCRIPT_PARAM_ONOFF, true) 	
-	Config.KS:addParam("useQ", "Use Q", SCRIPT_PARAM_ONOFF, true)	
+	Config.KS:addParam("active", "Kill Secure On/Off", SCRIPT_PARAM_ONOFF, true) 
 	Config.KS:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)	
 	Config.KS:addParam("useR", "Use R", SCRIPT_PARAM_ONOFF, true)	
 
 -- Target Selection
 Config:addSubMenu("Target Options", "sts")
 	Config.sts:addParam("stsRange", "Target Selection Range", SCRIPT_PARAM_SLICE, 3340, 0, 3340, 0)
-	Config.sts:addParam("drawTarget", "Draw Target", SCRIPT_PARAM_ONOFF, true)
+	Config.sts:addParam("drawTarget", "Draw Target Collision", SCRIPT_PARAM_ONOFF, true)
 	TS:AddToMenu(Config.sts)
 	
--- Minion Buffer
-Config:addParam("mBuff", "Minion Q Buffer", SCRIPT_PARAM_SLICE, 85, 50, 100, 0)
-
 -- Orbwalkers
 orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
 	if orbConfig.orbchoice == 1 then
@@ -270,26 +262,11 @@ function ActivateE(unit)
 end
 
 function OnDraw()
-		if mTarget and GetQColl(mTarget) then
-			onDqCollcolor = ARGB(100, 35, 250, 11)
-		end		
-		if mTarget and (not GetQColl(mTarget)) then
-			onDqCollcolor = ARGB(100, 124, 4, 4)
-		end
-	
 	if myHero.dead then return end	
 				
 	if mTarget and (not mTarget.dead) and ValidTarget(mTarget, SpellData[_R].range) and Config.sts.drawTarget then
 		DrawLine3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 1, onDqCollcolor)
-		DrawLineBorder3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 80, onDqCollcolor, 8)
-		if mTarget.visible and not mTarget.dead then			
-			for j=1, 25 do
-				local ycircle = (j*(120/25*2)-120)
-				local r = math.sqrt(120^2-ycircle^2)
-				ycircle = ycircle/1.3
-				DrawCircle(mTarget.x, mTarget.y+100+ycircle, mTarget.z, r, onDqCollcolor)				
-			end		 
-		end	
+		DrawLineBorder3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 80, onDqCollcolor, 8)	
 	end
 end
 
@@ -382,12 +359,16 @@ function CastSpellQ(target)
 			 QTarget, Qinfo = VP:GetLineCastPosition(target, SpellData[_Q].delay, SpellData[_Q].width, SpellData[_Q].range, SpellData[_Q].speed, myHero)	
 		end
 
-		if Config.usepro and QTarget and Qinfo and Qinfo.hitchance >= Config.hitSub.qChance and GetQColl(QTarget) then
+		if Config.usepro and QTarget and Qinfo and Qinfo.hitchance >= Config.hitSub.qChance and GetMinionCollision(myHero, QTarget) then
+			onDqCollcolor = ARGB(100, 124, 4, 4)
 			CastSpell(_Q, QTarget.x, QTarget.z) 
 			lastQCast = GetTickCount()
-		elseif (not Config.usepro) and Qinfo and Qinfo >= Config.hitSub.qChance and GetQColl(QTarget) then
+		elseif (not Config.usepro) and Qinfo and Qinfo >= Config.hitSub.qChance and GetMinionCollision(myHero, QTarget) then
+			onDqCollcolor = ARGB(100, 124, 4, 4)
 			CastSpell(_Q, QTarget.x, QTarget.z) 
 			lastQCast = GetTickCount()
+		else
+			onDqCollcolor = ARGB(100, 35, 250, 11)
 		end
 	end
 end
@@ -432,91 +413,44 @@ function KillSteal()
 		
 	for _,enemy in pairs(GetEnemyHeroes()) do
 		ksDmg = GetTotalDmg(enemy)
-		if Config.usepro then
-			QTarget, Qinfo = ProdictionQ:GetPrediction(enemy)
-			ETarget, Einfo = ProdictionE:GetPrediction(enemy)
-			RTarget, Rinfo = ProdictionR:GetPrediction(enemy)
-		elseif (not Config.usepro) then
-			QTarget, Qinfo = VP:GetLineCastPosition(enemy, SpellData[_Q].delay, SpellData[_Q].width, SpellData[_Q].range, SpellData[_Q].speed, myHero)	
-			ETarget, Einfo = VP:GetLineCastPosition(enemy, SpellData[_E].delay, SpellData[_E].width, SpellData[_E].range, SpellData[_E].speed, myHero)
-			RTarget, Rinfo = VP:GetLineCastPosition(enemy, SpellData[_R].delay, SpellData[_R].width, SpellData[_R].range, SpellData[_R].speed, myHero)
-		end
 		
-		if ValidTarget(enemy, SpellData[_Q].range) and GetDistanceSqr(myHero, enemy) < SpellData[_Q].rangeSqr and ksDmg.total > enemy.health then	
-			if ksDmg.Q > enemy.health then	
-				if SpellData[_Q].ready and (Q:GetManaUsage() < myHero.mana) and QTarget and Config.KS.useQ and qColl <= 1 then
-					if Config.usepro and Qinfo.hitchance >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					elseif (not Config.usepro) and Qinfo >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
+		if ValidTarget(enemy, SpellData[_E].range) and ksDmg.total > enemy.health and GetDistanceSqr(myHero, enemy) < SpellData[_E].rangeSqr then	
+			if Config.KS.useE and SpellData[_E].ready and ksDmg.E > enemy.health then
+				if Config.usepro then
+					ETarget, Einfo = ProdictionE:GetPrediction(enemy)
+					if Einfo.hitchance >= Config.hitSub.eChance then
+						CastSpell(_E, ETarget.x, ETarget.z)
 					end
-				end	
-			elseif IsOnCC(enemy) and ksDmg.E > enemy.health then
-				if SpellData[_E].ready and (E:GetManaUsage() < myHero.mana) and Config.KS.useE then
-					CastSpell(_E, mTarget.x, mTarget.z)
-				end					
-			elseif (not SpellData[_Q].ready) and ksDmg.E > enemy.health then
-				if SpellData[_E].ready and (E:GetManaUsage() < myHero.mana) and ETarget and Config.KS.useE then
-					if Config.usepro and Einfo.hitchance >= Config.hitSub.eChance then
+				elseif (not Config.usepro)	then
+					ETarget, Einfo = VP:GetLineCastPosition(enemy, SpellData[_E].delay, SpellData[_E].width, SpellData[_E].range, SpellData[_E].speed, myHero)
+					if Einfo >= Config.hitSub.eChance then
 						CastSpell(_E, ETarget.x, ETarget.z) 
-					elseif (not Config.usepro) and Einfo >= Config.hitSub.eChance then
-						CastSpell(_E, ETarget.x, ETarget.z) 
+					end			
+				end							
+			elseif Config.KS.useR and ksDmg.R > enemy.health and ksDmg.E < enemy.health then
+				if Config.usepro and Rinfo.hitchance >= Config.hitSub.rChance then
+					RTarget, Rinfo = ProdictionR:GetPrediction(enemy)
+					if Rinfo.hitchance >= Config.hitSub.rChance then
+						CastSpell(_R, RTarget.x, RTarget.z)
 					end
-				end			
-			elseif (ksDmg.Q + ksDmg.E) > enemy.health then
-				if SpellData[_E].ready and SpellData[_Q].ready and ((E:GetManaUsage() + Q:GetManaUsage()) < myHero.mana) and QTarget and Config.KS.useQ and qColl <= 1 then
-					if Config.usepro and Qinfo.hitchance >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					elseif (not Config.usepro) and Qinfo >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					end
-				end
-			elseif IsOnCC(enemy) and ksDmg.R > enemy.health then
-				if SpellData[_R].ready and (R:GetManaUsage() < myHero.mana) and Config.KS.useR then
-					CastSpell(_R, mTarget.x, mTarget.z)
-					return
-				end					
-			elseif (not SpellData[_Q].ready) and ksDmg.R > enemy.health then
-				if SpellData[_R].ready and (R:GetManaUsage() < myHero.mana) and RTarget and Config.KS.useR then
-					if Config.usepro and Rinfo.hitchance >= Config.hitSub.rChance then
+				elseif (not Config.usepro) then
+					RTarget, Rinfo = VP:GetLineCastPosition(enemy, SpellData[_R].delay, SpellData[_R].width, SpellData[_R].range, SpellData[_R].speed, myHero)
+					if Rinfo >= Config.hitSub.rChance then
 						CastSpell(_R, RTarget.x, RTarget.z) 
-					elseif (not Config.usepro) and Rinfo >= Config.hitSub.rChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
 					end
 				end				
-			elseif (ksDmg.Q + ksDmg.R) > enemy.health then
-				if SpellData[_R].ready and SpellData[_Q].ready and ((R:GetManaUsage() + Q:GetManaUsage()) < myHero.mana) and QTarget and Config.KS.useQ and qColl <= 1 then
-					if Config.usepro and Qinfo.hitchance >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					elseif (not Config.usepro) and Qinfo >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					end
-				end
-			elseif IsOnCC(enemy) and (ksDmg.E + ksDmg.R) > enemy.health then
-				if SpellData[_R].ready and SpellData[_E].ready and ((E:GetManaUsage() + R:GetManaUsage()) < myHero.mana) and Config.KS.useR and Config.KS.useE then
-						CastSpell(_E, mTarget.x, mTarget.z)
-						CastSpell(_R, mTarget.x, mTarget.z)
-					return
-				end		
-			elseif ksDmg.total > enemy.health then
-				if SpellData[_Q].ready and SpellData[_E].ready and SpellData[_R].ready and ((E:GetManaUsage() + Q:GetManaUsage() + R:GetManaUsage()) < myHero.mana) 
-				and QTarget and Config.KS.useQ and qColl <= 1 then
-					if Config.usepro and Qinfo.hitchance >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					elseif (not Config.usepro) and Qinfo >= Config.hitSub.qChance then
-						CastSpell(_Q, QTarget.x, QTarget.z) 
-					end
-				end	
 			end	
-		elseif ValidTarget(enemy, SpellData[_R].range) and ((GetDistanceSqr(enemy) > SpellData[_E].rangeSqr) or ( not SpellData[_Q].ready and not SpellData[_E].ready)) then
-			if ksDmg.R > enemy.health then
-				if SpellData[_R].ready and (R:GetManaUsage() < myHero.mana) and RTarget and Config.KS.useR then
-					if Config.usepro and Rinfo.hitchance >= Config.hitSub.qChance then
-						CastSpell(_R, RTarget.x, RTarget.z) 
-					elseif (not Config.usepro) and Rinfo >= Config.hitSub.qChance then
-						CastSpell(_R, RTarget.x, RTarget.z) 
-					end
-				end
+		elseif Config.KS.useR and ValidTarget(enemy, SpellData[_R].range) and ksDmg.R > enemy.health and GetDistanceSqr(enemy) > SpellData[_E].rangeSqr then
+			if Config.usepro then
+				RTarget, Rinfo = ProdictionR:GetPrediction(enemy)
+				if Rinfo.hitchance >= Config.hitSub.rChance then
+					CastSpell(_R, RTarget.x, RTarget.z)
+				end 
+			elseif (not Config.usepro) then
+				RTarget, Rinfo = VP:GetLineCastPosition(enemy, SpellData[_R].delay, SpellData[_R].width, SpellData[_R].range, SpellData[_R].speed, myHero)
+				if Rinfo >= Config.hitSub.rChance then
+					CastSpell(_R, RTarget.x, RTarget.z) 
+				end 
 			end
 		end
 	end
@@ -537,13 +471,20 @@ function OnDeleteObj(object)
 end
 
 function ReactivateE()
-	if mTarget and orbActive and ((not HasPassive(mTarget)) or ((lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount())) then	
+	--if mTarget and orbActive and ((not HasPassive(mTarget)) or ((lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount())) then	
+	--	CastSpell(_E)
+	--elseif mTarget and HasPassive(mTarget) and orbActive and GetDistanceSqr(myHero, orbActive) > SpellData[_E].rangeSqr then
+	--	CastSpell(_E)
+	--elseif (not mTarget) and orbActive then
+	--	CastSpell(_E)
+	--end	
+	
+	if mTarget and IsOnCC(mTarget) and orbActive and ((not HasPassive(mTarget)) or ((lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount())) then
 		CastSpell(_E)
-	elseif mTarget and HasPassive(mTarget) and orbActive and GetDistanceSqr(myHero, orbActive) > SpellData[_E].rangeSqr then
+	elseif mTarget and orbActive and GetDistance(mTarget, orbActive) < 275 then 
 		CastSpell(_E)
-	elseif (not mTarget) and orbActive then
-		CastSpell(_E)
-	end	
+	end
+	
 end
 
 function AutoUlt()
@@ -565,6 +506,76 @@ function AutoUlt()
 	end
 end
 
+function OnProcessSpell(unit, spell)
+	if unit.isMe and spell.name == "LuxLightStrikeKugel" then
+		SpellData[_E].lastCast = GetTickCount()
+		lastAA = (GetTickCount() + 5000)
+	end
+	
+	if unit.isMe and orbActive and (spell.name == "LuxBasicAttack" or spell.name == "LuxBasicAttack2") then
+		lastAA = GetTickCount()
+	end
+end
+
+--[[--CHAINCC--
+Chain CC support for: AmumuQ&R, Elise, J4, Jax, Nautilus, Pantheon, Warwick, Udyr, Vi, Ahri, Anivia, Lissandra, Sion, Syndra, Swain, Viktor, Vel'Koz, Veigar, TwistedFate, Xerath, Yasuo, Blitzcrank,
+ BraumP&R, Karma, LeonaQ&R, Morganna, Nami, Taric, Thresh, Zyra, Alistar, Brand, Aatrox, Cho'Gath, Irelia, Maokai, Shen, Ryze, SejuaniR Riven, Renekton, Janna, Gragas, Rammus]]
+
+local CCBUFFS = {
+	["aatroxqknockup"] = true,
+	["ahriseducedoom"] = true,
+	["powerfistslow"] = true,
+	["caitlynyordletrapdebuff"] = true,
+	["braumstundebuff"] = true,
+	["rupturetarget"] = true,
+	["EliseHumanE"] = true,
+	["Flee"] = true,
+	["HowlingGaleSpell"] = true,
+	["jarvanivdragonstrikeph2"] = true,
+	["karmaspiritbindroot"] = true,	
+	["LuxLightBindingMis"] = true,
+	["lissandrawfrozen"] = true,
+	["maokaiunstablegrowthroot"] = true,
+	["DarkBindingMissile"] = true,
+	["namiqdebuff"] = true,
+	["nautilusanchordragroot"] = true,
+	["RunePrison"] = true,
+	["Taunt"] = true,
+	["Stun"] = true,
+	["swainshadowgrasproot"] = true,
+	["threshqfakeknockup"] = true,
+	["velkozestun"] = true,
+	["virdunkstun"] = true,
+	["viktorgravitonfieldstun"] = true,
+	["supression"] = true,
+	["yasuoq3mis"] = true,
+	["zyragraspingrootshold"] = true,
+	["CurseoftheSadMummy"] = true,
+	["braumpulselineknockup"] = true,
+	["lissandraenemy2"] = true,
+	["sejuaniglacialprison"] = true,
+	["SonaR"] = true,
+	["zyrabramblezoneknockup"] = true,
+}
+
+function CastCC()
+	if Config.chainSub.useQchain and mTarget and SpellData[_Q].ready and ValidTarget(mTarget, SpellData[_Q].range) and GetMinionCollision(myHero, mTarget) and IsOnCC(mTarget) then
+		CastSpell(_Q, mTarget.x, mTarget.z)
+	end
+end
+
+function IsOnCC(target)
+	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
+	for i = 1, target.buffCount do
+		tBuff = target:getBuff(i)
+		if BuffIsValid(tBuff) and CCBUFFS[tBuff.name] then
+			return true
+		end	
+	end
+	return false
+end
+
+--/////////////////////////////////////////////////////////////////////////////COLLISION\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 function GenerateLineSegmentFromCastPosition(CastPosition, FromPosition, SkillShotRange) --From LineSkillShotPosition.lua by dienofail
     local MaxEndPosition = CastPosition + (-1 * (Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
     return MaxEndPosition
@@ -646,94 +657,85 @@ function GetHeroCollision(pStart, pEnd) --From Collision 1.1.1 by Klokje
         if #hCollision >= Config.UltSub.count then return true, hCollision else return false, hCollision end
 end
 
+function GetMinionCollision(pStart, pEnd) --From Collision 1.1.1 by Klokje
+	enemyMinions:update()
+	mCollision = {} 
+		
+	local distance =  GetDistance(pStart, pEnd)
+	local prediction = VP
+	if distance > SpellData[_Q].range then
+		distance = SpellData[_Q].range
+	end
+ 
+	local V = Vector(pEnd) - Vector(pStart)
+	local k = V:normalized()
+    local P = V:perpendicular2():normalized()
+ 
+    local t,i,u = k:unpack()
+    local x,y,z = P:unpack()
+ 
+    local startLeftX = pStart.x + (x *SpellData[_Q].width)
+    local startLeftY = pStart.y + (y *SpellData[_Q].width)
+    local startLeftZ = pStart.z + (z *SpellData[_Q].width)
+    local endLeftX = pStart.x + (x * SpellData[_Q].width) + (t * distance)
+    local endLeftY = pStart.y + (y * SpellData[_Q].width) + (i * distance)
+    local endLeftZ = pStart.z + (z * SpellData[_Q].width) + (u * distance)
+     
+    local startRightX = pStart.x - (x * SpellData[_Q].width)
+    local startRightY = pStart.y - (y * SpellData[_Q].width)
+    local startRightZ = pStart.z - (z * SpellData[_Q].width)
+    local endRightX = pStart.x - (x * SpellData[_Q].width) + (t * distance)
+    local endRightY = pStart.y - (y * SpellData[_Q].width) + (i * distance)
+    local endRightZ = pStart.z - (z * SpellData[_Q].width)+ (u * distance)
+ 
+    local startLeft = WorldToScreen(D3DXVECTOR3(startLeftX, startLeftY, startLeftZ))
+    local endLeft = WorldToScreen(D3DXVECTOR3(endLeftX, endLeftY, endLeftZ))
+    local startRight = WorldToScreen(D3DXVECTOR3(startRightX, startRightY, startRightZ))
+    local endRight = WorldToScreen(D3DXVECTOR3(endRightX, endRightY, endRightZ))
+      
+    local poly = Polygon(Point(startLeft.x, startLeft.y),  Point(endLeft.x, endLeft.y), Point(startRight.x, startRight.y),   Point(endRight.x, endRight.y))
+ 
+    for index, minion in pairs(enemyMinions.objects) do
+		if minion ~= nil and minion.valid and not minion.dead then
+			if GetDistance(pStart, minion) < distance then
+				local pos, t, vec = prediction:GetLineCastPosition(minion, SpellData[_Q].delay, SpellData[_Q].width, SpellData[_Q].range, SpellData[_Q].speed, myHero)	
+                local lineSegmentLeft = LineSegment(Point(startLeftX,startLeftZ), Point(endLeftX, endLeftZ))
+                local lineSegmentRight = LineSegment(Point(startRightX,startRightZ), Point(endRightX, endRightZ))
+                local toScreen, toPoint
+                if pos ~= nil then
+					toScreen = WorldToScreen(D3DXVECTOR3(minion.x, minion.y, minion.z))
+                    toPoint = Point(toScreen.x, toScreen.y)
+                else
+					toScreen = WorldToScreen(D3DXVECTOR3(minion.x, minion.y, minion.z))
+                    toPoint = Point(toScreen.x, toScreen.y)
+                end
+ 
+ 
+                if poly:contains(toPoint) then
+					table.insert(mCollision, minion)
+                else
+                    if pos ~= nil then
+						distance1 = Point(pos.x, pos.z):distance(lineSegmentLeft)
+                        distance2 = Point(pos.x, pos.z):distance(lineSegmentRight)
+                    else
+                        distance1 = Point(minion.x, minion.z):distance(lineSegmentLeft)
+                        distance2 = Point(minion.x, minion.z):distance(lineSegmentRight)
+                    end
+                    if (distance1 < (getHitBoxRadius(minion)*2+10) or distance2 < (getHitBoxRadius(minion) *2+10)) then
+                        table.insert(mCollision, minion)
+                    end
+				end
+			end
+		end
+	end
+	if #mCollision <= 1 then return true, mCollision else return false, mCollision end
+end
+
 function getHitBoxRadius(target)
 	return GetDistance(target, target.minBBox)/2
 end
 
-function OnProcessSpell(unit, spell)
-	if unit.isMe and spell.name == "LuxLightStrikeKugel" then
-		SpellData[_E].lastCast = GetTickCount()
-		lastAA = (GetTickCount() + 5000)
-	end
-	
-	if unit.isMe and orbActive and (spell.name == "LuxBasicAttack" or spell.name == "LuxBasicAttack2") then
-		lastAA = GetTickCount()
-	end
-end
-
---[[--CHAINCC--
-Chain CC support for: AmumuQ&R, Elise, J4, Jax, Nautilus, Pantheon, Warwick, Udyr, Vi, Ahri, Anivia, Lissandra, Sion, Syndra, Swain, Viktor, Vel'Koz, Veigar, TwistedFate, Xerath, Yasuo, Blitzcrank,
- BraumP&R, Karma, LeonaQ&R, Morganna, Nami, Taric, Thresh, Zyra, Alistar, Brand, Aatrox, Cho'Gath, Irelia, Maokai, Shen, Ryze, SejuaniR Riven, Renekton, Janna, Gragas, Rammus]]
-
-local CCBUFFS = {
-	["aatroxqknockup"] = true,
-	["ahriseducedoom"] = true,
-	["powerfistslow"] = true,
-	["caitlynyordletrapdebuff"] = true,
-	["braumstundebuff"] = true,
-	["rupturetarget"] = true,
-	["EliseHumanE"] = true,
-	["Flee"] = true,
-	["HowlingGaleSpell"] = true,
-	["jarvanivdragonstrikeph2"] = true,
-	["karmaspiritbindroot"] = true,	
-	["LuxLightBindingMis"] = true,
-	["lissandrawfrozen"] = true,
-	["maokaiunstablegrowthroot"] = true,
-	["DarkBindingMissile"] = true,
-	["namiqdebuff"] = true,
-	["nautilusanchordragroot"] = true,
-	["RunePrison"] = true,
-	["Taunt"] = true,
-	["Stun"] = true,
-	["swainshadowgrasproot"] = true,
-	["threshqfakeknockup"] = true,
-	["velkozestun"] = true,
-	["virdunkstun"] = true,
-	["viktorgravitonfieldstun"] = true,
-	["supression"] = true,
-	["yasuoq3mis"] = true,
-	["zyragraspingrootshold"] = true,
-	["CurseoftheSadMummy"] = true,
-	["braumpulselineknockup"] = true,
-	["lissandraenemy2"] = true,
-	["sejuaniglacialprison"] = true,
-	["SonaR"] = true,
-	["zyrabramblezoneknockup"] = true,
-}
-
-function CastCC()
-	if Config.chainSub.useQchain and mTarget and SpellData[_Q].ready and ValidTarget(mTarget, SpellData[_Q].range) and GetQColl(mTarget) and IsOnCC(mTarget) then
-		CastSpell(_Q, mTarget.x, mTarget.z)
-	end
-end
-
-function IsOnCC(target)
-	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
-	for i = 1, target.buffCount do
-		tBuff = target:getBuff(i)
-		if BuffIsValid(tBuff) and CCBUFFS[tBuff.name] then
-			return true
-		end	
-	end
-	return false
-end
-
 --/////////////////////////////////////////////////////////////////////////////FUNCTIONS\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-function GetQColl(target)
-	qColl = CountObjectsOnLineSegment(myHero, Vector(target.x, target.z), (SpellData[_Q].width + Config.mBuff), enemyMinions.objects)
-
-	if qColl > 1 then
-		collEndTime = GetTickCount()
-		collTime = false
-	end
-
-	if GetTickCount() > (collEndTime + qCollduration) then			
-		collTime = true
-	end
-	return collTime
-end
-
 function IsRecalling(unit)
 	if unit and unit.isMe then
 		return HasBuff(unit, "Recall")
@@ -754,11 +756,10 @@ end
 function GetTotalDmg(enemy)
 	if enemy ~= nil then
 		local getDamage = {}
-		getDamage.Q = getDmg("Q", enemy, myHero) * 0.97
 		getDamage.E = getDmg("E", enemy, myHero) * 0.97
 		getDamage.R = ((SpellData[_R].ready and getDmg("R", enemy, myHero)) or 0) * 0.97
 		
-		getDamage.total = (getDamage.Q + getDamage.E + getDamage.R) * 0.97
+		getDamage.total = (getDamage.E + getDamage.R) * 0.97
 		return getDamage
 	end
 end
