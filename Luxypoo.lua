@@ -4,7 +4,7 @@ require "SourceLib"
 require "VPrediction"
 
 --/////////////////////////////////////////////////////////////////////////////AUTOUPDATE\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-local sversion = "1.01"
+local sversion = "1.02"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Luxypoo.lua".."?rand="..math.random(1,10000)
@@ -157,7 +157,6 @@ Config:addSubMenu("Kill Secure", "KS")
 Config:addSubMenu("Target Options", "sts")
 	Config.sts:addParam("stsRange", "Target Selection Range", SCRIPT_PARAM_SLICE, 3340, 0, 3340, 0)
 	Config.sts:addParam("drawTarget", "Draw Target Collision", SCRIPT_PARAM_ONOFF, true)
-	TS:AddToMenu(Config.sts)
 	
 -- Orbwalkers
 orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
@@ -165,6 +164,11 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		require "SOW"
 		Orbwalker = SOW(VP)
 		Orbwalker:LoadToMenu(orbConfig)
+	end
+	if orbConfig.orbchoice == 3 then
+		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
+		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
 	end
 	if orbConfig.orbchoice == 4 then
 		require "SxOrbWalk"
@@ -191,17 +195,17 @@ function OnTick()
 			ReactivateE()
 		end
 ------------------------AUTOCARRY------------------------
-		if orbConfig.Mode0 or _G.MMA_Orbwalker or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
+		if orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
 			Combo()
 			if Config.UltSub.forceR and (not IsKeyDown(17)) then
 				ForceR()
 			end
 ------------------------MIXEDMODE------------------------		
-		elseif orbConfig.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) 
+		elseif orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) 
 		and myManaPct() > Config.HarassSub.minM then
 			Harass()
 ------------------------LANECLEAR------------------------		
-		elseif orbConfig.Mode2 or _G.MMA_LaneClear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear) then
+		elseif orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear) then
 			LaneClear()
 		end
 			
@@ -231,7 +235,9 @@ function Checks()
 	and _G.AutoCarry.Crosshair.Skills_Crosshair.target then
 		if _G.AutoCarry.Crosshair.Skills_Crosshair.range ~= Config.sts.stsRange then
 			_G.AutoCarry.Crosshair:SetSkillCrosshairRange(Config.sts.stsRange)
-		elseif _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type then 		
+		end
+		
+		if _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type then 		
 			mTarget = _G.AutoCarry.Crosshair.Skills_Crosshair.target
 		end
 --/////////////////////////////////////////////////////////////////////////////MMA\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -305,16 +311,26 @@ function ForceR()
   end
 end 
 
-function ForceRUnbinded() --ADD HITCHANCE
+function ForceRUnbinded()
 	if Config.usepro and mTarget then
 		RTarget, Rinfo = ProdictionR:GetPrediction(mTarget)
 	elseif (not Config.usepro) and mTarget then
 		RTarget, Rinfo = VP:GetLineCastPosition(mTarget, SpellData[_R].delay, SpellData[_R].width, SpellData[_R].range, SpellData[_R].speed, myHero)
 	end	
 	
-	if SpellData[_R].ready and mTarget and ValidTarget(mTarget, SpellData[_R].range) and RTarget then --ADD HITCHANCE
-		CastSpell(_R, RTarget.x, RTarget.z)
-  end
+	if SpellData[_R].ready and mTarget and ValidTarget(mTarget, SpellData[_R].range) then
+		if Config.usepro and mTarget then
+			RTarget, Rinfo = ProdictionR:GetPrediction(mTarget)
+			if RTarget and Rinfo.hitchance >= Config.hitSub.rChance then
+				CastSpell(_R, RTarget.x, RTarget.z)
+			end	
+		elseif (not Config.usepro) and mTarget then
+			RTarget, Rinfo = VP:GetLineCastPosition(mTarget, SpellData[_R].delay, SpellData[_R].width, SpellData[_R].range, SpellData[_R].speed, myHero)
+			if RTarget and Rinfo >= Config.hitSub.rChance then
+				CastSpell(_R, RTarget.x, RTarget.z)
+			end			
+		end	
+	end
 end 
 
 function LaneClear() 
@@ -339,14 +355,14 @@ function LaneClear()
 end
 
 function Combo()
-	if mTarget and mTarget.type == myHero.type and myManaPct() > Config.ComboSub.minM then
+	if mTarget and mTarget.type == myHero.type and ValidTarget(mTarget, SpellData[_E].range) and myManaPct() > Config.ComboSub.minM then
 		CastSpellQ(mTarget)
 		CastSpellE(mTarget)
 	end
 end
 
 function Harass()
-	if mTarget and mTarget.type == myHero.type and myManaPct() > Config.HarassSub.minM then
+	if mTarget and mTarget.type == myHero.type and ValidTarget(mTarget, SpellData[_E].range) and myManaPct() > Config.HarassSub.minM then
 		CastSpellE(mTarget)
 	end
 end
@@ -377,7 +393,7 @@ function CastSpellE(target)
 
 	if SpellData[_E].ready and IsOnCC(target) and ((SpellData[_E].lastCast + 5000) <= GetTickCount() or SpellData[_E].lastCast == 0) then
 		CastSpell(_E, target.x, target.z)
-	elseif SpellData[_E].ready and (((SpellData[_E].lastCast + 5000) < GetTickCount()) or SpellData[_E].lastCast == 0) and (not SpellData[_Q].ready) 
+	elseif SpellData[_E].ready and ((SpellData[_E].lastCast + 5000) <= GetTickCount() or SpellData[_E].lastCast == 0) and (not SpellData[_Q].ready) 
 	and ((lastQCast + 1000) < GetTickCount() or lastQCast == 0) then
 		if Config.usepro then
 			ETarget, Einfo = ProdictionE:GetPrediction(target)
@@ -390,7 +406,7 @@ function CastSpellE(target)
 		elseif (not Config.usepro) and Einfo >= Config.hitSub.eChance then
 			CastSpell(_E, ETarget.x, ETarget.z) 
 		end
-	elseif SpellData[_E].ready and (((SpellData[_E].lastCast + 5000) < GetTickCount()) or SpellData[_E].lastCast == 0) and 
+	elseif SpellData[_E].ready and ((SpellData[_E].lastCast + 5000) <= GetTickCount() or SpellData[_E].lastCast == 0) and 
 	(orbConfig.Mode1 or _G.MMA_HybridMode or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass)) and (not HasPassive(target)) then
 		if Config.usepro then
 			ETarget, Einfo = ProdictionE:GetPrediction(target)
@@ -427,7 +443,7 @@ function KillSteal()
 						CastSpell(_E, ETarget.x, ETarget.z) 
 					end			
 				end							
-			elseif Config.KS.useR and ksDmg.R > enemy.health and ksDmg.E < enemy.health then
+			elseif Config.KS.useR and ksDmg.R > enemy.health and ksDmg.E < enemy.health and not SpellData[_E].ready then
 				if Config.usepro and Rinfo.hitchance >= Config.hitSub.rChance then
 					RTarget, Rinfo = ProdictionR:GetPrediction(enemy)
 					if Rinfo.hitchance >= Config.hitSub.rChance then
@@ -471,20 +487,19 @@ function OnDeleteObj(object)
 end
 
 function ReactivateE()
-	--if mTarget and orbActive and ((not HasPassive(mTarget)) or ((lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount())) then	
-	--	CastSpell(_E)
-	--elseif mTarget and HasPassive(mTarget) and orbActive and GetDistanceSqr(myHero, orbActive) > SpellData[_E].rangeSqr then
-	--	CastSpell(_E)
-	--elseif (not mTarget) and orbActive then
-	--	CastSpell(_E)
-	--end	
-	
-	if mTarget and IsOnCC(mTarget) and orbActive and ((not HasPassive(mTarget)) or ((lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount())) then
-		CastSpell(_E)
-	elseif mTarget and orbActive and GetDistance(mTarget, orbActive) < 275 then 
-		CastSpell(_E)
+	if mTarget and orbActive then
+		if IsOnCC(mTarget) then
+			if not HasPassive(mTarget) then
+				CastSpell(_E)
+			elseif (lastAA + (GetDistance(myHero, mTarget) / 900) + 525) < GetTickCount() then
+				CastSpell(_E)
+			end
+		elseif not IsOnCC(mTarget) and GetDistance(mTarget, orbActive) < 295 then
+			CastSpell(_E)
+		elseif orbConfig.Mode2 or _G.MMA_LaneClear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear) then
+			CastSpell(_E)
+		end
 	end
-	
 end
 
 function AutoUlt()
@@ -494,14 +509,13 @@ function AutoUlt()
 		isRecalling = false
 	end
 	
-	if isRecalling or (not Config.UltSub.useautoR) then return end
+	if isRecalling then return end
 
 	if mTarget then
 	ultPos = GenerateLineSegmentFromCastPosition(myHero, mTarget, SpellData[_R].range)
 	local ultCount = GetHeroCollision(myHero, ultPos)
 		if ultCount then
 			CastSpell(_R, mTarget.x, mTarget.z)
-			--print("autoult - "..#hCollision.."")
 		end
 	end
 end
@@ -559,11 +573,14 @@ local CCBUFFS = {
 }
 
 function CastCC()
-	if Config.chainSub.useQchain and mTarget and SpellData[_Q].ready and ValidTarget(mTarget, SpellData[_Q].range) and GetMinionCollision(myHero, mTarget) and IsOnCC(mTarget) then
-		CastSpell(_Q, mTarget.x, mTarget.z)
+	for i = 1, heroManager.iCount do
+		local Enemy = heroManager:getHero(i)
+		if SpellData[_Q].ready and ValidTarget(Enemy, SpellData[_Q].range, true) and IsOnCC(Enemy) then
+			CastSpell(_Q, Enemy.x, Enemy.z)
+		end
 	end
 end
-
+	
 function IsOnCC(target)
 	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
 	for i = 1, target.buffCount do
