@@ -12,7 +12,7 @@ local ProdictionQ
 local VP = nil
 
 --[[		Auto Update		Pretty well ripped from Fantastik Sivir - Fantastik]] 
-local sversion = "0.24"
+local sversion = "0.25"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -61,6 +61,7 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		require "SOW"
 		Orbwalker = SOW(VP)
 		Orbwalker:LoadToMenu(orbConfig)
+		orbConfig:addParam("drawrange", "Draw AA Range", SCRIPT_PARAM_ONOFF, true)
 	end
 	if orbConfig.orbchoice == 3 then
 		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
@@ -158,6 +159,14 @@ function Checks()
 --/////////////////////////////////////////////////////////////////////////////SOW\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 	elseif orbConfig.orbchoice == 1 and Orbwalker then
 		mTarget = Orbwalker:GetTarget(true)
+	end
+end
+
+function OnDraw()
+	if myHero.dead then return end	
+
+	if orbConfig.orbchoice == 1 and orbConfig.drawrange and Orbwalker then
+		Orbwalker:DrawAARange(3, ARGB(100, 35, 250, 11))
 	end
 end
 
