@@ -34,7 +34,7 @@ if AUTOUPDATE then
 			if tonumber(sversion) < ServerVersion then
 				AutoupdaterMsg("New version available"..ServerVersion)
 				AutoupdaterMsg("Updating, please don't press F9")
-				DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..sversion.." => "..ServerVersion.."), press F9 twice to load the updated version.") end) end, 3)
+				DelayAction(function() DownloadFile(UPDATE_URL, UPDATE_FILE_PATH, function () AutoupdaterMsg("Successfully updated. ("..sversion.." => "..ServerVersion.."), press F9 twice to load the updated version. Big Update read forum thread.") end) end, 3)
 			else
 				AutoupdaterMsg("Script loaded.  You have got the latest version ("..ServerVersion..")")
 			end
