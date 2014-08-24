@@ -8,6 +8,7 @@ require "VPrediction"
 
 local QAble, WAble, EAble, RAble = false, false, false
 local rDmg
+local mode1active, mode2active, mode3active = false, false, false
 local qCollision = 1
 local rRange = nil
 local trapCount = 0
@@ -18,7 +19,7 @@ local ProdictionQ
 local VP = nil
 local enemyMinions = minionManager(MINION_ENEMY, 1300, myHero)
 
-local sversion = "0.30"
+local sversion = "0.31"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
@@ -53,7 +54,7 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
 	Config.qSub:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 	Config.qSub:addParam("minMlc", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 25, 0, 100)
-	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.1", "Toggle" })
+	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.2", "Toggle" })
 	Config.qSub:addParam("dumbQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 	Config.qSub:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
 	if (not Config.qSub.usepro) then
@@ -62,7 +63,7 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 	if Config.qSub.usepro then
 		Config.qSub:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 	end
-	Config.qSub:addParam("printColl", "SmartQ v0.1 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
+	Config.qSub:addParam("printColl", "SmartQ v0.2 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
 Config:addSubMenu("Yordle Snap Trap", "wSub")
 	Config.wSub:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.wSub:addParam("AGCtrap", "AntiGapClose with W if E on CD", SCRIPT_PARAM_ONOFF, true)
@@ -92,6 +93,7 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
 		SxOrb:LoadToMenu(orbConfig)
+		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
 	end
 	if Config.qSub.usepro then
 		require "Prodiction"
@@ -108,22 +110,37 @@ end
 function OnTick()
 	Checks()
 	
-	if orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
+	if (orbConfig.orbchoice == 1 and orbConfig.Mode0) or (orbConfig.orbchoice == 3 and orbConfig.orbwalk) or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight) then
 		if (not Config.qSub.usepro) then
 			Peacemaker()
+			mode1active = true
+			mode2active = false
+			mode3active = false
 		elseif Config.qSub.usepro then
-			PeacemakerPRO()
+			PeacemakerPRO() 
+			mode1active = true
+			mode2active = false
+			mode3active = false
 		end
 	elseif orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass) and myManaPct() > Config.qSub.minM then
 		if (not Config.qSub.usepro) then
 			Peacemaker()
+			mode1active = false
+			mode2active = true
+			mode3active = false
 		elseif Config.qSub.usepro then
 			PeacemakerPRO()
+			mode1active = false
+			mode2active = true
+			mode3active = false
 		end
-	elseif Config.qSub.minMinions ~= 0 and orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear) 
+	elseif Config.qSub.minMinions ~= 0 and (orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear)) 
 	and myManaPct() > Config.qSub.minMlc then
 		enemyMinions:update()
 		LaneClear()
+		mode1active = false
+		mode2active = false
+		mode3active = true
 	end	
 		
 	if Config.wSub.onoff then 
@@ -147,15 +164,15 @@ function OnTick()
 	end 
 	
 	if Config.wSub.printCount and ((msgTrap+1500) < GetTickCount()) then
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">Traps Set - "..trapCount..".</font>")
+		print("<font color=\"#0099FF\">[AutoTrap]</font> <font color=\"#FF6600\">Traps Set - "..trapCount..".</font>")
 		msgTrap = GetTickCount()
 	end
 	if Config.qSub.printColl and ((msgColl+1500) < GetTickCount()) then
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">Collision with X heroes Required for SmartQ, X="..qCollision..".</font>")
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">AA DPS - "..aaDmg..".</font>")
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">Q on 1 Target DPS - "..qTotal1..".</font>")
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">Q on 2 Target DPS - "..qTotal2..".</font>")
-		print("<font color=\"#0099FF\">[Caitlynpoo!]</font> <font color=\"#FF6600\">Q on 3 Target DPS - "..qTotal3..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.2]</font> <font color=\"#FF6600\">Collision with X heroes Required for SmartQ, X="..qCollision..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.2]</font> <font color=\"#FF6600\">AA DPS - "..aaDmg..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.2]</font> <font color=\"#FF6600\">Q on 1 Target DPS - "..qTotal1..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.2]</font> <font color=\"#FF6600\">Q on 2 Target DPS - "..qTotal2..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.2]</font> <font color=\"#FF6600\">Q on 3 Target DPS - "..qTotal3..".</font>")
 		msgColl = GetTickCount()
 	end
 end
@@ -240,7 +257,7 @@ function Peacemaker()
 		local qDmgchck = (myHero.totalDamage * 0.85)
 		local QendPos = GenerateLineSegmentFromCastPosition(myHero, mTarget, 1300)
 		if QAble and HitChance >= Config.qSub.vphit and GetDistanceSqr(CastPosition) < 1690000 and qDmgchck < mTarget.health 
-		and ((Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ)) then
+		and ((mode1active and Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ) or mode2active) then
 			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
 				CastSpell(_Q, CastPosition.x, CastPosition.z)
 			elseif orbConfig.orbchoice == 3 and _G.MMA_NextAttackAvailability > 0.1 and _G.MMA_NextAttackAvailability < 0.2 then
@@ -259,7 +276,7 @@ function PeacemakerPRO()
         local QTarget, Qinfo = ProdictionQ:GetPrediction(mTarget)
 		local qDmgchck = (myHero.totalDamage * 0.85)
         if QAble and Qinfo.hitchance >= Config.qSub.prohit and GetDistanceSqr(QTarget) < 1690000 and qDmgchck < mTarget.health 
-		and ((Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ)) then 
+		and ((mode1active and Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ) or mode2active) then 
 			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
 				CastSpell(_Q, QTarget.x, QTarget.z)
 			elseif orbConfig.orbchoice == 3 and _G.MMA_NextAttackAvailability > 0.1 and _G.MMA_NextAttackAvailability < 0.2 then
@@ -291,7 +308,7 @@ function LaneClear()
 	for i, enemyMinion in pairs(enemyMinions.objects) do
 		if enemyMinion ~= nil then
 			local QendPos = GenerateLineSegmentFromCastPosition(myHero, enemyMinion, 1300)
-			if QAble and GetMinionCollision(myHero, QendPos) and GetDistanceSqr(enemyMinion) < 1690000 then
+			if QAble and GetMinionCollision(myHero, QendPos) then
 				if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
 					CastSpell(_Q, enemyMinion.x, enemyMinion.z)
 				elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove then
@@ -498,37 +515,40 @@ function IsGapClosing(target)
 end
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
---XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      SmartQ       XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SmartQ v0.2    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 function SmartQ()
 	local ccha = myHero.critChance
 	local admg = myHero.totalDamage		
 	local aspd = (myHero.attackSpeed * 0.625)
 	local cdmg
+	local plvl = PeacemakerLVL()
+	local pcdt = PeacemakerCD()
+	local hlvl = HeadshotLVL()
 	if GetInventoryHaveItem(3031) then
 		cdmg = 2.5
 	else
 		cdmg = 2
 	end
 	
-	local critDmg = ((ccha*admg*aspd*cdmg)+((aspd/HeadshotLVL())*ccha*admg*cdmg*0.5))
-	local nocritDmg = ((aspd*(1-ccha)*admg)+((aspd/HeadshotLVL())*admg*0.5))
-	aaDmg = (critDmg+nocritDmg)					--Total AA DPS
+	local critDmg = ((ccha*admg*aspd*cdmg)+((aspd/hlvl)*ccha*admg*cdmg*0.5))
+	local nocritDmg = ((aspd*(1-ccha)*admg)+((aspd/hlvl)*admg*0.5))
+	aaDmg = (critDmg+nocritDmg+myHero.level)					--Total AA DPS + level bonus
 
-	local aaqDmg1 = ((PeacemakerLVL()+(1.3*admg))*1)/6
-	local aaqDmg2 = ((PeacemakerLVL()+(1.3*admg))*1.9)/6
-	local aaqDmg3 = ((PeacemakerLVL()+(1.3*admg))*2.7)/6		
+	local aaqDmg1 = (((plvl+(1.3*admg))*1)/pcdt)
+	local aaqDmg2 = (((plvl+(1.3*admg))*1.9)/pcdt)
+	local aaqDmg3 = (((plvl+(1.3*admg))*2.7)/pcdt)		
 		
 	local qaspd = (aspd*(5/6))
-	local qcritDmg = ((ccha*admg*qaspd*cdmg)+((qaspd/HeadshotLVL())*ccha*admg*cdmg*0.5))
-	local qnocritDmg = ((qaspd*(1-ccha)*admg)+((qaspd/HeadshotLVL())*admg*0.5))
+	local qcritDmg = ((ccha*admg*qaspd*cdmg)+((qaspd/hlvl)*ccha*admg*cdmg*0.5))
+	local qnocritDmg = ((qaspd*(1-ccha)*admg)+((qaspd/hlvl)*admg*0.5))
 	local qaaDmg = (qcritDmg+qnocritDmg)		--Total AA+Q DPS
 	
 	qTotal1 = (qaaDmg+aaqDmg1)
 	qTotal2 = (qaaDmg+aaqDmg2)
 	qTotal3 = (qaaDmg+aaqDmg3)
 	
-	if aaDmg < qTotal1 then
+	if aaDmg <= qTotal1 then
 		qCollision = 1
 	elseif aaDmg < qTotal2 then
 		qCollision = 2
@@ -550,6 +570,15 @@ function PeacemakerLVL()
 	elseif myHero.level >= 5 then return 100
 	elseif myHero.level >= 3 then return 60
 	elseif myHero.level >= 1 then return 20
+	end
+end
+
+function PeacemakerCD()
+	if myHero.level >= 9 then return 6 
+	elseif myHero.level >= 7 then return 7
+	elseif myHero.level >= 5 then return 8
+	elseif myHero.level >= 3 then return 9
+	elseif myHero.level >= 1 then return 10
 	end
 end
 
@@ -707,19 +736,30 @@ function getHitBoxRadius(target)
 end
 
 function SmarterQ(target)
-	local range = myHero.range
-	local wayPoint = VP:CalculateTargetPosition(target, 0.95, 800, math.huge, myHero, "line")
-	if GetDistance(myHero, wayPoint) > range then
+	if target == nil then return end
+	local range = 650
+	local movespeed = target.ms
+	local wayPoint = VP:CalculateTargetPosition(target, 0.95, 1300, math.huge, myHero, "line")
+	local gap = GetDistance(myHero, target)
+	local gap2 = GetDistance(myHero, wayPoint)
+	
+	if gap2 > range then
 		local isRetreating = true
-		if isRetreating and ((range-GetDistance(myHero, target))/target.ms)>900 then
+		local escapeTime = ((range - gap)/movespeed)
+		if isRetreating and escapeTime > 0.850 then
+			--print("can't escape, time = "..escapeTime.."")
 			return true
-		elseif isRetreating and ((myHero.range-GetDistance(myHero, target))/target.ms)<900 then
+		elseif isRetreating and escapeTime < 0.850  and escapeTime > -0.07 then
+			--print("will escape, time = "..escapeTime.."")
 			return false		
+		elseif isRetreating and escapeTime < -0.07 and movespeed >= myHero.ms then
+			--print("out of range cannot catch")
+			return true
 		end
-	elseif GetDistance(myHero, wayPoint) < range then
+	elseif gap2 < range then
+		--print("expected to remain in range")
 		return true
-	elseif GetDistance(myHero, target) > range and (target.ms+10) > myHero.ms then
-		return true
-	else return false
+	else 
+		return false
 	end
 end
