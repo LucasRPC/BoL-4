@@ -1,4 +1,19 @@
-
+--[[CREDITS:
+	All the Lib Creators:
+		honda7
+		klokje
+		Sida
+		Manciuszz
+		Superx321
+	Other Caitlyn Scripters: (I've learned a lot from them)
+		MixsStar
+		Toy
+		How I met Katarina
+		dbman
+	Others: 
+		Bilbao -  cause everything he writes on the forum seems so damn helpful
+		redprince - for the trap timers
+]]
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX OnLoad/AutoUpdate XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -7,19 +22,24 @@ if myHero.charName ~= "Caitlyn" then return end
 require "VPrediction"
 
 local QAble, WAble, EAble, RAble = false, false, false
-local RDamage, RRange = 0, nil
-local AADPS, QAADPS1, QAADPS2, QAADPS3 = 0, 0, 0, 0
+local RRange = nil
+local AADPS, QAADPS1, QAADPS2, QAADPS3, QAADPS4, QAADPS5 = 0, 0, 0, 0, 0, 0
 local mode1active, mode2active = false, false
 local QCollision = 1
 local MSGTrapCount, MSGLastSentTrap, MSGLastSentColl = 0, 0, 0
 local Prodiction
+local LastPing = 0
 local QendPos = nil
 local mCollision = {}
 local ProdictionQ
 local VP = nil
 local enemyMinions = minionManager(MINION_ENEMY, 1300, myHero)
+local TIMERTYPE_ENDPOS = 1
+local TIMERTYPE_STARTPOS = 2
+local TIMERTYPE_CASTER = 3
+local timedDrawings = {}
 
-local sversion = "0.32"
+local sversion = "0.33"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
@@ -56,10 +76,11 @@ orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
 
 Config:addSubMenu("Piltover Peacemaker", "qSub")
 	Config.qSub:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
-	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 3, 0, 6)
+	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
 	Config.qSub:addParam("minMac", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
 	Config.qSub:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 	Config.qSub:addParam("minMlc", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
+	Config.qSub:addParam("animcancel", "Use Q in E Animation", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.3", "Toggle" })
 	Config.qSub:addParam("dumbQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 	Config.qSub:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
@@ -73,6 +94,7 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 Config:addSubMenu("Yordle Snap Trap", "wSub")
 	Config.wSub:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.wSub:addParam("AGCtrap", "AntiGapClose with W if E on CD", SCRIPT_PARAM_ONOFF, true)
+	Config.wSub:addParam("drawtrap", "Draw Trap Range and Timer", SCRIPT_PARAM_ONOFF, true)
 	Config.wSub:addParam("printCount", "Count Traps Set [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("L"))
 Config:addSubMenu("90 Caliber Net", "eSub")
 	Config.eSub:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
@@ -81,6 +103,11 @@ Config:addSubMenu("90 Caliber Net", "eSub")
 	--Config.eSub:addParam("drawejump", "Draw E Jump Range", SCRIPT_PARAM_ONOFF, true)
 Config:addSubMenu("Ace in the Hole", "rSub")
 	Config.rSub:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
+	Config.rSub:addParam("damagetillr", "Draw Damage left till Killshot", SCRIPT_PARAM_ONOFF, true)
+	Config.rSub:addParam("rminimap", "Draw Range on MiniMap", SCRIPT_PARAM_ONOFF, true)
+	Config.rSub:addParam("pingkillable", "Ping Killable Heroes", SCRIPT_PARAM_ONOFF, true)
+	Config.rSub:addParam("timebetweenpings", "Minimum time between pings", SCRIPT_PARAM_SLICE, 2, 1, 5)
+	
 
 orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
 	if orbConfig.orbchoice == 1 then
@@ -98,10 +125,10 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
 	end
 	if orbConfig.orbchoice == 4 then
+		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
 		SxOrb:LoadToMenu(orbConfig)
-		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
 	end
 	if Config.qSub.usepro then
 		require "Prodiction"
@@ -183,6 +210,9 @@ function NetToMouse()
 		HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 		myHero:MoveTo(mousePos.x,mousePos.z)
+		if mTarget and ValidTarget(mTarget, 1300) and Config.qSub.animcancel then
+			CastSpell(_Q, mTarget.x, mTarget.z)
+		end
 		CastSpell(_E,DashPos.x,DashPos.z)
 	end
 end
@@ -224,10 +254,22 @@ function OnDraw()
 		Orbwalker:DrawAARange(3, ARGB(100, 35, 250, 11))
 	end
 	
-	if orbConfig.orbchoice == 1 and orbConfig.drawtarget and Orbwalker and mTarget then
-		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, 185, 3, ARGB(100, 185, 4, 4))
+	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 4) and orbConfig.drawtarget and mTarget and ValidTarget(mTarget) then
+		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, ((getHitBoxRadius(mTarget)+30)), 3, ARGB(100, 185, 4, 4))
 	end
-		
+	
+	if Config.rSub.rminimap and RAble then
+		DrawCircleMinimap(myHero.x, myHero.y, myHero.z, RRange, 1, ARGB(255, 255, 255, 255), 100)
+	end
+	
+	if Config.wSub.drawtrap then
+		for i, tDraw in pairs(timedDrawings) do
+			if tDraw.startTime < os.clock() then
+				DrawText3D(tostring(math.ceil(tDraw.endTime - os.clock(),1)), tDraw.pos.x, tDraw.pos.y, (30+tDraw.pos.z), 24, ARGB(255, 255, 0, 0), true)
+				DrawCircle3D(tDraw.pos.x, tDraw.pos.y, tDraw.pos.z, 72, 1, ARGB(255, 255, 0, 0))
+			end
+		end
+	end
 	--if Config.eSub.drawejump and EAble then 
 	--	DrawCircle3D(myHero.x, myHero.y, myHero.z, 390, 3, ARGB(100, 25, 25, 195))
 	--end
@@ -244,12 +286,25 @@ function AceintheHole()
     CheckRLevel()
 	for i = 1, heroManager.iCount do
         local Enemy = heroManager:getHero(i)
-        if RAble then RDamage = getDmg("R",Enemy,myHero) else RDamage = 0 end
-        if ValidTarget(Enemy, RRange, true) and (Enemy.health + 60) < RDamage then
-        PrintFloatText(myHero, 0, "Press R For Killshot") end
-        if ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health + 60) < RDamage then
-        CastSpell(_R, Enemy) end
-    end
+ 		if RAble and ValidTarget(Enemy, RRange, true) then 
+			local RDamage = getDmg("R",Enemy,myHero)	
+			if (Enemy.health * 1.08) < RDamage then
+				PrintFloatText(myHero, 0, "Press R For Killshot")
+				local pingbuffer = (Config.rSub.timebetweenpings*1000)
+				if Config.rSub.pingkillable and (LastPing+pingbuffer) < GetTickCount() then
+					PingSignal(PING_NORMAL, Enemy.x, Enemy.y, Enemy.z,2)
+					LastPing = GetTickCount()
+				end	
+				
+				if ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health + 60) < RDamage then
+					CastSpell(_R, Enemy) 
+				end
+			elseif (Enemy.health * 1.08) > RDamage and Config.rSub.damagetillr then
+				local rfloattext = tostring(math.floor((1.08*Enemy.health) - RDamage))
+				PrintFloatText(Enemy, 0, ""..rfloattext.."")			
+			end
+		end
+	end
 end
 
 function Peacemaker()
@@ -291,14 +346,6 @@ function PeacemakerPRO()
 	end
 end
 
---[[function HeadShot() --SAC MODE ONLY(not working atm)
-	if HasPassive(myHero) and _G.AutoCarry.Plugins then
-		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(PassiveDmg())
-	elseif _G.AutoCarry and _G.AutoCarry.Plugins and (not HasPassive(myHero)) then
-		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(NoPassive())
-	end
-end]]
-
 function HasPassive(unit)
 	if unit and unit.isMe then
 		return HasBuff(unit, "caitlynheadshot")
@@ -337,7 +384,7 @@ function GetBestQPositionFarm()
 		end
 	end
 
-	if MaxQPos and MaxQ >= Config.qSub.minMinions then
+	if MaxQPos then
 		return MaxQPos
 	else
 		return nil
@@ -357,6 +404,14 @@ function CountMinionsHit(enemy)
 end
 
 function myManaPct() return (myHero.mana * 100) / myHero.maxMana end
+
+--[[function HeadShot() --SAC MODE ONLY(not working atm)
+	if HasPassive(myHero) and _G.AutoCarry.Plugins then
+		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(PassiveDmg())
+	elseif _G.AutoCarry and _G.AutoCarry.Plugins and (not HasPassive(myHero)) then
+		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(NoPassive())
+	end
+end]]
 --[[function PassiveDmg() return ((_G.AutoCarry.MyHero:GetTotalAttackDamageAgainstTarget(_G.AutoCarry.Minions.EnemyMinions)) * 1.7) end
 function NoPassive() return 0 end]]
 
@@ -447,6 +502,38 @@ function IsOnCC(target)
 	return false
 end
 
+function OnDeleteObj(object)
+	if object.charName:find("CaitlynTrap") and object.team == myHero.team then
+		for i, timedDr in pairs(timedDrawings) do
+			if GetDistance(timedDr.pos, object) < 65 then 
+            table.remove(timedDrawings, i)
+            break
+			end
+		end
+	end
+end
+
+function addTimedDrawPos(posX, posY, posZ, duration, delay)
+    local tmpID = math.random(1,10000) -- add a new timer in the timed drawings table (with position)
+    table.insert(timedDrawings, {id = tmpID, startTime = os.clock() + (delay or 0), endTime = os.clock() + (delay or 0) + duration, pos = Vector(posX, posY, posZ)})
+    DelayAction(function() removeTimedDraw(tmpID) end, duration)
+end
+
+function removeTimedDraw(timerID)
+    for i, timedDr in pairs(timedDrawings) do -- remove a timer from the timed drawings table
+        if timedDr.id == timerID then
+            table.remove(timedDrawings, i)
+            break
+        end
+    end
+end
+
+function timerType(spellName)
+    if spellName == "CaitlynYordleTrap" then -- check if a spell timer is supported, returning target type, duration and delay
+        return TIMERTYPE_ENDPOS, 240	
+	end
+end
+	
 --[[function HasGA(target)
 	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
 	for i = 1, target.buffCount do
@@ -544,13 +631,22 @@ function OnProcessSpell(unit, spell)
 		CastSpell(_W, spell.endPos.x, spell.endPos.z)
 	end
 	
+	--if Config.qSub.animcancel and unit and unit.isMe and spell.name == "CaitlynEntrapment" and QAble then
+	--	CastSpell(_Q, mousePos.x, mousePos.z)
+		
+	--end
+	
 	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
+		local tType, duration, delay = timerType(spell.name)           
+		if tType == TIMERTYPE_ENDPOS then
+			addTimedDrawPos(spell.endPos.x, spell.endPos.y, spell.endPos.z, duration, delay)
+		end
 		MSGTrapCount = MSGTrapCount + 1
 	end
 end
 	
 function AGCCastE()
-	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) then
+	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) then	
 		CastSpell(_E, mTarget.x, mTarget.z)
 		if (not EAble) and Config.wSub.AGCtrap then
 			CastSpell(_W, mTarget.x, mTarget.z)
@@ -592,7 +688,9 @@ function SmartQ()
 
 	local QDmgOn1 = (((plvl+(1.3*admg))*1)/pcdt)
 	local QDmgOn2 = (((plvl+(1.3*admg))*1.9)/pcdt)
-	local QDmgOn3 = (((plvl+(1.3*admg))*2.7)/pcdt)		
+	local QDmgOn3 = (((plvl+(1.3*admg))*2.7)/pcdt)	
+	local QDmgOn4 = (((plvl+(1.3*admg))*3.3)/pcdt)
+	local QDmgOn5 = (((plvl+(1.3*admg))*3.8)/pcdt)
 		
 	local qaspd = (aspd*((pcdt-1)/pcdt))
 	local qcritDmg = ((ccha*admg*(qaspd/(hlvl-(hlvl-1)))*cdmg)+((qaspd/hlvl)*ccha*admg*cdmg*1.5))
@@ -602,6 +700,8 @@ function SmartQ()
 	QAADPS1 = (qaaDmg+QDmgOn1)
 	QAADPS2 = (qaaDmg+QDmgOn2)
 	QAADPS3 = (qaaDmg+QDmgOn3)
+	QAADPS4 = (qaaDmg+QDmgOn4)
+	QAADPS5 = (qaaDmg+QDmgOn5)
 	
 	if AADPS <= QAADPS1 then
 		QCollision = 1
@@ -609,6 +709,10 @@ function SmartQ()
 		QCollision = 2
 	elseif AADPS < QAADPS3 then
 		QCollision = 3
+	elseif AADPS < QAADPS4 then
+		QCollision = 4
+	elseif AADPS < QAADPS5 then
+		QCollision = 5
 	end
 end
 
@@ -777,3 +881,5 @@ function InfoMessage()
 	end
 end
 
+	
+		
