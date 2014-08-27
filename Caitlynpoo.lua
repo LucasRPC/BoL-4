@@ -39,7 +39,7 @@ local TIMERTYPE_STARTPOS = 2
 local TIMERTYPE_CASTER = 3
 local timedDrawings = {}
 
-local sversion = "0.33"
+local sversion = "0.34"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
@@ -93,13 +93,19 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 	Config.qSub:addParam("printColl", "SmartQ v0.3 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
 Config:addSubMenu("Yordle Snap Trap", "wSub")
 	Config.wSub:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
+	Config.wSub:addParam("gatrap", "AutoTrap on GA(casts on ally GA-bug)", SCRIPT_PARAM_ONOFF, false)
 	Config.wSub:addParam("AGCtrap", "AntiGapClose with W if E on CD", SCRIPT_PARAM_ONOFF, true)
+	Config.wSub:addParam("casttrap", "Cast Trap on Chasing Heroes", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("T"))
 	Config.wSub:addParam("drawtrap", "Draw Trap Range and Timer", SCRIPT_PARAM_ONOFF, true)
 	Config.wSub:addParam("printCount", "Count Traps Set [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("L"))
 Config:addSubMenu("90 Caliber Net", "eSub")
 	Config.eSub:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
+	Config.eSub:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
+	Config.eSub:addSubMenu("Use Anti Gap on:", "listSub")
+		for _, enemy in ipairs(GetEnemyHeroes()) do
+			Config.eSub.listSub:addParam(enemy.charName, enemy.charName, SCRIPT_PARAM_ONOFF, true)
+		end	
 	--Config.eSub:addParam("net2", "E to location SubModifier Hotkey", SCRIPT_PARAM_ONKEYDOWN, false, 20)
-	Config.eSub:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)	
 	--Config.eSub:addParam("drawejump", "Draw E Jump Range", SCRIPT_PARAM_ONOFF, true)
 Config:addSubMenu("Ace in the Hole", "rSub")
 	Config.rSub:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
@@ -190,6 +196,10 @@ function OnTick()
 	
 	if Config.eSub.net then
 		NetToMouse()
+	end
+	
+	if Config.wSub.casttrap then
+		FleeMode()
 	end
 		
 	if InFountain() then
@@ -284,6 +294,15 @@ end
 
 function AceintheHole()
     CheckRLevel()
+	
+	if Config.rSub.damagetillr and mTarget and ValidTarget(mTarget, RRange) then
+		local RDamage1 = getDmg("R",mTarget,myHero)
+		if (1.08 * mTarget.health) > RDamage1 then
+			local rfloattext = tostring(math.floor((1.08 * mTarget.health) - RDamage1))
+			PrintFloatText(mTarget, 0, ""..rfloattext.."")
+		end
+	end
+	
 	for i = 1, heroManager.iCount do
         local Enemy = heroManager:getHero(i)
  		if RAble and ValidTarget(Enemy, RRange, true) then 
@@ -295,13 +314,9 @@ function AceintheHole()
 					PingSignal(PING_NORMAL, Enemy.x, Enemy.y, Enemy.z,2)
 					LastPing = GetTickCount()
 				end	
-				
 				if ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health + 60) < RDamage then
 					CastSpell(_R, Enemy) 
-				end
-			elseif (Enemy.health * 1.08) > RDamage and Config.rSub.damagetillr then
-				local rfloattext = tostring(math.floor((1.08*Enemy.health) - RDamage))
-				PrintFloatText(Enemy, 0, ""..rfloattext.."")			
+				end		
 			end
 		end
 	end
@@ -481,13 +496,12 @@ function CastW()
 				CastSpell(_Q, Enemy.x, Enemy.z)
 			end
 		end
-		--if WAble and ValidTarget(Enemy, 800, true) and HasGA(Enemy) then
-		--	function OnCreateObj(object)
-		--		if object.name:find("LifeAura") then
-		--			CastSpell(_W, object.x, object.z)
-		--		end
-		--	end	
-		--end
+	end
+end
+
+function OnCreateObj(object)
+	if object.name:find("LifeAura") and Config.wSub.gatrap then
+		CastSpell(_W, object.x, object.z)
 	end
 end
 
@@ -534,7 +548,7 @@ function timerType(spellName)
 	end
 end
 	
---[[function HasGA(target)
+function HasGA(target)
 	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
 	for i = 1, target.buffCount do
 		tBuff = target:getBuff(i)
@@ -543,7 +557,7 @@ end
 		end	
 	end
 	return false
-end]]
+end
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        AGC        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -620,7 +634,7 @@ local TELESPELLS = {
 }
 
 function OnProcessSpell(unit, spell)
-	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
+	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
 		CastSpell(_E, unit.x, unit.z)
 		if (not EAble) and Config.wSub.AGCtrap then
 			CastSpell(_W, spell.endPos.x, spell.endPos.z)
@@ -630,12 +644,7 @@ function OnProcessSpell(unit, spell)
 	if TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
 		CastSpell(_W, spell.endPos.x, spell.endPos.z)
 	end
-	
-	--if Config.qSub.animcancel and unit and unit.isMe and spell.name == "CaitlynEntrapment" and QAble then
-	--	CastSpell(_Q, mousePos.x, mousePos.z)
-		
-	--end
-	
+
 	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
 		local tType, duration, delay = timerType(spell.name)           
 		if tType == TIMERTYPE_ENDPOS then
@@ -646,7 +655,7 @@ function OnProcessSpell(unit, spell)
 end
 	
 function AGCCastE()
-	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) then	
+	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) and Config.eSub.listSub[mTarget.charName] then	
 		CastSpell(_E, mTarget.x, mTarget.z)
 		if (not EAble) and Config.wSub.AGCtrap then
 			CastSpell(_W, mTarget.x, mTarget.z)
@@ -718,7 +727,7 @@ end
 
 function SmarterQ(target)
 	if target == nil then return end
-	local range = 650
+	local range = 580
 	local movespeed = target.ms
 	local wayPoint = VP:CalculateTargetPosition(target, 0.95, 1300, math.huge, myHero, "line")
 	local gap = GetDistance(myHero, target)
@@ -881,5 +890,27 @@ function InfoMessage()
 	end
 end
 
-	
+function FleeMode()
+	if WAble then
+		for i = 1, heroManager.iCount do
+			local Enemy = heroManager:getHero(i)
+			local closestEnemy
+			if ValidTarget(Enemy, 500) and closestEnemy == nil then
+				closestEnemy = Enemy
+			elseif ValidTarget(Enemy, 500) and GetDistance(Enemy) < GetDistance(closestEnemy) then
+				closestEnemy = Enemy
+			end
 		
+			local trapPos
+			local caitPos
+			if closestEnemy and GetDistance(closestEnemy) < 500 then
+				trapPos = VP:CalculateTargetPosition(closestEnemy, 1.75, 600, math.huge, myHero, "circular")
+				caitPos = VP:CalculateTargetPosition(myHero, 1.6, 600, math.huge, myHero, "circular")
+			end	
+			
+			if trapPos and GetDistanceSqr(trapPos) <= GetDistanceSqr(closestEnemy) and GetDistanceSqr(trapPos, closestEnemy) > 15625 and GetDistanceSqr(caitPos, closestEnemy) > GetDistanceSqr(myHero, closestEnemy) then
+				CastSpell(_W, trapPos.x, trapPos.z)
+			end
+		end
+	end
+end
