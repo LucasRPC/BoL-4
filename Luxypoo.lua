@@ -4,7 +4,7 @@ require "SourceLib"
 require "VPrediction"
 
 --/////////////////////////////////////////////////////////////////////////////AUTOUPDATE\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-local sversion = "1.02"
+local sversion = "1.03"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Luxypoo.lua".."?rand="..math.random(1,10000)
@@ -40,9 +40,10 @@ local TS = SimpleTS(STS_PRIORITY_LESS_CAST_MAGIC)
 local ultPos 
 local onDqCollcolor = ARGB(100, 124, 4, 4)
 local hCollision = {}
+local FriendlySmite = {}
 local Config = nil
 local isRecalling = false
-local jungleMinions = minionManager(MINION_JUNGLE, 1100, myHero, MINION_SORT_MAXHEALTH_DEC)
+local jungleMinions = minionManager(MINION_JUNGLE, 3340, myHero, MINION_SORT_MAXHEALTH_DEC)
 local enemyMinions = minionManager(MINION_ENEMY, 1500, myHero, MINION_SORT_HEALTH_ASC)
 local SpellData = { 
 	[_Q] = {
@@ -51,7 +52,8 @@ local SpellData = {
 		range = 1150,
 		rangeSqr = math.pow(1175, 2),
 		width = 80,
-		speed = 1175,
+		widthHlf = 40,
+		speed = 1275,
 		delay = 0.25
 	},
 	
@@ -61,7 +63,7 @@ local SpellData = {
 		range = 1100,
 		rangeSqr = math.pow(1000, 2),
 		width = 275,
-		speed = 1300,
+		speed = 1500,
 		delay = 0.15,
 		lastCast = 0
 	},
@@ -72,17 +74,29 @@ local SpellData = {
 		range = 3340,
 		rangeSqr = math.pow(3340, 2),
 		width = 190,
-		widthHlf = 95,
+		widthHlf = 75,
 		speed = math.huge,
 		delay = 0.7
 	},
 }
-
+local jungleObjects = {
+	["TT_Spiderboss7.1.1"] = {object = nil, isCamp = true},
+	["Worm12.1.1"] = {object = nil, isCamp = true},
+	["Dragon6.1.1"] = {object = nil, isCamp = true},
+	["AncientGolem1.1.1"] = {object = nil, isCamp = true},
+	["AncientGolem7.1.1"] = {object = nil, isCamp = true},
+}
 --/////////////////////////////////////////////////////////////////////////////SETUP\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 function OnLoad()
 	VP = VPrediction()
 	Menu()
 	Loaded = true
+	
+	for _, ally in pairs(GetAllyHeroes()) do
+		if ally:GetSpellData(SUMMONER_1).name == "SummonerSmite" or ally:GetSpellData(SUMMONER_2).name == "SummonerSmite" then
+			FriendlySmite[#FriendlySmite+1] = ally
+		end
+	end
 end
 
 function Menu()
@@ -125,7 +139,7 @@ Config:addSubMenu("AutoCarry Options", "ComboSub")
 -- MixedMode options
 Config:addSubMenu("MixedMode Options", "HarassSub")
 	Config.HarassSub:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)	
-	Config.HarassSub:addParam("minM", "Required Mana %", SCRIPT_PARAM_SLICE, 40, 0, 100)
+	Config.HarassSub:addParam("minM", "Required Mana %", SCRIPT_PARAM_SLICE, 60, 0, 100)
 
 -- Ultimate Options
 Config:addSubMenu("Final Spark Options", "UltSub")
@@ -137,10 +151,12 @@ Config:addSubMenu("Final Spark Options", "UltSub")
 
 -- Jungle
 Config:addSubMenu("Jungle Clear", "JungleSub")
-	Config.JungleSub:addParam("jclr", "Jungleclear Key", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("X"))
+	Config.JungleSub:addParam("jclr", "Buff Steal Key", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("X"))
 	Config.JungleSub:addParam("useQjclear", "Use Q", SCRIPT_PARAM_ONOFF, true)
 	Config.JungleSub:addParam("useEjclear", "Use E", SCRIPT_PARAM_ONOFF, true)
 	Config.JungleSub:addParam("minM", "Required Mana %", SCRIPT_PARAM_SLICE, 0, 0, 100)
+	Config.JungleSub:addParam("buffsteal", "R - Steal Buffs/Drag/Baron", SCRIPT_PARAM_LIST, 1, { "OnKeyDown", "Automatic" })
+	Config.JungleSub:addParam("smitecheck", "Check for friendly smite", SCRIPT_PARAM_ONOFF, true)
 
 -- LaneClear/LastHit
 Config:addSubMenu("Lane Clear", "LClearSub")
@@ -151,7 +167,7 @@ Config:addSubMenu("Lane Clear", "LClearSub")
 Config:addSubMenu("Kill Secure", "KS")
 	Config.KS:addParam("active", "Kill Secure On/Off", SCRIPT_PARAM_ONOFF, true) 
 	Config.KS:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)	
-	Config.KS:addParam("useR", "Use R", SCRIPT_PARAM_ONOFF, true)	
+	Config.KS:addParam("useR", "Use R (Not Recommended - Broken) ", SCRIPT_PARAM_ONOFF, false)	
 
 -- Target Selection
 Config:addSubMenu("Target Options", "sts")
@@ -187,6 +203,7 @@ end
 function OnTick()
 	if Loaded then
 		enemyMinions:update()
+		jungleMinions:update()
 		KillSteal()
 		Checks()	
 		CastCC()
@@ -207,16 +224,16 @@ function OnTick()
 ------------------------LANECLEAR------------------------		
 		elseif orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear) then
 			LaneClear()
+			JungleClear()
 		end
 			
 		if Config.UltSub.useautoR and SpellData[_R].ready then
 			AutoUlt()
 		end
 
-		if Config.JungleSub.jclr then
-			jungleMinions:update()	
-			JungleClear()
-		end		
+		if Config.JungleSub.buffsteal == 2 or (Config.JungleSub.buffsteal == 1 and Config.JungleSub.jclr) then		
+			JungleSteal()
+		end
 				
 		if Config.UltSub.forceR and ((orbConfig.Enabled and not orbConfig.Mode0) or (_G.MMA and not _G.MMA_Orbwalker) or (_G.AutoCarry and not _G.AutoCarry.Keys.AutoCarry) 
 		or (SxOrb and not SxOrb.SxOrbMenu.Keys.Fight)) and (not IsKeyDown(17)) then
@@ -269,10 +286,13 @@ end
 
 function OnDraw()
 	if myHero.dead then return end	
-				
+	
+	if orbConfig.orbchoice == 1 then
+		Orbwalker:DrawAARange(3, ARGB(100, 124, 4, 4))
+	end
+	
 	if mTarget and (not mTarget.dead) and ValidTarget(mTarget, SpellData[_R].range) and Config.sts.drawTarget then
-		DrawLine3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 1, onDqCollcolor)
-		DrawLineBorder3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 80, onDqCollcolor, 8)	
+		DrawLineBorder3D(myHero.x, myHero.y, myHero.z, mTarget.x, mTarget.y, mTarget.z, 80, onDqCollcolor, 4)	
 	end
 end
 
@@ -414,6 +434,33 @@ function CastSpellE(target)
 			ETarget, Einfo = VP:GetLineCastPosition(target, SpellData[_E].delay, SpellData[_E].width, SpellData[_E].range, SpellData[_E].speed, myHero)
 		end		
 		CastSpell(_E, ETarget.x, ETarget.z)
+	end
+end
+
+--/////////////////////////////////////////////////////////////////////////////JUNGLESTEAL\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+function JungleSteal()
+	for _, object in pairs(jungleMinions.objects) do
+		if object and object.valid and jungleObjects[object.name] and jungleObjects[object.name].isCamp then
+			jungleObjects[object.name].object = object
+		end
+	end
+	
+	if SpellData[_R].ready then
+		for _, jungleBuff in pairs(jungleObjects) do
+			if jungleBuff and jungleBuff.isCamp then
+				local tempMob = jungleBuff.object
+				if tempMob ~= nil and tempMob.valid and tempMob.visible and not tempMob.dead and GetDistance(tempMob) < SpellData[_R].range then
+					if Config.JungleSub.smitecheck and (not IsKeyDown(17)) then
+						for _, ally in pairs(FriendlySmite) do
+							if GetDistance(ally, tempMob) < 600 then return end
+						end
+					end
+					if getDmg("R", tempMob, myHero) >  tempMob.health then
+						CastSpell(_R, tempMob.x, tempMob.z)
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -691,19 +738,19 @@ function GetMinionCollision(pStart, pEnd) --From Collision 1.1.1 by Klokje
     local t,i,u = k:unpack()
     local x,y,z = P:unpack()
  
-    local startLeftX = pStart.x + (x *SpellData[_Q].width)
-    local startLeftY = pStart.y + (y *SpellData[_Q].width)
-    local startLeftZ = pStart.z + (z *SpellData[_Q].width)
-    local endLeftX = pStart.x + (x * SpellData[_Q].width) + (t * distance)
-    local endLeftY = pStart.y + (y * SpellData[_Q].width) + (i * distance)
-    local endLeftZ = pStart.z + (z * SpellData[_Q].width) + (u * distance)
+    local startLeftX = pStart.x + (x *SpellData[_Q].widthHlf)
+    local startLeftY = pStart.y + (y *SpellData[_Q].widthHlf)
+    local startLeftZ = pStart.z + (z *SpellData[_Q].widthHlf)
+    local endLeftX = pStart.x + (x * SpellData[_Q].widthHlf) + (t * distance)
+    local endLeftY = pStart.y + (y * SpellData[_Q].widthHlf) + (i * distance)
+    local endLeftZ = pStart.z + (z * SpellData[_Q].widthHlf) + (u * distance)
      
-    local startRightX = pStart.x - (x * SpellData[_Q].width)
-    local startRightY = pStart.y - (y * SpellData[_Q].width)
-    local startRightZ = pStart.z - (z * SpellData[_Q].width)
-    local endRightX = pStart.x - (x * SpellData[_Q].width) + (t * distance)
-    local endRightY = pStart.y - (y * SpellData[_Q].width) + (i * distance)
-    local endRightZ = pStart.z - (z * SpellData[_Q].width)+ (u * distance)
+    local startRightX = pStart.x - (x * SpellData[_Q].widthHlf)
+    local startRightY = pStart.y - (y * SpellData[_Q].widthHlf)
+    local startRightZ = pStart.z - (z * SpellData[_Q].widthHlf)
+    local endRightX = pStart.x - (x * SpellData[_Q].widthHlf) + (t * distance)
+    local endRightY = pStart.y - (y * SpellData[_Q].widthHlf) + (i * distance)
+    local endRightZ = pStart.z - (z * SpellData[_Q].widthHlf)+ (u * distance)
  
     local startLeft = WorldToScreen(D3DXVECTOR3(startLeftX, startLeftY, startLeftZ))
     local endLeft = WorldToScreen(D3DXVECTOR3(endLeftX, endLeftY, endLeftZ))
