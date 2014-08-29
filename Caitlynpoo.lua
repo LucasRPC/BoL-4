@@ -1,5 +1,5 @@
 --[[CREDITS:
-	All the Lib Creators:
+	All the Lib/Orbwalk Creators:
 		honda7
 		klokje
 		Sida
@@ -20,6 +20,7 @@
 if myHero.charName ~= "Caitlyn" then return end
 
 require "VPrediction"
+require "MapPosition"
 
 local QAble, WAble, EAble, RAble = false, false, false
 local RRange = nil
@@ -75,12 +76,12 @@ Config = scriptConfig("Caitlynpoo", "Caitlynpoo")
 orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
 
 Config:addSubMenu("Piltover Peacemaker", "qSub")
+	Config.qSub:addSubMenu("Mana Manager", "manamanager")
+		Config.qSub.manamanager:addParam("minMac", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
+		Config.qSub.manamanager:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
+		Config.qSub.manamanager:addParam("minMlc", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 	Config.qSub:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
-	Config.qSub:addParam("minMac", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
-	Config.qSub:addParam("minM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
-	Config.qSub:addParam("minMlc", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
-	Config.qSub:addParam("animcancel", "Use Q in E Animation", SCRIPT_PARAM_ONOFF, false)
 	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.3", "Toggle" })
 	Config.qSub:addParam("dumbQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 	Config.qSub:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
@@ -91,22 +92,25 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 		Config.qSub:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 	end
 	Config.qSub:addParam("printColl", "SmartQ v0.3 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
+
 Config:addSubMenu("Yordle Snap Trap", "wSub")
 	Config.wSub:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
-	Config.wSub:addParam("gatrap", "AutoTrap on GA(casts on ally GA-bug)", SCRIPT_PARAM_ONOFF, false)
 	Config.wSub:addParam("AGCtrap", "AntiGapClose with W if E on CD", SCRIPT_PARAM_ONOFF, true)
-	Config.wSub:addParam("casttrap", "Cast Trap on Chasing Heroes", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("T"))
+	Config.wSub:addParam("casttrap", "Cast Trap on Closest Enemy Path", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("T"))
 	Config.wSub:addParam("drawtrap", "Draw Trap Range and Timer", SCRIPT_PARAM_ONOFF, true)
 	Config.wSub:addParam("printCount", "Count Traps Set [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("L"))
+
 Config:addSubMenu("90 Caliber Net", "eSub")
-	Config.eSub:addParam("net", "E to Mouse", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
-	Config.eSub:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
-	Config.eSub:addSubMenu("Use Anti Gap on:", "listSub")
+	Config.eSub:addSubMenu("Net to Mouse", "netSub")	
+		Config.eSub.netSub:addParam("net", "Hotkey", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("E"))
+		Config.eSub.netSub:addParam("animcancel", "Use Q in E Animation", SCRIPT_PARAM_ONOFF, false)
+		Config.eSub.netSub:addParam("drawejump", "Draw E Jump Range", SCRIPT_PARAM_ONOFF, true)
+	Config.eSub:addSubMenu("Use AntiGapClose on:", "listSub")
 		for _, enemy in ipairs(GetEnemyHeroes()) do
 			Config.eSub.listSub:addParam(enemy.charName, enemy.charName, SCRIPT_PARAM_ONOFF, true)
 		end	
-	--Config.eSub:addParam("net2", "E to location SubModifier Hotkey", SCRIPT_PARAM_ONKEYDOWN, false, 20)
-	--Config.eSub:addParam("drawejump", "Draw E Jump Range", SCRIPT_PARAM_ONOFF, true)
+	Config.eSub:addParam("AGConoff", "AntiGapClose", SCRIPT_PARAM_ONOFF, true)
+
 Config:addSubMenu("Ace in the Hole", "rSub")
 	Config.rSub:addParam("kill", "R Killshot", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
 	Config.rSub:addParam("damagetillr", "Draw Damage left till Killshot", SCRIPT_PARAM_ONOFF, true)
@@ -145,13 +149,14 @@ end
 
 function OnLoad()
 	VP = VPrediction()
+	wallposition = MapPosition()
 	Menu()	
 end
 
 function OnTick()
 	Checks()
 	
-	if (orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight)) and myManaPct() > Config.qSub.minMac then
+	if (orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight)) and myManaPct() > Config.qSub.manamanager.minMac then
 		if (not Config.qSub.usepro) then
 			Peacemaker()
 			mode1active = true
@@ -161,7 +166,7 @@ function OnTick()
 			mode1active = true
 			mode2active = false
 		end
-	elseif (orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass)) and myManaPct() > Config.qSub.minM then
+	elseif (orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass)) and myManaPct() > Config.qSub.manamanager.minM then
 		if (not Config.qSub.usepro) then
 			Peacemaker()
 			mode1active = false
@@ -172,7 +177,7 @@ function OnTick()
 			mode2active = true
 		end
 	elseif Config.qSub.minMinions ~= 0 and (orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear)) 
-	and myManaPct() > Config.qSub.minMlc then
+	and myManaPct() > Config.qSub.manamanager.minMlc then
 		enemyMinions:update()
 		LaneClear()
 		mode1active = false
@@ -194,12 +199,12 @@ function OnTick()
 		AceintheHole()
 	end	
 	
-	if Config.eSub.net then
+	if Config.eSub.netSub.net then
 		NetToMouse()
 	end
 	
 	if Config.wSub.casttrap then
-		FleeMode()
+		TrapNearEnemy()
 	end
 		
 	if InFountain() then
@@ -220,10 +225,14 @@ function NetToMouse()
 		HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 		myHero:MoveTo(mousePos.x,mousePos.z)
-		if mTarget and ValidTarget(mTarget, 1300) and Config.qSub.animcancel then
+		if mTarget and ValidTarget(mTarget, 1300) and Config.eSub.netSub.animcancel then
 			CastSpell(_Q, mTarget.x, mTarget.z)
 		end
-		CastSpell(_E,DashPos.x,DashPos.z)
+		local ewallcheck = GenerateLineSegmentFromCastPosition(myHero, MPos, 495)
+		local mappoint = Point(ewallcheck.x, ewallcheck.z)
+		if not wallposition:inWall(mappoint) then
+			CastSpell(_E, DashPos.x, DashPos.z)
+		end
 	end
 end
 
@@ -280,9 +289,9 @@ function OnDraw()
 			end
 		end
 	end
-	--if Config.eSub.drawejump and EAble then 
-	--	DrawCircle3D(myHero.x, myHero.y, myHero.z, 390, 3, ARGB(100, 25, 25, 195))
-	--end
+	if Config.eSub.netSub.drawejump and EAble then 
+		DrawCircle3D(myHero.x, myHero.y, myHero.z, 495, 3, ARGB(100, 25, 25, 195))
+	end
 end
 
 function CheckRLevel()
@@ -483,16 +492,13 @@ local CCBUFFS = {
 	["unstoppableforceestun"] = true,
 	["lissandrarself"] = true,
 }
-local GABUFFS = {
-	["willrevive"] = true,
-}
 
 function CastW()
 	for i = 1, heroManager.iCount do
 		local Enemy = heroManager:getHero(i)
 		if WAble and ValidTarget(Enemy, 800, true) and IsOnCC(Enemy) then
 			CastSpell(_W, Enemy.x, Enemy.z)
-			if Config.qSub.Qonoff and myManaPct() > Config.qSub.minMac then
+			if Config.qSub.Qonoff and myManaPct() > Config.qSub.manamanager.minMac then
 				CastSpell(_Q, Enemy.x, Enemy.z)
 			end
 		end
@@ -500,11 +506,16 @@ function CastW()
 end
 
 function OnCreateObj(object)
-	if object.name:find("LifeAura") and Config.wSub.gatrap then
-		CastSpell(_W, object.x, object.z)
-	end
+	if object.name:find("LifeAura") then
+		for i=1, heroManager.iCount do
+			currentEnemy = heroManager:GetHero(i)
+			if currentEnemy.team ~= myHero.team and GetDistanceSqr(currentEnemy) <= 640000 and currentEnemy.bInvulnerable then
+				CastSpell(_W, currentEnemy.x, currentEnemy.z)
+            end
+        end
+    end
 end
-
+		
 function IsOnCC(target)
 	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
 	for i = 1, target.buffCount do
@@ -548,16 +559,6 @@ function timerType(spellName)
 	end
 end
 	
-function HasGA(target)
-	assert(type(target) == 'userdata', "IsOnCC: Wrong type. Expected userdata got: "..tostring(type(target)))
-	for i = 1, target.buffCount do
-		tBuff = target:getBuff(i)
-		if BuffIsValid(tBuff) and GABUFFS[tBuff.name] then
-			return true
-		end	
-	end
-	return false
-end
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        AGC        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -635,7 +636,11 @@ local TELESPELLS = {
 
 function OnProcessSpell(unit, spell)
 	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		CastSpell(_E, unit.x, unit.z)
+		local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, unit, 400)
+		local mappoint = Point(ewallcheck.x, ewallcheck.z)
+		if not wallposition:inWall(mappoint) then
+			CastSpell(_E, unit.x, unit.z)
+		end
 		if (not EAble) and Config.wSub.AGCtrap then
 			CastSpell(_W, spell.endPos.x, spell.endPos.z)
 		end
@@ -656,7 +661,11 @@ end
 	
 function AGCCastE()
 	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) and Config.eSub.listSub[mTarget.charName] then	
-		CastSpell(_E, mTarget.x, mTarget.z)
+		local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, mTarget, 400)
+		local mappoint = Point(ewallcheck.x, ewallcheck.z)
+		if not wallposition:inWall(mappoint) then
+			CastSpell(_E, unit.x, unit.z)
+		end
 		if (not EAble) and Config.wSub.AGCtrap then
 			CastSpell(_W, mTarget.x, mTarget.z)
 		end
@@ -674,6 +683,34 @@ function IsGapClosing(target)
 	return false
 end
 
+ function GenerateLineSegmentFromCastPosition2(CastPosition, FromPosition, SkillShotRange)
+    local MaxEndPosition = CastPosition + ((Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
+    return MaxEndPosition
+end
+
+function TrapNearEnemy()
+	if WAble then		
+		local distance = 2500000
+		local closestEnemy = nil
+		for i=1, heroManager.iCount do
+			currentEnemy = heroManager:GetHero(i)
+			if currentEnemy.team ~= myHero.team and not currentEnemy.dead and GetDistance(currentEnemy) <= 500 then
+				if GetDistance(currentEnemy) <= distance then
+					distance = GetDistance(currentEnemy)
+					closestEnemy = currentEnemy
+				end
+			end
+		end		
+		
+		if closestEnemy then
+			local targetPos = VP:CalculateTargetPosition(closestEnemy, 1.25, 600, math.huge, myHero, "circular")	
+			if targetPos then 
+				CastSpell(_W, targetPos.x, targetPos.z)
+			end
+		end
+	end
+end
+
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SmartQ v0.3    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -682,7 +719,7 @@ function SmartQ()
 	local admg = myHero.totalDamage		
 	local aspd = (myHero.attackSpeed * 0.625)
 	local cdmg
-	local plvl = PeacemakerLVL()
+	local plvl = (20 + ((myHero:GetSpellData(_Q).level or 0) * 40))
 	local pcdt = PeacemakerCD()
 	local hlvl = HeadshotLVL()
 	if GetInventoryHaveItem(3031) then
@@ -759,15 +796,6 @@ function HeadshotLVL()
 	if myHero.level >= 13 then return 5 
 	elseif myHero.level >= 7 then return 6
 	elseif myHero.level >= 1 then return 7
-	end
-end
-
-function PeacemakerLVL()
-	if myHero.level >= 9 then return 180 
-	elseif myHero.level >= 7 then return 140
-	elseif myHero.level >= 5 then return 100
-	elseif myHero.level >= 3 then return 60
-	elseif myHero.level >= 1 then return 20
 	end
 end
 
@@ -890,27 +918,8 @@ function InfoMessage()
 	end
 end
 
-function FleeMode()
-	if WAble then
-		for i = 1, heroManager.iCount do
-			local Enemy = heroManager:getHero(i)
-			local closestEnemy
-			if ValidTarget(Enemy, 500) and closestEnemy == nil then
-				closestEnemy = Enemy
-			elseif ValidTarget(Enemy, 500) and GetDistance(Enemy) < GetDistance(closestEnemy) then
-				closestEnemy = Enemy
-			end
-		
-			local trapPos
-			local caitPos
-			if closestEnemy and GetDistance(closestEnemy) < 500 then
-				trapPos = VP:CalculateTargetPosition(closestEnemy, 1.75, 600, math.huge, myHero, "circular")
-				caitPos = VP:CalculateTargetPosition(myHero, 1.6, 600, math.huge, myHero, "circular")
-			end	
-			
-			if trapPos and GetDistanceSqr(trapPos) <= GetDistanceSqr(closestEnemy) and GetDistanceSqr(trapPos, closestEnemy) > 15625 and GetDistanceSqr(caitPos, closestEnemy) > GetDistanceSqr(myHero, closestEnemy) then
-				CastSpell(_W, trapPos.x, trapPos.z)
-			end
-		end
-	end
-end
+
+
+
+
+
