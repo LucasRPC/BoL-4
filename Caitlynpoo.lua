@@ -40,7 +40,7 @@ local TIMERTYPE_STARTPOS = 2
 local TIMERTYPE_CASTER = 3
 local timedDrawings = {}
 
-local sversion = "0.34"
+local sversion = "0.35"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
