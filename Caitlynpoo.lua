@@ -72,6 +72,7 @@ local CCLIST = {
 	["Sona"] = {ccName = "SonaR"},
 	["Swain"] = {ccName = "swainshadowgrasproot"},
 	["Thresh"] = {ccName = "threshqfakeknockup"},
+	["Veigar"] = {ccName = "VeigarStun"},	
 	["Velkoz"] = {ccName = "velkozestun"},
 	["Vi"] = {ccName = "virdunkstun"},
 	["Viktor"] = {ccName = "viktorgravitonfieldstun"},
