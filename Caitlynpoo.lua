@@ -13,6 +13,7 @@
 	Others: 
 		Bilbao -  cause everything he writes on the forum seems so damn helpful
 		redprince - for the trap timers
+		Sida again - For being awesome.
 ]]
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX OnLoad/AutoUpdate XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -39,8 +40,109 @@ local TIMERTYPE_ENDPOS = 1
 local TIMERTYPE_STARTPOS = 2
 local TIMERTYPE_CASTER = 3
 local timedDrawings = {}
+local CCBUFFS = {
+	["caitlynyordletrapdebuff"] = true,
+	["Flee"] = true,
+	["Stun"] = true,
+	["supression"] = true,
+	["Taunt"] = true,
+	["zhonyasringshield"] = true,
+}
+local CCLIST = {
+	["Aatrox"] = {ccName = "aatroxqknockup"},
+	["Ahri"] = {ccName = "ahriseducedoom"},
+	["Amumu"] = {ccName = "CurseoftheSadMummy"},
+	["Blitzcrank"] = {ccName = "powerfistslow"},
+	["Braum"] = {ccName = "braumstundebuff", "braumpulselineknockup"},
+	["Chogath"] = {ccName = "rupturetarget"},
+	["Elise"] = {ccName = "EliseHumanE"},
+	["Janna"] = {ccName = "HowlingGaleSpell"},
+	["JarvanIV"] = {ccName = "jarvanivdragonstrikeph2"},
+	["Karma"] = {ccName = "karmaspiritbindroot"},
+	["Lux"] = {ccName = "LuxLightBindingMis"},
+	["Lissandra"] = {ccName = "lissandrawfrozen", "lissandraenemy2"},
+	["Malphite"] = {ccName = "unstoppableforceestun"},
+	["Maokai"] = {ccName = "maokaiunstablegrowthroot"},
+	["MonkeyKing"] = {ccName = "monkeykingspinknockup"},
+	["Morgana"] = {ccName = "DarkBindingMissile"},
+	["Nami"] = {ccName = "namiqdebuff"},
+	["Nautilus"] = {ccName = "nautilusanchordragroot"},
+	["Ryze"] = {ccName = "RunePrison"},
+	["Sejuani"] = {ccName = "sejuaniglacialprison"},
+	["Sona"] = {ccName = "SonaR"},
+	["Swain"] = {ccName = "swainshadowgrasproot"},
+	["Thresh"] = {ccName = "threshqfakeknockup"},
+	["Velkoz"] = {ccName = "velkozestun"},
+	["Vi"] = {ccName = "virdunkstun"},
+	["Viktor"] = {ccName = "viktorgravitonfieldstun"},
+	["Yasuo"] = {ccName = "yasuoq3mis"},
+	["Zyra"] = {ccName = "zyragraspingrootshold", "zyrabramblezoneknockup"},
+}
+local SELFCCLIST = {
+	["FiddleSticks"] = {ccName = "fearmonger_marker"},
+	["Katarina"] = {ccName = "katarinarsound"},
+	["Lissandra"] = {ccName = "lissandrarself"},
+	["Malzahar"] = {ccName = "AlZaharNetherGrasp"},
+	["MasterYi"] = {ccName = "Meditate"},
+	["MissFortune"] = {ccName = "missfortunebulletsound"},
+	["Nunu"] = {ccName = "AbsoluteZero"},
+	["Pantheon"] = {ccName = "pantheonesound"},
+	["Velkoz"] = {ccName = "VelkozR"},
+	["Warwick"] = {ccName = "infiniteduresssound"},
+	["Zilean"] = {ccName = "chronorevive"},
+}
+local AGCLIST = {
+	["Aatrox"] = {gcName = "AatroxQ"},
+	["Ahri"] = {gcName = "AhriTumble"},
+	["Alistar"] = {gcName = "Headbutt"},
+	["Corki"] = {gcName = "CarpetBomb"},
+	["Diana"] = {gcName = "DianaTeleport"},
+	["Ezreal"] = {gcName = "EzrealArcaneShift"},
+	["Fiora"] = {gcName = "FioraQ"},
+	["Fizz"] = {gcName = "FizzPiercingStrike"},
+	["Gnar"] = {gcName = "GnarE", "gnarbige"},
+	["Gragas"] = {gcName = "GragasE"},
+	["Graves"] = {gcName = "GravesMove"},
+	["Hecarim"] = {gcName = "HecarimUlt"},
+	["Irelia"] = {gcName = "IreliaGatotsu"},
+	["JarvanIV"] = {gcName = "JarvanIVDragonStrike"},
+	["Jax"] = {gcName = "JaxLeapStrike"},
+	["Khazix"] = {gcName = "KhazixE"},
+	["Leblanc"] = {gcName = "LeblancSlide", "LeblancSlideM"},
+	["LeeSin"] = {gcName = "blindmonkqtwodash"},
+	["Leona"] = {gcName = "LeonaZenithBlade"},
+	["Lucian"] = {gcName = "LucianE"},
+	["Maokai"] = {gcName = "MaokaiUnstableGrowth"},
+	["MonkeyKing"] = {gcName = "MonkeyKingNimbus"},
+	["Nautilus"] = {gcName = "NautilusAnchorDrag"},
+	["Nidalee"] = {gcName = "Pounce"},
+	["Pantheon"] = {gcName = "PantheonW"},
+	["Poppy"] = {gcName = "PoppyHeroicCharge"},
+	["Quinn"] = {gcName = "QuinnE", "QuinnValorE"},
+	["Renekton"] = {gcName = "RenektonSliceAndDice"},
+	["Riven"] = {gcName = "RivenTriCleave"},
+	["Sejuani"] = {gcName = "SejuaniArcticAssault"},
+	["Shen"] = {gcName = "ShenShadowDash"},
+	["Thresh"] = {gcName = "threshqleap"},
+	["Tristana"] = {gcName = "RocketJump"},
+	["Tryndamere"] = {gcName = "slashCast"},
+	["Vi"] = {gcName = "ViQ"},
+	["Volibear"] = {gcName = "VolibearQ"},
+	["XinZhao"] = {gcName = "XenZhaoSweep"},
+	["Yasuo"] = {gcName = "YasuoDashWrapper"},
+	["Zac"] = {gcName = "ZacE"},
+}
+local AGCSPELLS = {
+	["SummonerFlash"] = true,
+}
+local TELESPELLS = {
+	["PantheonRFall"] = true,
+	["LeblancSlide"] = true,
+	["LeblancSlideM"] = true,
+	["Crowstorm"] = true,
+}
 
-local sversion = "0.35"
+local sversion = "0.36"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
@@ -150,7 +252,9 @@ end
 function OnLoad()
 	VP = VPrediction()
 	wallposition = MapPosition()
-	Menu()	
+	Menu()
+	MakeCCTable()
+	MakeAGCTable()
 end
 
 function OnTick()
@@ -190,11 +294,7 @@ function OnTick()
 	if Config.wSub.onoff then 
 		CastW()
 	end
-	
-	if Config.eSub.AGConoff then 
-		AGCCastE()
-	end
-	
+		
 	if RAble then
 		AceintheHole()
 	end	
@@ -224,7 +324,7 @@ function NetToMouse()
 		MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
 		HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
-		myHero:MoveTo(mousePos.x,mousePos.z)
+		--myHero:MoveTo(mousePos.x,mousePos.z)
 		if mTarget and ValidTarget(mTarget, 1300) and Config.eSub.netSub.animcancel then
 			CastSpell(_Q, mTarget.x, mTarget.z)
 		end
@@ -322,8 +422,10 @@ function AceintheHole()
 				if Config.rSub.pingkillable and (LastPing+pingbuffer) < GetTickCount() then
 					PingSignal(PING_NORMAL, Enemy.x, Enemy.y, Enemy.z,2)
 					LastPing = GetTickCount()
-				end	
-				if ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health + 60) < RDamage then
+					if ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
+						CastSpell(_R, Enemy) 
+					end	
+				elseif ValidTarget(Enemy, RRange, true) and Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
 					CastSpell(_R, Enemy) 
 				end		
 			end
@@ -377,58 +479,35 @@ function HasPassive(unit)
 end
 
 function LaneClear()
-	if QAble and #enemyMinions.objects > Config.qSub.minMinions then
-		for i, minion in pairs(enemyMinions.objects) do
-		    if GetDistance(minion) < 1300 then
-				local QPos = GetBestQPositionFarm()
-				if QPos then
-					if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
-						CastSpell(_Q, QPos.x, QPos.z)
-					elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove then
-						CastSpell(_Q, QPos.x, QPos.z)
-					elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() then
-						CastSpell(_Q, QPos.x, QPos.z)
-					elseif orbConfig.orbchoice == 4 and SxOrb:CanMove() then
-						CastSpell(_Q, QPos.x, QPos.z)
-					end					
+	if QAble and #enemyMinions.objects >= Config.qSub.minMinions then		
+		for i=1, enemyMinions.iCount do
+		local QEndPos = GenerateLineSegmentFromCastPosition(myHero, enemyMinions.objects[i], 1300)
+		local n = 0
+			for i=1, enemyMinions.iCount do
+				local minion = enemyMinions.objects[i]
+				if minion and GetDistance(minion) < 1300 then
+					local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(QEndPos.x, QEndPos.z), Vector(minion.x, minion.z))
+					if dist <= 70 then
+						n = n + 1
+						if n >= Config.qSub.minMinions then					
+							if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
+								CastSpell(_Q, minion.x, minion.z)
+							elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove then
+								CastSpell(_Q, minion.x, minion.z)
+							elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() then
+								CastSpell(_Q, minion.x, minion.z)
+							elseif orbConfig.orbchoice == 4 and SxOrb:CanMove() then
+								CastSpell(_Q, minion.x, minion.z)
+							end		
+						end
+					end
 				end
 			end
 		end
 	end
 end
 
-function GetBestQPositionFarm()
-	local MaxQPos
-	local MaxQ = 0
-	for i, minion in pairs(enemyMinions.objects) do
-		local hitQ = CountMinionsHit(minion)
-		if hitQ > MaxQ or MaxQPos == nil then
-			MaxQPos = minion
-			MaxQ = hitQ
-		end
-	end
-
-	if MaxQPos then
-		return MaxQPos
-	else
-		return nil
-	end
-end
-
-function CountMinionsHit(enemy)
-	local QEndPos = Vector(myHero) + 1300 * (Vector(enemy) - Vector(myHero)):normalized()
-	local n = 0
-	for i, minion in pairs(enemyMinions.objects) do
-		local pointSegment, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(Vector(myHero), QEndPos, minion)
-		if isOnSegment and GetDistance(minion, pointSegment) <= 50 then
-			n = n + 1
-		end
-	end
-	return n
-end
-
 function myManaPct() return (myHero.mana * 100) / myHero.maxMana end
-
 --[[function HeadShot() --SAC MODE ONLY(not working atm)
 	if HasPassive(myHero) and _G.AutoCarry.Plugins then
 		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(PassiveDmg())
@@ -442,57 +521,6 @@ function NoPassive() return 0 end]]
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      AutoTrap     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-local CCBUFFS = {
-	["aatroxqknockup"] = true,
-	["ahriseducedoom"] = true,
-	["powerfistslow"] = true,
-	["caitlynyordletrapdebuff"] = true,
-	["braumstundebuff"] = true,
-	["rupturetarget"] = true,
-	["EliseHumanE"] = true,
-	["Flee"] = true,
-	["HowlingGaleSpell"] = true,
-	["jarvanivdragonstrikeph2"] = true,
-	["karmaspiritbindroot"] = true,	
-	["LuxLightBindingMis"] = true,
-	["lissandrawfrozen"] = true,
-	["maokaiunstablegrowthroot"] = true,
-	["DarkBindingMissile"] = true,
-	["namiqdebuff"] = true,
-	["nautilusanchordragroot"] = true,
-	["RunePrison"] = true,
-	["Taunt"] = true,
-	["Stun"] = true,
-	["swainshadowgrasproot"] = true,
-	["threshqfakeknockup"] = true,
-	["velkozestun"] = true,
-	["virdunkstun"] = true,
-	["viktorgravitonfieldstun"] = true,
-	["supression"] = true,
-	["yasuoq3mis"] = true,
-	["zyragraspingrootshold"] = true,
-	["CurseoftheSadMummy"] = true,
-	["braumpulselineknockup"] = true,
-	["lissandraenemy2"] = true,
-	["sejuaniglacialprison"] = true,
-	["SonaR"] = true,
-	["zyrabramblezoneknockup"] = true,
-	["infiniteduresssound"] = true,
-	["chronorevive"] = true,
-	["katarinarsound"] = true,
-	["AbsoluteZero"] = true,
-	["Meditate"] = true,
-	["pantheonesound"] = true,
-	["zhonyasringshield"] = true,
-	["fearmonger_marker"] = true,
-	["AlZaharNetherGrasp"] = true,
-	["missfortunebulletsound"] = true,	
-	["VelkozR"] = true,	
-	["monkeykingspinknockup"] = true,
-	["unstoppableforceestun"] = true,
-	["lissandrarself"] = true,
-}
-
 function CastW()
 	for i = 1, heroManager.iCount do
 		local Enemy = heroManager:getHero(i)
@@ -506,7 +534,7 @@ function CastW()
 end
 
 function OnCreateObj(object)
-	if object.name:find("LifeAura") then
+	if Config.wSub.onoff and object.name:find("LifeAura") then
 		for i=1, heroManager.iCount do
 			currentEnemy = heroManager:GetHero(i)
 			if currentEnemy.team ~= myHero.team and GetDistanceSqr(currentEnemy) <= 640000 and currentEnemy.bInvulnerable then
@@ -514,6 +542,14 @@ function OnCreateObj(object)
             end
         end
     end
+	
+	if Config.wSub.onoff and object.name:find("global_ss_teleport_target_red") and GetDistanceSqr(object) < 640000 then
+		CastSpell(_W, object.x, object.z)
+	end	
+
+	if Config.wSub.onoff and object.name:find("GateMarker_red") and GetDistanceSqr(object) < 640000 then
+		CastSpell(_W, object.x, object.z)
+	end
 end
 		
 function IsOnCC(target)
@@ -558,134 +594,18 @@ function timerType(spellName)
         return TIMERTYPE_ENDPOS, 240	
 	end
 end
-	
 
---XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
---XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        AGC        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
---XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-local AGCSPELLS = {
-	["EzrealArcaneShift"] = true,
-	["AhriTumble"] = true,
-	["RivenTriCleave"] = true,
-	["AatroxQ"] = true,
-	["GravesMove"] = true,
-	["FioraQ"] = true,
-	["CarpetBomb"] = true,
-	["ShenShadowDash"] = true,
-	["QuinnValorE"] = true,
-	["QuinnE"] = true,
-	["FizzPiercingStrike"] = true,
-	["BlindMonkQTwo"] = true,
-	["GragasE"] = true,
-	["SejuaniArcticAssault"] = true,
-	["RenektonSliceAndDice"] = true,
-	["LeblancSlide"] = true,
-	["LeblancSlideM"] = true,
-	["JarvanIVDragonStrike"] = true,
-	["MonkeyKingNimbus"] = true,
-	["YasuoDashWrapper"] = true,
-	["UFSlash"] = true,
-	["DianaTeleport"] = true,
-	["RocketJump"] = true,
-	["HecarimUlt"] = true,
-	["LeonaZenithBlade"] = true,
-	["KhazixE"] = true,
-	["LucianE"] = true,
-	["NautilusAnchorDrag"] = true,	
-	["slashCast"] = true,
-	["Pounce"] = true,
-	["XenZhaoSweep"] = true,
-	["MaokaiUnstableGrowth"] = true,
-	["PoppyHeroicCharge"] = true,
-	["JaxLeapStrike"] = true,
-	["PantheonW"] = true,
-	["threshqleap"] = true,
-	["ViQ"] = true,
-	["IreliaGatotsu"] = true,
-	["SummonerFlash"] = true,
-	["Headbutt"] = true,
-}
-local AGCBUFFS = {
-	["aatroxqdescent"] = true,
-	["AhriTumble"] = true,
-	["valkyriesound"] = true,
-	["fiorqcd"] = true,
-	["gravesmovesteroid"] = true,
-	["LeblancSlide"] = true,
-	["GragasE"] = true,
-	["jarvanivdragonstrikeph"] = true,
-	["blindmonkqtwodash"] = true,
-	["RivenTriCleave"] = true,	
-	["ShenShadowDash"] = true,
-	["VolibearQ"] = true,
-	["QuinnE"] = true,
-	["ZacE"] = true,
-	["SejuaniArcticAssault"] = true,
-	["renektonsliceanddicedelay"] = true,
-	["viqdash"] = true,
-	["monkeykingnimbuskick"] = true,
-}
-local TELESPELLS = {
-	["SummonerTeleport"] = true,
-	["gate"] = true,
-	["PantheonRFall"] = true,
-	["LeblancSlide"] = true,
-	["LeblancSlideM"] = true,
-	["Crowstorm"] = true,
-}
-
-function OnProcessSpell(unit, spell)
-	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] and GetDistanceSqr(myHero, spell.endPos) <= 90000 then
-		local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, unit, 400)
-		local mappoint = Point(ewallcheck.x, ewallcheck.z)
-		if not wallposition:inWall(mappoint) then
-			CastSpell(_E, unit.x, unit.z)
-		end
-		if (not EAble) and Config.wSub.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+function MakeCCTable()
+	for _, enemy in ipairs(GetEnemyHeroes()) do
+		if SELFCCLIST[enemy.charName] then
+			CCBUFFS[SELFCCLIST[enemy.charName].ccName] = true
+		end			
+	end
+	for _, ally in ipairs(GetAllyHeroes()) do
+		if CCLIST[ally.charName] then
+			CCBUFFS[CCLIST[ally.charName].ccName] = true
 		end
 	end
-	
-	if TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
-		CastSpell(_W, spell.endPos.x, spell.endPos.z)
-	end
-
-	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
-		local tType, duration, delay = timerType(spell.name)           
-		if tType == TIMERTYPE_ENDPOS then
-			addTimedDrawPos(spell.endPos.x, spell.endPos.y, spell.endPos.z, duration, delay)
-		end
-		MSGTrapCount = MSGTrapCount + 1
-	end
-end
-	
-function AGCCastE()
-	if mTarget and ValidTarget(mTarget, 500) and IsGapClosing(mTarget) and Config.eSub.listSub[mTarget.charName] then	
-		local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, mTarget, 400)
-		local mappoint = Point(ewallcheck.x, ewallcheck.z)
-		if not wallposition:inWall(mappoint) then
-			CastSpell(_E, unit.x, unit.z)
-		end
-		if (not EAble) and Config.wSub.AGCtrap then
-			CastSpell(_W, mTarget.x, mTarget.z)
-		end
-	end
-end
-
-function IsGapClosing(target)
-	assert(type(target) == 'userdata', "IsGapClosing: Wrong type. Expected userdata got: "..tostring(type(target)))
-	for i = 1, target.buffCount do
-		tBuff = target:getBuff(i)
-		if BuffIsValid(tBuff) and AGCBUFFS[tBuff.name] then
-			return true
-		end	
-	end
-	return false
-end
-
- function GenerateLineSegmentFromCastPosition2(CastPosition, FromPosition, SkillShotRange)
-    local MaxEndPosition = CastPosition + ((Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
-    return MaxEndPosition
 end
 
 function TrapNearEnemy()
@@ -709,6 +629,67 @@ function TrapNearEnemy()
 			end
 		end
 	end
+end
+
+--XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX        AGC        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+function OnProcessSpell(unit, spell)
+	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] then
+		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
+		if dist < 250 then
+			local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, unit, 400)
+			local mappoint = Point(ewallcheck.x, ewallcheck.z)	
+			if not wallposition:inWall(mappoint) then
+				if unit then 
+					CastSpell(_E, unit.x, unit.z)
+				else
+					CastSpell(_E, spell.endPos.x, spell.endPos.z)
+				end
+			end
+		end
+		
+		if (not EAble) and Config.wSub.AGCtrap then
+			CastSpell(_W, spell.endPos.x, spell.endPos.z)
+		end
+	end
+	
+	if Config.wSub.onoff and TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
+		CastSpell(_W, spell.endPos.x, spell.endPos.z)
+	end
+
+	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
+		local tType, duration, delay = timerType(spell.name)           
+		if tType == TIMERTYPE_ENDPOS then
+			addTimedDrawPos(spell.endPos.x, spell.endPos.y, spell.endPos.z, duration, delay)
+		end
+		MSGTrapCount = MSGTrapCount + 1
+	end
+end
+	
+ function GenerateLineSegmentFromCastPosition2(CastPosition, FromPosition, SkillShotRange)
+    local MaxEndPosition = CastPosition + ((Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
+    return MaxEndPosition
+end
+
+function MakeAGCTable()
+	for _, enemy in ipairs(GetEnemyHeroes()) do
+		if AGCLIST[enemy.charName] then
+			AGCSPELLS[AGCLIST[enemy.charName].gcName] = true
+		end			
+	end
+end
+
+function GetShortestDistanceFromLineSegment(v1, v2, v3)
+	local a = math.rad(Vector(v1):angleBetween(Vector(v3), Vector(v2)))		
+	local d
+	if a < 1.57 and GetDistanceSqr(v1, v2) > GetDistanceSqr(v1, v3) then
+		d = math.abs(math.sin(a)*(GetDistance(v1, v3))/math.cos(a))
+	else
+		d = GetDistance(v2, v3)
+	end
+	--print(""..d.."")
+	return d
 end
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -917,9 +898,4 @@ function InfoMessage()
 		MSGLastSentColl = GetTickCount()
 	end
 end
-
-
-
-
-
-
+	
