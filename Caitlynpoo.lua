@@ -25,14 +25,12 @@ require "MapPosition"
 
 local QAble, WAble, EAble, RAble = false, false, false
 local RRange = nil
-local AADPS, QAADPS1, QAADPS2, QAADPS3, QAADPS4, QAADPS5 = 0, 0, 0, 0, 0, 0
-local mode1active, mode2active = false, false
+local AADPS, QAADPS1, QAADPS2 = 0, 0, 0
 local QCollision = 1
 local MSGTrapCount, MSGLastSentTrap, MSGLastSentColl = 0, 0, 0
 local Prodiction
 local LastPing = 0
 local QendPos = nil
-local mCollision = {}
 local ProdictionQ
 local VP = nil
 local enemyMinions = minionManager(MINION_ENEMY, 1300, myHero)
@@ -143,7 +141,7 @@ local TELESPELLS = {
 	["Crowstorm"] = true,
 }
 
-local sversion = "0.36"
+local sversion = "0.37"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
@@ -185,16 +183,16 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 		Config.qSub.manamanager:addParam("minMlc", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 	Config.qSub:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
-	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.3", "Toggle" })
+	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.4", "Toggle" })
 	Config.qSub:addParam("dumbQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 	Config.qSub:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
 	if (not Config.qSub.usepro) then
-		Config.qSub:addParam("vphit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
+		Config.qSub:addParam("hit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
 	end
 	if Config.qSub.usepro then
-		Config.qSub:addParam("prohit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
+		Config.qSub:addParam("hit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 	end
-	Config.qSub:addParam("printColl", "SmartQ v0.3 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
+	Config.qSub:addParam("printColl", "SmartQ v0.4 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
 
 Config:addSubMenu("Yordle Snap Trap", "wSub")
 	Config.wSub:addParam("onoff", "AutoTrap on CC", SCRIPT_PARAM_ONOFF, true)
@@ -222,7 +220,7 @@ Config:addSubMenu("Ace in the Hole", "rSub")
 	Config.rSub:addParam("timebetweenpings", "Minimum time between pings", SCRIPT_PARAM_SLICE, 2, 1, 5)
 	
 
-orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SaC", "MMA", "SxOrbWalk" })	
+orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SxOrbWalk", "MMA", "SAC" })	
 	if orbConfig.orbchoice == 1 then
 		require "SOW"
 		Orbwalker = SOW(VP)
@@ -232,16 +230,16 @@ orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PAR
 		orbConfig:addParam("focustarget", "Focus Selected Target", SCRIPT_PARAM_ONOFF, true)
 		
 	end
-	if orbConfig.orbchoice == 3 then
-		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
-		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
-	end
-	if orbConfig.orbchoice == 4 then
+	if orbConfig.orbchoice == 2 then
 		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
 		require "SxOrbWalk"
 		SxOrb = SxOrbWalk()
 		SxOrb:LoadToMenu(orbConfig)
+	end
+	if orbConfig.orbchoice == 3 then
+		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
+		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
 	end
 	if Config.qSub.usepro then
 		require "Prodiction"
@@ -260,36 +258,12 @@ end
 
 function OnTick()
 	Checks()
+	enemyMinions:update()
 	
-	if (orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight)) and myManaPct() > Config.qSub.manamanager.minMac then
-		if (not Config.qSub.usepro) then
-			Peacemaker()
-			mode1active = true
-			mode2active = false
-		elseif Config.qSub.usepro then
-			PeacemakerPRO() 
-			mode1active = true
-			mode2active = false
-		end
-	elseif (orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass)) and myManaPct() > Config.qSub.manamanager.minM then
-		if (not Config.qSub.usepro) then
-			Peacemaker()
-			mode1active = false
-			mode2active = true
-		elseif Config.qSub.usepro then
-			PeacemakerPRO()
-			mode1active = false
-			mode2active = true
-		end
-	elseif Config.qSub.minMinions ~= 0 and (orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear)) 
-	and myManaPct() > Config.qSub.manamanager.minMlc then
-		enemyMinions:update()
-		LaneClear()
-		mode1active = false
-		mode2active = false
-	else
-		mode1active = false
-		mode2active = false
+	if GetOrbwalkMode() < 3 then
+		Peacemaker()
+	elseif GetOrbwalkMode() == 3 then
+		LaneClearTarget()
 	end	
 		
 	if Config.wSub.onoff then 
@@ -322,15 +296,15 @@ end
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 function NetToMouse() 
 	if EAble and (not IsKeyDown(17))then
-		MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
-		HeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
-		--myHero:MoveTo(mousePos.x,mousePos.z)
+		local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
+		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
+		local ewallcheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, 0, HeroPos.z - MPos.z):normalized()*495))
+		local mappoint = Point(ewallcheck.x, ewallcheck.z)		
+		
 		if mTarget and ValidTarget(mTarget, 1300) and Config.eSub.netSub.animcancel then
 			CastSpell(_Q, mTarget.x, mTarget.z)
 		end
-		local ewallcheck = GenerateLineSegmentFromCastPosition(myHero, MPos, 495)
-		local mappoint = Point(ewallcheck.x, ewallcheck.z)
 		if not wallposition:inWall(mappoint) then
 			CastSpell(_E, DashPos.x, DashPos.z)
 		end
@@ -344,17 +318,32 @@ function Checks()
 	RAble = (myHero:CanUseSpell(_R) == READY)
 	
 --///////////////////////////////////////////////////////////////////SAC\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\	
-	if orbConfig.orbchoice == 2 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Skills_Crosshair 
+	if orbConfig.orbchoice == 4 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Skills_Crosshair 
 	and _G.AutoCarry.Crosshair.Skills_Crosshair.target and _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type then 		
 			mTarget = _G.AutoCarry.Crosshair.Skills_Crosshair.target
 --///////////////////////////////////////////////////////////////////MMA\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 	elseif orbConfig.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
 		mTarget = _G.MMA_Target	
 --///////////////////////////////////////////////////////////////////SxO\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-	elseif orbConfig.orbchoice == 4 and SxOrb then
+	elseif orbConfig.orbchoice == 2 and SxOrb then
 		sxTarget = SxOrb:GetTarget()
 		if sxTarget and sxTarget.type == myHero.type then
 			mTarget = sxTarget
+		elseif not mTarget then 
+			local best, damage = nil, 99
+			for i, enemy in pairs(GetEnemyHeroes()) do
+				if enemy.team ~= myHero.team and ValidTarget(enemy, 1300) then
+					local qdamage = getDmg("Q", enemy, myHero)
+					local d = enemy.health / qdamage
+					if (best == nil) or d < damage then
+						best = enemy
+						damage = d
+					end				
+				end
+			end	
+			if best then
+				mTarget = best
+			end
 		end
 --///////////////////////////////////////////////////////////////////SOW\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 	elseif orbConfig.orbchoice == 1 and Orbwalker then
@@ -363,6 +352,22 @@ function Checks()
 			mTarget = selectedTarget
 		else
 		mTarget = Orbwalker:GetTarget(true)
+			if not mTarget then 
+				local best, damage = nil, 99
+				for i, enemy in pairs(GetEnemyHeroes()) do
+					if enemy.team ~= myHero.team and ValidTarget(enemy, 1300) then
+						local qdamage = getDmg("Q", enemy, myHero)
+						local d = enemy.health / qdamage
+						if (best == nil) or d < damage then
+							best = enemy
+							damage = d
+						end				
+					end
+				end	
+				if best then
+					mTarget = best
+				end
+			end
 		end
 	end
 end
@@ -374,8 +379,8 @@ function OnDraw()
 		Orbwalker:DrawAARange(3, ARGB(100, 35, 250, 11))
 	end
 	
-	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 4) and orbConfig.drawtarget and mTarget and ValidTarget(mTarget) then
-		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, ((getHitBoxRadius(mTarget)+30)), 3, ARGB(100, 185, 4, 4))
+	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 2) and orbConfig.drawtarget and mTarget and ValidTarget(mTarget) then
+		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, ((GetDistance(mTarget, mTarget.minBBox)/2) + 30), 3, ARGB(100, 185, 4, 4))
 	end
 	
 	if Config.rSub.rminimap and RAble then
@@ -435,89 +440,85 @@ function AceintheHole()
 end
 
 function Peacemaker()
-	if mTarget then
-		CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.632, 80, 1300, 2225, myHero)
-		local qDmgchck = (myHero.totalDamage * 0.85)
-		local QendPos = GenerateLineSegmentFromCastPosition(myHero, mTarget, 1300)
-		if QAble and HitChance >= Config.qSub.vphit and GetDistanceSqr(CastPosition) < 1690000 and qDmgchck < mTarget.health 
-		and ((mode1active and Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ) or mode2active) then
-			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif orbConfig.orbchoice == 3 and _G.MMA_NextAttackAvailability > 0.1 and _G.MMA_NextAttackAvailability < 0.2 then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() and (not Orbwalker:CanAttack()) then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			elseif orbConfig.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() and (not SxOrb:CanAttack()) then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
-		end
-	end
-end
-
-function PeacemakerPRO()
-	if mTarget then
-        local QTarget, Qinfo = ProdictionQ:GetPrediction(mTarget)
-		local qDmgchck = (myHero.totalDamage * 0.85)
-        if QAble and Qinfo.hitchance >= Config.qSub.prohit and GetDistanceSqr(QTarget) < 1690000 and qDmgchck < mTarget.health 
-		and ((mode1active and Config.qSub.smartQ == 1 and GetHeroCollision(myHero, QendPos) and SmarterQ(mTarget)) or (Config.qSub.smartQ ==  2 and Config.qSub.dumbQ) or mode2active) then 
-			if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
-				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif orbConfig.orbchoice == 3 and _G.MMA_NextAttackAvailability > 0.1 and _G.MMA_NextAttackAvailability < 0.2 then
-				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() and (not Orbwalker:CanAttack()) then
-				CastSpell(_Q, QTarget.x, QTarget.z)
-			elseif  orbConfig.orbchoice == 4 and mTarget.type == myHero.type and SxOrb:CanMove() and (not SxOrb:CanAttack()) then
-				CastSpell(_Q, CastPosition.x, CastPosition.z)
-			end
-    	end
-	end
-end
-
-function HasPassive(unit)
-	if unit and unit.isMe then
-		return HasBuff(unit, "caitlynheadshot")
-	end
-end
-
-function LaneClear()
-	if QAble and #enemyMinions.objects >= Config.qSub.minMinions then		
-		for i=1, enemyMinions.iCount do
-		local QEndPos = GenerateLineSegmentFromCastPosition(myHero, enemyMinions.objects[i], 1300)
-		local n = 0
-			for i=1, enemyMinions.iCount do
-				local minion = enemyMinions.objects[i]
-				if minion and GetDistance(minion) < 1300 then
-					local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(QEndPos.x, QEndPos.z), Vector(minion.x, minion.z))
-					if dist <= 70 then
-						n = n + 1
-						if n >= Config.qSub.minMinions then					
-							if orbConfig.orbchoice == 2 and _G.AutoCarry.Orbwalker:IsAfterAttack() then
-								CastSpell(_Q, minion.x, minion.z)
-							elseif orbConfig.orbchoice == 3 and _G.MMA_AbleToMove then
-								CastSpell(_Q, minion.x, minion.z)
-							elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() then
-								CastSpell(_Q, minion.x, minion.z)
-							elseif orbConfig.orbchoice == 4 and SxOrb:CanMove() then
-								CastSpell(_Q, minion.x, minion.z)
-							end		
-						end
-					end
+	if mTarget and ValidTarget(mTarget, 1300) then
+		local QendPos = myHero + (Vector(mTarget.x - myHero.x, 0, mTarget.z - myHero.z):normalized()*1300)
+		local CastPos, Hit = GetSelectedPrediction(mTarget)
+		if QAble and Hit >= Config.qSub.hit and not mTarget.dead and (GetAfterAA() or (GetDistanceSqr(mTarget) > 455625)) then
+			if Config.qSub.smartQ == 1 then
+				if QCollision <= 1 then
+					CastSpell(_Q, CastPos.x, CastPos.z)
+				elseif GetHeroCollision(QendPos) then
+					CastSpell(_Q, CastPos.x, CastPos.z)
 				end
+			elseif Config.qSub.smartQ ==  2 and Config.qSub.dumbQ then
+				CastSpell(_Q, CastPos.x, CastPos.z)
 			end
 		end
+	end
+end
+
+function GetAfterAA()
+	if orbConfig.orbchoice == 4 and _G.AutoCarry.Orbwalker:IsAfterAttack() then			
+		return true
+	elseif orbConfig.orbchoice == 3 and _G.MMA_NextAttackAvailability > 0.1 and _G.MMA_NextAttackAvailability < 0.2 then
+		return true
+	elseif orbConfig.orbchoice == 2 and mTarget.type == myHero.type and SxOrb:CanMove() and (not SxOrb:CanAttack()) then
+		return true
+	elseif orbConfig.orbchoice == 1 and orbConfig.Enabled and Orbwalker:CanMove() and (not Orbwalker:CanAttack()) then
+		return true
+	else 
+		return false
+	end
+end
+
+function GetSelectedPrediction(unit)
+	if not Config.qSub.usepro then
+		local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(unit, 0.632, 80, 1300, 2225, myHero)
+		return CastPosition, HitChance, Position
+	else
+		local QTarget, Qinfo = ProdictionQ:GetPrediction(unit)
+		return QTarget, Qinfo.hitchance , nil
+	end
+end
+
+function LaneClearTarget()
+	if QAble then		
+		for i=1, 5 do
+			local QEndPos = Vector(myHero) + Vector(Vector(enemyMinions.objects[i]) - Vector(myHero)):normalized()*1300
+			if QEndPos then	
+				LaneClearHit(QEndPos)
+			end
+		end
+	end
+end
+
+function LaneClearHit(pos)
+	local n = 0
+	for i=1, #enemyMinions.objects do
+		local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(pos.x, pos.z), Vector(enemyMinions.objects[i].x, enemyMinions.objects[i].z))
+		if dist <= 80 then
+			n = n + 1
+			if n >= Config.qSub.minMinions then					
+				CastSpell(_Q, enemyMinions.objects[i].x, enemyMinions.objects[i].z)
+			end
+		end
+	end
+end
+
+function GetOrbwalkMode()
+	if (orbConfig.Mode0 or orbConfig.orbwalk or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.AutoCarry) or (SxOrb and SxOrb.SxOrbMenu.Keys.Fight)) and myManaPct() > Config.qSub.manamanager.minMac then
+		return 1
+	elseif (orbConfig.Mode1 or orbConfig.hybrid or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.MixedMode) or (SxOrb and SxOrb.SxOrbMenu.Keys.Harass)) and myManaPct() > Config.qSub.manamanager.minM then
+		return 2
+	elseif Config.qSub.minMinions ~= 0 and (orbConfig.Mode2 or orbConfig.laneclear or (_G.AutoCarry and _G.AutoCarry.Keys and _G.AutoCarry.Keys.LaneClear) or (SxOrb and SxOrb.SxOrbMenu.Keys.LaneClear)) 
+	and myManaPct() > Config.qSub.manamanager.minMlc then
+		return 3
+	else
+		return 4
 	end
 end
 
 function myManaPct() return (myHero.mana * 100) / myHero.maxMana end
---[[function HeadShot() --SAC MODE ONLY(not working atm)
-	if HasPassive(myHero) and _G.AutoCarry.Plugins then
-		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(PassiveDmg())
-	elseif _G.AutoCarry and _G.AutoCarry.Plugins and (not HasPassive(myHero)) then
-		_G.AutoCarry.Plugins:RegisterBonusLastHitDamage(NoPassive())
-	end
-end]]
---[[function PassiveDmg() return ((_G.AutoCarry.MyHero:GetTotalAttackDamageAgainstTarget(_G.AutoCarry.Minions.EnemyMinions)) * 1.7) end
-function NoPassive() return 0 end]]
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      AutoTrap     XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -639,7 +640,7 @@ function OnProcessSpell(unit, spell)
 	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
-			local ewallcheck = GenerateLineSegmentFromCastPosition2(myHero, unit, 400)
+			local ewallcheck = myHero + ((Vector(myHero.x - unit.x, 0, myHero.z - unit.z):normalized()*400))
 			local mappoint = Point(ewallcheck.x, ewallcheck.z)	
 			if not wallposition:inWall(mappoint) then
 				if unit then 
@@ -667,11 +668,6 @@ function OnProcessSpell(unit, spell)
 		MSGTrapCount = MSGTrapCount + 1
 	end
 end
-	
- function GenerateLineSegmentFromCastPosition2(CastPosition, FromPosition, SkillShotRange)
-    local MaxEndPosition = CastPosition + ((Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
-    return MaxEndPosition
-end
 
 function MakeAGCTable()
 	for _, enemy in ipairs(GetEnemyHeroes()) do
@@ -684,17 +680,20 @@ end
 function GetShortestDistanceFromLineSegment(v1, v2, v3)
 	local a = math.rad(Vector(v1):angleBetween(Vector(v3), Vector(v2)))		
 	local d
-	if a < 1.57 and GetDistanceSqr(v1, v2) > GetDistanceSqr(v1, v3) then
-		d = math.abs(math.sin(a)*(GetDistance(v1, v3))/math.cos(a))
-	else
-		d = GetDistance(v2, v3)
+	if a < 1.04 then 
+		if GetDistanceSqr(v1, v2) > GetDistanceSqr(v1, v3) then
+			d = math.abs(math.sin(a)*(GetDistance(v1, v3))/math.cos(a))
+		else
+			d = GetDistance(v2, v3)
+		end
+	else	
+		d = 716103
 	end
-	--print(""..d.."")
 	return d
 end
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
---XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SmartQ v0.3    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+--XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    SmartQ v0.4    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 function SmartQ()
 	local ccha = myHero.critChance
@@ -712,65 +711,23 @@ function SmartQ()
 	
 	local critDmg = ((ccha*admg*(aspd/(hlvl-(hlvl-1)))*cdmg)+((aspd/hlvl)*ccha*admg*cdmg*1.5))
 	local nocritDmg = (((aspd/(hlvl-(hlvl-1)))*(1-ccha)*admg)+((aspd/hlvl)*admg*1.5))
-	AADPS = (critDmg+nocritDmg+myHero.level)					--Total AA DPS + level bonus
+	AADPS = (critDmg+nocritDmg+myHero.level)
 
 	local QDmgOn1 = (((plvl+(1.3*admg))*1)/pcdt)
 	local QDmgOn2 = (((plvl+(1.3*admg))*1.9)/pcdt)
-	local QDmgOn3 = (((plvl+(1.3*admg))*2.7)/pcdt)	
-	local QDmgOn4 = (((plvl+(1.3*admg))*3.3)/pcdt)
-	local QDmgOn5 = (((plvl+(1.3*admg))*3.8)/pcdt)
 		
 	local qaspd = (aspd*((pcdt-1)/pcdt))
 	local qcritDmg = ((ccha*admg*(qaspd/(hlvl-(hlvl-1)))*cdmg)+((qaspd/hlvl)*ccha*admg*cdmg*1.5))
 	local qnocritDmg = (((qaspd/(hlvl-(hlvl-1)))*(1-ccha)*admg)+((qaspd/hlvl)*admg*1.5))
-	local qaaDmg = (qcritDmg+qnocritDmg)		--Total AA+Q DPS
+	local qaaDmg = (qcritDmg+qnocritDmg)
 	
 	QAADPS1 = (qaaDmg+QDmgOn1)
 	QAADPS2 = (qaaDmg+QDmgOn2)
-	QAADPS3 = (qaaDmg+QDmgOn3)
-	QAADPS4 = (qaaDmg+QDmgOn4)
-	QAADPS5 = (qaaDmg+QDmgOn5)
 	
 	if AADPS <= QAADPS1 then
 		QCollision = 1
-	elseif AADPS < QAADPS2 then
+	elseif AADPS > QAADPS2 then
 		QCollision = 2
-	elseif AADPS < QAADPS3 then
-		QCollision = 3
-	elseif AADPS < QAADPS4 then
-		QCollision = 4
-	elseif AADPS < QAADPS5 then
-		QCollision = 5
-	end
-end
-
-function SmarterQ(target)
-	if target == nil then return end
-	local range = 580
-	local movespeed = target.ms
-	local wayPoint = VP:CalculateTargetPosition(target, 0.95, 1300, math.huge, myHero, "line")
-	local gap = GetDistance(myHero, target)
-	local gap2 = GetDistance(myHero, wayPoint)
-	local latency = ((GetLatency())/1000)
-	
-	if gap2 > range then
-		local isRetreating = true
-		local escapeTime = ((range - gap)/movespeed)
-		if isRetreating and escapeTime > 0.850 then
-			--print("can't escape, time = "..escapeTime.."")
-			return true
-		elseif isRetreating and escapeTime < 0.850  and escapeTime > (0-latency) then
-			--print("will escape, time = "..escapeTime.."")
-			return false		
-		elseif isRetreating and escapeTime < (0-latency) and movespeed >= myHero.ms then
-			--print("out of range cannot catch")
-			return true
-		end
-	elseif gap2 < range then
-		--print("expected to remain in range")
-		return true
-	else 
-		return false
 	end
 end
 
@@ -801,88 +758,22 @@ function GetInventoryHaveItem(itemID, target)
     return (GetInventorySlotItem(itemID, target) ~= nil)
 end
 
-function GetHeroCollision(pStart, pEnd) --From Collision 1.1.1 by Klokje
-        hCollision = {}
-        local heros = {}
- 
-        for i = 1, heroManager.iCount do
-            local hero = heroManager:GetHero(i)
-            if hero.team ~= myHero.team and not hero.dead then
-                table.insert(heros, hero)
-            end
-        end
- 
-        local distance =  GetDistance(pStart, pEnd)
-		local prediction = VP
-		
-        if distance > 1300 then
-            distance = 1300
-        end
- 
-        local V = Vector(pEnd) - Vector(pStart)
-        local k = V:normalized()
-        local P = V:perpendicular2():normalized()
- 
-        local t,i,u = k:unpack()
-        local x,y,z = P:unpack()
- 
-        local startLeftX = pStart.x + (x * 40)
-        local startLeftY = pStart.y + (y * 40)
-        local startLeftZ = pStart.z + (z * 40)
-        local endLeftX = pStart.x + (x * 40) + (t * distance)
-        local endLeftY = pStart.y + (y * 40) + (i * distance)
-        local endLeftZ = pStart.z + (z * 40) + (u * distance)
-       
-        local startRightX = pStart.x - (x * 40)
-        local startRightY = pStart.y - (y * 40)
-        local startRightZ = pStart.z - (z * 40)
-        local endRightX = pStart.x - (x * 40) + (t * distance)
-        local endRightY = pStart.y - (y * 40) + (i * distance)
-        local endRightZ = pStart.z - (z * 40)+ (u * distance)
- 
-        local startLeft = WorldToScreen(D3DXVECTOR3(startLeftX, startLeftY, startLeftZ))
-        local endLeft = WorldToScreen(D3DXVECTOR3(endLeftX, endLeftY, endLeftZ))
-        local startRight = WorldToScreen(D3DXVECTOR3(startRightX, startRightY, startRightZ))
-        local endRight = WorldToScreen(D3DXVECTOR3(endRightX, endRightY, endRightZ))
-       
-        local poly = Polygon(Point(startLeft.x, startLeft.y),  Point(endLeft.x, endLeft.y), Point(startRight.x, startRight.y),   Point(endRight.x, endRight.y))
- 
-        for index, hero in pairs(heros) do
-            if hero ~= nil and hero.valid and not hero.dead then
-                if GetDistance(pStart, hero) < distance then
-					local pos, t, vec  = prediction:GetLineCastPosition(hero, 0.632, 80, 1300, 2225, myHero)				
-                    local lineSegmentLeft = LineSegment(Point(startLeftX,startLeftZ), Point(endLeftX, endLeftZ))
-                    local lineSegmentRight = LineSegment(Point(startRightX,startRightZ), Point(endRightX, endRightZ))
-                    local toScreen, toPoint
-                    if pos ~= nil then
-                        toScreen = WorldToScreen(D3DXVECTOR3(pos.x, hero.y, pos.z))
-                        toPoint = Point(toScreen.x, toScreen.y)
-                    end
- 
-                    if poly:contains(toPoint) then
-                        table.insert(hCollision, hero)
-                    else
-                        if pos ~= nil then
-                            distance1 = Point(pos.x, pos.z):distance(lineSegmentLeft)
-                            distance2 = Point(pos.x, pos.z):distance(lineSegmentRight)
-                        end
-                        if (distance1 < (getHitBoxRadius(hero)*2+10) or distance2 < (getHitBoxRadius(hero) *2+10)) then
-                            table.insert(hCollision, hero)
-                        end
-                    end
-                end
-            end
-        end
-        if #hCollision >= QCollision then return true, hCollision else return false, hCollision end
-end
-
-function GenerateLineSegmentFromCastPosition(CastPosition, FromPosition, SkillShotRange)
-    local MaxEndPosition = CastPosition + (-1 * (Vector(CastPosition.x - FromPosition.x, 0, CastPosition.z - FromPosition.z):normalized()*SkillShotRange))
-    return MaxEndPosition
-end
-
-function getHitBoxRadius(target)
-	return GetDistance(target, target.minBBox)/2
+function GetHeroCollision(pos)
+	local n = 1
+	local dist
+	for i,currentEnemy in ipairs(GetEnemyHeroes()) do
+		if currentEnemy.team ~= myHero.team and (not currentEnemy.dead) and currentEnemy.charName ~=  mTarget.charName and GetDistanceSqr(currentEnemy) < 1690000 then
+			dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(pos.x, pos.z), Vector(currentEnemy.x, currentEnemy.z))
+			if dist <= 120 then
+				n = n + 1
+				if n >= QCollision then	
+					return true
+				else
+					return false
+				end
+			end
+		end
+	end
 end
 
 function InfoMessage()
@@ -891,11 +782,10 @@ function InfoMessage()
 		MSGLastSentTrap = GetTickCount()
 	end
 	if Config.qSub.printColl and ((MSGLastSentColl+1500) < GetTickCount()) then
-		print("<font color=\"#0099FF\">[SmartQ v0.3]</font> <font color=\"#FF6600\">Collision with X heroes Required for SmartQ, X="..QCollision..".</font>")
-		print("<font color=\"#0099FF\">[SmartQ v0.3]</font> <font color=\"#FF6600\">AA DPS - "..AADPS..".</font>")
-		print("<font color=\"#0099FF\">[SmartQ v0.3]</font> <font color=\"#FF6600\">Q on 1 Target DPS - "..QAADPS1..".</font>")
-		print("<font color=\"#0099FF\">[SmartQ v0.3]</font> <font color=\"#FF6600\">Q on 2 Target DPS - "..QAADPS2..".</font>")
-		print("<font color=\"#0099FF\">[SmartQ v0.3]</font> <font color=\"#FF6600\">Q on 3 Target DPS - "..QAADPS3..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.4]</font> <font color=\"#FF6600\">Collision with X heroes Required for SmartQ, X="..QCollision..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.4]</font> <font color=\"#FF6600\">AA DPS - "..AADPS..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.4]</font> <font color=\"#FF6600\">Q on 1 Target DPS - "..QAADPS1..".</font>")
+		print("<font color=\"#0099FF\">[SmartQ v0.4]</font> <font color=\"#FF6600\">Q on 2 Target DPS - "..QAADPS2..".</font>")
 		MSGLastSentColl = GetTickCount()
 	end
 end
