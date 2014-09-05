@@ -25,12 +25,12 @@ local SupportedChars = {
 
 if not SupportedChars[myHero.charName] then return end
 
-local sversion = "0.38"
+local sversion = "0.39"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
 local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
-local UPDATE_FILE_PATH = SCRIPT_PATH.."Caitlynpoo.lua"
+local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
 local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
 local DOWNLOADING_LIBS = false
 local LibsChecked = false
