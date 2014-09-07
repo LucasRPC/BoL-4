@@ -64,7 +64,7 @@ function Combo()
 	if mTarget and ValidTarget(mTarget, 700) and ComboCheck() then 
 		CastSpell(_E, mTarget)
 	end
-	if HasAmp(mTarget) and ValidTarget(mTarget, 400) then
+	if mTarget and HasAmp(mTarget) and ValidTarget(mTarget, 400) then
 		CastSpell(_W, mTarget)
 		CastSpell(_R)
 	end
