@@ -68,8 +68,8 @@ function Combo()
 		CastSpell(_W, mTarget)
 		CastSpell(_R)
 	end
-	if not EAble and not WAble and not RAble and Orbwalk:CanMove() and (not Orbwalk:CanAttack()) and ValidTarget(mTarget, 275) then
-		CastSpell(_Q)
+	if not EAble and not WAble and not RAble and ValidTarget(mTarget, 275) then
+		Orbwalk:RegisterAfterAttackCallback(function() CastSpell(_Q) end)
 		Orbwalk:ResetAA()
 	end	
 end
