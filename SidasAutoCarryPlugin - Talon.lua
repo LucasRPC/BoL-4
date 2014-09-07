@@ -99,8 +99,8 @@ end
     return nil
 end
 
-Menu = AutoCarry.Plugins:RegisterPlugin(Plugin(), "Talon Combo")
+
 Menu:addParam("Combo", "Combo Hotkey", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("W"))
 Menu:addParam("Harass", "Harass Hotkey", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("X"))]]
-
+Menu = AutoCarry.Plugins:RegisterPlugin(Plugin(), "Talon Combo")
   
