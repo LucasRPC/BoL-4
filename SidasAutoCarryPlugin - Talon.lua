@@ -13,7 +13,6 @@ function Plugin:OnTick()
 	Checks()
 	Target = AutoCarry.Crosshair:GetTarget()
 	
-	if Menu.Harass then ItemTest() end
 	if AutoCarry.Keys.AutoCarry then Combo() end
 	if AutoCarry.Keys.MixedMode then Harass() end	
 end
@@ -26,15 +25,6 @@ local Items = {
 	[3074] = {name = "ItemTiamatCleave"},
 	[3142] = {name = "YoumusBlade"},
 }
-
-function ItemTest()
-	for i, _ in pairs(Items) do
-		local slot = GetInventorySlotItem(i)
-		if GetInventoryItemIsCastable(i) then
-			Packet("S_CAST", { spellId = slot, targetNetworkId = Target.networkID }):send()
-		end
-	end
-end
 
 function Checks()
 	QAble = (myHero:CanUseSpell(_Q) == READY)
@@ -92,7 +82,6 @@ function OnGainBuff(unit, buff)
 end
 
 Menu = AutoCarry.Plugins:RegisterPlugin(Plugin(), "Talon Combo")
-Menu:addParam("Harass", "Debug key", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("X"))
 Menu:addParam("useItems", "Use Items in Combo", SCRIPT_PARAM_ONOFF, false)
 
   
