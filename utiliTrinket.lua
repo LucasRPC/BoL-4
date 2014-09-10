@@ -1,17 +1,18 @@
 function OnLoad()
-	Menu = scriptConfig("Utilitrinket", "Utilitrinket")
+	Menu = scriptConfig("Trinket", "Trinket")
+	Menu:addParam("ward", "Buy Warding Totem at Game Start", SCRIPT_PARAM_ONOFF, true)
 	Menu:addParam("recall", "Buy Sweeper at x Minutes", SCRIPT_PARAM_SLICE, 10, 1, 30)
 	Menu:addParam("sightstone", "Buy Sweeper on Sightstone", SCRIPT_PARAM_ONOFF, true)
 	Menu:addParam("quill", "Buy Sweeper on Quillcoat", SCRIPT_PARAM_ONOFF, true)
 	Menu:addParam("wriggle", "Buy Sweeper on Wriggle's", SCRIPT_PARAM_ONOFF, true)
-	print("Utilitrinket loaded.")
+	print("Trinket Utility loaded.")
 end
 
 function OnTick()
 	if NearFountain() then
 		local GameTimeSeconds = GetGameTimer()
 		local GameTime = GameTimeSeconds/60
-		if not GetInventorySlotItem(3340) and GameTime < 2 then 
+		if Menu.ward and not GetInventorySlotItem(3340) and GameTime < 2 then 
 			Packet("PKT_BuyItemReq", { targetNetworkId = myHero.networkID, itemId = 3340 }):send()
 		end	
 		if GetInventorySlotItem(3340) and GameTime >= Menu.recall then
