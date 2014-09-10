@@ -1,3 +1,5 @@
+local GameTime = 0
+
 function OnLoad()
 	Menu = scriptConfig("Trinket", "Trinket")
 	Menu:addParam("ward", "Buy Warding Totem at Game Start", SCRIPT_PARAM_ONOFF, true)
@@ -10,8 +12,6 @@ end
 
 function OnTick()
 	if NearFountain() then
-		local GameTimeSeconds = GetGameTimer()
-		local GameTime = GameTimeSeconds/60
 		if Menu.ward and not GetInventorySlotItem(3340) and GameTime < 2 then 
 			Packet("PKT_BuyItemReq", { targetNetworkId = myHero.networkID, itemId = 3340 }):send()
 		end	
@@ -42,3 +42,10 @@ function SellItem(slot)
 	p:Encode1(slot)
 	SendPacket(p)
 end
+
+function OnRecvPacket(p)
+	if p.header == 0xF0 then
+		GameTime = GameTime + 1
+	end
+end
+
