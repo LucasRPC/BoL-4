@@ -1,7 +1,7 @@
 function OnLoad()
 	Menu = scriptConfig("Trinket", "Trinket")
 	Menu:addParam("ward", "Buy Warding Totem at Game Start", SCRIPT_PARAM_ONOFF, true)
-	Menu:addParam("recall", "Buy Sweeper at x Minutes", SCRIPT_PARAM_SLICE, 10, 1, 30)
+	Menu:addParam("timer", "Buy Sweeper at x Minutes", SCRIPT_PARAM_SLICE, 10, 1, 30)
 	Menu:addParam("sightstone", "Buy Sweeper on Sightstone", SCRIPT_PARAM_ONOFF, true)
 	Menu:addParam("quill", "Buy Sweeper on Quillcoat", SCRIPT_PARAM_ONOFF, true)
 	Menu:addParam("wriggle", "Buy Sweeper on Wriggle's", SCRIPT_PARAM_ONOFF, true)
@@ -15,7 +15,7 @@ function OnTick()
 		if Menu.ward and not GetInventorySlotItem(3340) and GameTime < 2 then 
 			Packet("PKT_BuyItemReq", { targetNetworkId = myHero.networkID, itemId = 3340 }):send()
 		end	
-		if GetInventorySlotItem(3340) and GameTime >= Menu.recall then
+		if GetInventorySlotItem(3340) and GameTime >= Menu.timer then
 			SellItem(134)
 			DelayAction(function() Packet("PKT_BuyItemReq", { targetNetworkId = myHero.networkID, itemId = 3341 }):send() end, 0.2)
 		end
