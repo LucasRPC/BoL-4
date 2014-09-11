@@ -21,7 +21,7 @@ function OnTick()
 			local bestPos = FindBestPos()
             if bestPos then
 				--print("best pos found")
-				local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
+				local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, Precision())
 				if flashRealPos then
 					--print("real pos found")
 					if GetPathDistance(Point(flashRealPos.x, flashRealPos.z)) > FAIL_DIST then
@@ -40,7 +40,7 @@ function OnDraw()
     if PerfectFlash.perfectFlash and PerfectFlash.drawcircles and FLASHRReady then
         local bestPos = FindBestPos()
         if bestPos then
-	        local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
+	        local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, Precision())
 	        if flashRealPos and GetPathDistance(Point(flashRealPos.x, flashRealPos.z)) > FAIL_DIST then
 	            DrawCircle3D(flashRealPos.x, flashRealPos.y, flashRealPos.z, 50, 2, ARGB(255,255,255,255), 20)
 	        end
@@ -121,7 +121,7 @@ function FindBestPos()
         x = myHero.x + FLASH_DIST * math.cos(angle)
         y = myHero.y
         z = myHero.z + FLASH_DIST * math.sin(angle)
-        local flashRealPos = FindNearestNonWall(x, y, z, FLASH_DIST, 20)
+        local flashRealPos = FindNearestNonWall(x, y, z, FLASH_DIST, Precision())
         if flashRealPos then
         	paths[i] = GetPathDistance(Point(flashRealPos.x, flashRealPos.z))
         else
@@ -145,4 +145,14 @@ function FindBestPos()
 		return nil
 	end
 end
+
+function Precision()
+	if PerfectFlash.limit == 10 then return 20 
+	elseif PerfectFlash.limit == 9 then return 30 
+	elseif PerfectFlash.limit == 8 then return 40 
+	elseif PerfectFlash.limit <= 7 then return 50 
+	end
+end
+
+
 
