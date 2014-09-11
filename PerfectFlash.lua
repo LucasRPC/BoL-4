@@ -1,6 +1,54 @@
 local FLASH_DIST = 400 - 20
-local FAIL_DIST = 122500
-local MIN_PATH_DIST = FLASH_DIST + 300
+local FAIL_DIST = 400
+local MIN_PATH_DIST = 1200
+local FLASHRReady = false
+
+function OnLoad()
+    PerfectFlash = scriptConfig("PerfectFlash", "PerfectFlashConfig")
+    PerfectFlash:addParam("perfectFlash", "Run -> flash -> Run", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("X"))
+    PerfectFlash:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, false)
+	PerfectFlash:addParam("limit", "+ BetterPerfomance - BetterFPS", SCRIPT_PARAM_SLICE, 7, 5, 10)
+    FLASHSlot = ((myHero:GetSpellData(SUMMONER_1).name:find("summonerflash") and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name:find("summonerflash") and SUMMONER_2) or nil)
+    print("Perfect Flash v6d loaded")
+end
+
+function OnTick()
+	FLASHRReady = (FLASHSlot ~= nil and myHero:CanUseSpell(FLASHSlot) == READY)
+	if PerfectFlash.perfectFlash then
+		local moveTo = GetClosestForWallPos(Vector(mousePos.x, mousePos.y, mousePos.z))
+		Packet('S_MOVE', {x = moveTo.x, y = moveTo.z}):send()
+		if FLASHRReady then
+			local bestPos = FindBestPos()
+            if bestPos then
+				--print("best pos found")
+				local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
+				if flashRealPos then
+					--print("real pos found")
+					if GetPathDistance(Point(flashRealPos.x, flashRealPos.z)) > FAIL_DIST then
+						--print("path distance passed")
+						if GetDistanceSqr(moveTo) < 5800 then
+							Packet("S_CAST", { spellId = FLASHSlot, toX = bestPos.x, toY = bestPos.z, fromX = bestPos.x, fromY = bestPos.z }):send()
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function OnDraw()
+    if PerfectFlash.perfectFlash and PerfectFlash.drawcircles and FLASHRReady then
+        local bestPos = FindBestPos()
+        if bestPos then
+	        local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
+	        if flashRealPos and GetPathDistance(Point(flashRealPos.x, flashRealPos.z)) > FAIL_DIST then
+	            DrawCircle3D(flashRealPos.x, flashRealPos.y, flashRealPos.z, 50, 2, ARGB(255,255,255,255), 20)
+	        end
+	    end
+        local flashCastPos = Vector(myHero) + (Vector(mousePos) - myHero):normalized()*FLASH_DIST
+        DrawCircle3D(flashCastPos.x, flashCastPos.y, flashCastPos.z, 25, 2, ARGB(150,255,0,0), 10)
+    end
+end
 
 function GetPathDistance(targetPosition) -- return true distance based on unit path
     path = Movement:CalculatePath(targetPosition)
@@ -17,6 +65,21 @@ function GetPathDistance(targetPosition) -- return true distance based on unit p
         end
         return distance
     end
+end
+
+function GetClosestForWallPos(endPoint)
+    local checks = PerfectFlash.limit
+    local checkDistance = FLASH_DIST/checks
+    local wall = false
+    local checksPos = endPoint
+    for k=1, checks, 1 do
+        checksPos = Vector(myHero) + (endPoint - myHero):normalized()*(checkDistance*k)
+        if IsWall(D3DXVECTOR3(checksPos.x, checksPos.y, checksPos.z)) then
+            wall = true
+            break
+        end
+    end
+    return checksPos
 end
 
 function FindNearestNonWall( x0, y0, z0, maxRadius, precision )
@@ -44,17 +107,8 @@ function FindNearestNonWall( x0, y0, z0, maxRadius, precision )
     end
 end
 
-function OnLoad()
-    PerfectFlash = scriptConfig("PerfectFlash", "PerfectFlashConfig")
-    PerfectFlash:addParam("perfectFlash", "Run -> flash -> Run", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("F"))
-    PerfectFlash:addParam("drawcircles", "Draw Circles", SCRIPT_PARAM_ONOFF, false)
-    --PerfectFlash:addParam("block", "Block fail flash", SCRIPT_PARAM_ONOFF, false)
-    FLASHSlot = ((myHero:GetSpellData(SUMMONER_1).name:find("summonerflash") and SUMMONER_1) or (myHero:GetSpellData(SUMMONER_2).name:find("summonerflash") and SUMMONER_2) or nil)
-    print("Perfect Flash v6d loaded")
-end
-
 function FindBestPos()
-    local N_CHECKS = 7
+    local N_CHECKS = PerfectFlash.limit
 
     local flashCastPos = Vector(myHero) + (Vector(mousePos) - myHero):normalized()*FLASH_DIST
     local start_angle = math.atan2(flashCastPos.z - myHero.z, flashCastPos.x - myHero.x)
@@ -92,75 +146,3 @@ function FindBestPos()
 	end
 end
 
-function OnTick()
-    FLASHRReady = (FLASHSlot ~= nil and myHero:CanUseSpell(FLASHSlot) == READY)
-    if PerfectFlash.perfectFlash then
-        if FLASHRReady then
-			local bestPos = FindBestPos()
-            if bestPos then
-            	local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
-            	if flashRealPos and GetDistanceSqr(Point(flashRealPos.x, flashRealPos.z)) > FAIL_DIST then
-                	print("wallcast")
-					Packet("S_CAST", { spellId = FLASHSlot, toX = bestPos.x, toY = bestPos.z, fromX = bestPos.x, fromY = bestPos.z }):send()
-				end
-			elseif GetDistanceSqr(mousePos) < 144400 then
-				local flashCastPos = Vector(myHero) + (Vector(mousePos) - myHero):normalized()*FLASH_DIST
-				if not IsWall(D3DXVECTOR3(flashCastPos.x, flashCastPos.y, flashCastPos.z)) then
-					print("non-wallcast")
-					Packet("S_CAST", { spellId = FLASHSlot, toX = flashCastPos.x, toY = flashCastPos.z, fromX = flashCastPos.x, fromY = flashCastPos.z }):send()
-				end
-            end
-        end
-        MoveToCursor()
-    end
-end
-
-function OnDraw()
-    if PerfectFlash.drawcircles then
-        local bestPos = FindBestPos()
-        if bestPos then
-	        local flashRealPos = FindNearestNonWall(bestPos.x, myHero.y, bestPos.y, FLASH_DIST, 20)
-	        if flashRealPos and GetPathDistance(Point(flashRealPos.x, flashRealPos.z)) > MIN_PATH_DIST then
-	            DrawCircle3D(flashRealPos.x, flashRealPos.y, flashRealPos.z, 50, 2, ARGB(255,255,255,255), 20)
-	        end
-	    end
-        local flashCastPos = Vector(myHero) + (Vector(mousePos) - myHero):normalized()*FLASH_DIST
-        DrawCircle3D(flashCastPos.x, flashCastPos.y, flashCastPos.z, 25, 2, ARGB(150,255,0,0), 10)
-    end
-end
-
---[[function OnSendPacket(p) -- block flash for distance < FAIL_DIST
-    if PerfectFlash.block then
-        packet = Packet(p)
-        packetName = packet:get('name')     
-		if packet:get('sourceNetworkId') == player.networkID and packetName == 'S_CAST' and packet:get('spellId') == 13 then
-			local flashCastPos = Vector(myHero) + (Vector(mousePos) - myHero):normalized()*FLASH_DIST
-            local flashRealPos = FindNearestNonWall(flashCastPos.x, flashCastPos.y, flashCastPos.z, FLASH_DIST, 20)
-            if flashRealPos and GetDistanceSqr(flashRealPos) < FAIL_DIST then
-                print("blocked")
-			    packet:block()
-                MoveToCursor()
-            end     
-        end
-    end
-end]]
-
-function GetClosestForWallPos(endPoint)
-    local checks = 5
-    local checkDistance = FLASH_DIST/checks
-    local wall = false
-    local checksPos = endPoint
-    for k=1, checks, 1 do
-        checksPos = Vector(myHero) + (endPoint - myHero):normalized()*(checkDistance*k)
-        if IsWall(D3DXVECTOR3(checksPos.x, checksPos.y, checksPos.z)) then
-            wall = true
-            break
-        end
-    end
-    return checksPos
-end
-
-function MoveToCursor()
-    local moveTo = GetClosestForWallPos(Vector(mousePos.x, mousePos.y, mousePos.z))
-    Packet('S_MOVE', {x = moveTo.x, y = moveTo.z}):send()
-end
