@@ -25,11 +25,11 @@ local SupportedChars = {
 
 if not SupportedChars[myHero.charName] then return end
 
-local sversion = "0.39"
+local sversion = "0.41"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
-local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.lua".."?rand="..math.random(1,10000)
+local UPDATE_PATH = "/PewPewPew2/BoL/Danger-Meter/PewPewPooBundle.lua".."?rand="..math.random(1,10000)
 local UPDATE_FILE_PATH = SCRIPT_PATH..GetCurrentEnv().FILE_NAME
 local UPDATE_URL = "https://"..UPDATE_HOST..UPDATE_PATH
 local DOWNLOADING_LIBS = false
@@ -38,18 +38,12 @@ local LibsChecked = false
 function UpdateLibs()
 local VpURL = "https://raw.githubusercontent.com/Hellsing/BoL/master/common/VPrediction.lua"
 local SowURL = "https://raw.github.com/Hellsing/BoL/master/common/SOW.lua"
-local MapURL = "https://raw.githubusercontent.com/c3iL/BoL-1/master/MapPosition.lua"
-local GeoURL = "https://raw.githubusercontent.com/wquantum1/BoL/master/old2dgeo.lua"
 local SxURL = "https://raw.githubusercontent.com/Superx321/BoL/master/common/SxOrbWalk.lua"
 
 	if not FileExist(LIB_PATH.."VPrediction.lua") then
 		DownloadURL(VpURL, "VPrediction.lua", "VPrediction")
 	elseif not FileExist(LIB_PATH.."SOW.lua") then
 		DownloadURL(SowURL, "SOW.lua", "SimpleOrbwalker")
-	elseif not FileExist(LIB_PATH.."MapPosition.lua") then
-		DownloadURL(MapURL, "MapPosition.lua", "MapPosition")
-	elseif not FileExist(LIB_PATH.."old2dgeo.lua") then
-		DownloadURL(GeoURL, "old2dgeo.lua", "old2dgeo")
 	elseif not FileExist(LIB_PATH.."SxOrbWalk.lua") then
 		DownloadURL(SxURL, "SxOrbWalk.lua", "SxOrbWalk")
 	elseif DOWNLOADING_LIBS then
@@ -97,7 +91,7 @@ if AUTOUPDATE then
 	if not DOWNLOADING_LIBS then
 		AutoupdaterMsg("LibDownloader complete")
 		LibsChecked = true
-		local ServerData = GetWebResult(UPDATE_HOST, "/PewPewPew2/BoL/Danger-Meter/Caitlynpoo.version")
+		local ServerData = GetWebResult(UPDATE_HOST, "/PewPewPew2/BoL/Danger-Meter/PewPewPooBundle.version")
 		local ServerData2 = GetWebResult(MESSAGE_HOST, "/raw.php?i=0e5aSswT")
 		DelayAction(function() AutomaticUpdate(ServerData, ServerData2) end, 1)
 	end
@@ -107,7 +101,6 @@ end
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX    Globals Var.   XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 require "VPrediction"
-require "MapPosition"	
 
 local currentChar
 local QAble, WAble, EAble, RAble = false, false, false, false
@@ -227,9 +220,9 @@ function OnLoad()
 if not LibsChecked then return end
 
 	VP = VPrediction()
-	wallposition = MapPosition()
 	currentChar:Init()
 	currentChar:Menu()
+	OrbwalkMenu()
 	MakeCCTable()
 	MakeAGCTable()	
 end
@@ -401,6 +394,31 @@ function GetAfterAA()
 	end
 end
 
+function OrbwalkMenu()
+orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
+orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SxOrbWalk", "MMA", "SAC" })	
+	if orbConfig.orbchoice == 1 then
+		require "SOW"
+		Orbwalker = SOW(VP)
+		Orbwalker:LoadToMenu(orbConfig)
+		orbConfig:addParam("drawrange", "Draw AA Range", SCRIPT_PARAM_ONOFF, true)
+		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
+		orbConfig:addParam("focustarget", "Focus Selected Target", SCRIPT_PARAM_ONOFF, true)
+		
+	end
+	if orbConfig.orbchoice == 2 then
+		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
+		require "SxOrbWalk"
+		SxOrb = SxOrbWalk()
+		SxOrb:LoadToMenu(orbConfig)
+	end
+	if orbConfig.orbchoice == 3 then
+		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
+		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
+	end
+end
+
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX      Caitlyn      XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -424,7 +442,6 @@ end
 
 function Caitlyn:Menu()
 Config = scriptConfig("Caitlynpoo", "Caitlynpoo")
-orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
 
 Config:addSubMenu("Mana Manager", "manamanager")
 	Config.manamanager:addParam("minMac", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
@@ -441,6 +458,9 @@ Config:addSubMenu("Piltover Peacemaker", "qSub")
 		Config.qSub:addParam("hit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
 	end
 	if Config.qSub.usepro then
+		require "Prodiction"
+		self.Prodiction = ProdictManager.GetInstance()
+		self.ProdictionQ = self.Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 80)		
 		Config.qSub:addParam("hit", "Q - Prodiction Hitchance", SCRIPT_PARAM_LIST, 3, { "Low", "Normal", "High", "Very High" })
 	end
 	Config.qSub:addParam("printColl", "SmartQ v0.4 [INFO]", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("K"))
@@ -469,34 +489,6 @@ Config:addSubMenu("Ace in the Hole", "rSub")
 	Config.rSub:addParam("rminimap", "Draw Range on MiniMap", SCRIPT_PARAM_ONOFF, true)
 	Config.rSub:addParam("pingkillable", "Ping Killable Heroes", SCRIPT_PARAM_ONOFF, true)
 	Config.rSub:addParam("timebetweenpings", "Minimum time between pings", SCRIPT_PARAM_SLICE, 2, 1, 5)
-	
-
-orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SxOrbWalk", "MMA", "SAC" })	
-	if orbConfig.orbchoice == 1 then
-		require "SOW"
-		Orbwalker = SOW(VP)
-		Orbwalker:LoadToMenu(orbConfig)
-		orbConfig:addParam("drawrange", "Draw AA Range", SCRIPT_PARAM_ONOFF, true)
-		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
-		orbConfig:addParam("focustarget", "Focus Selected Target", SCRIPT_PARAM_ONOFF, true)
-		
-	end
-	if orbConfig.orbchoice == 2 then
-		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
-		require "SxOrbWalk"
-		SxOrb = SxOrbWalk()
-		SxOrb:LoadToMenu(orbConfig)
-	end
-	if orbConfig.orbchoice == 3 then
-		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
-		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
-	end
-	if Config.qSub.usepro then
-		require "Prodiction"
-		self.Prodiction = ProdictManager.GetInstance()
-		self.ProdictionQ = self.Prodiction:AddProdictionObject(_Q, 1300, 2200, 0.250, 80)
-	end
 end
 
 function Caitlyn:OnTick()
@@ -539,13 +531,12 @@ function Caitlyn:NetToMouse()
 		local MPos = Vector(mousePos.x, mousePos.y, mousePos.z)
 		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
-		local ewallcheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, 0, HeroPos.z - MPos.z):normalized()*495))
-		local mappoint = Point(ewallcheck.x, ewallcheck.z)		
+		local ewallcheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, HeroPos.y - MPos.y, HeroPos.z - MPos.z):normalized()*495))	
 		
 		if mTarget and ValidTarget(mTarget, 1300) and Config.eSub.netSub.animcancel then
 			CastSpell(_Q, mTarget.x, mTarget.z)
 		end
-		if not wallposition:inWall(mappoint) then
+		if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
 			CastSpell(_E, DashPos.x, DashPos.z)
 		end
 	end
@@ -563,7 +554,7 @@ function Caitlyn:OnDraw()
 	end
 	
 	if Config.rSub.rminimap and RAble then
-		DrawCircleMinimap(myHero.x, myHero.y, myHero.z, RRange, 1, ARGB(255, 255, 255, 255), 100)
+		DrawCircleMinimap(myHero.x, myHero.y, myHero.z, self.RRange, 1, ARGB(255, 255, 255, 255), 100)
 	end
 	
 	if Config.wSub.drawtrap then
@@ -760,19 +751,20 @@ function Caitlyn:OnProcessSpell(unit, spell)
 	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
-			local ewallcheck = myHero + ((Vector(myHero.x - unit.x, 0, myHero.z - unit.z):normalized()*400))
-			local mappoint = Point(ewallcheck.x, ewallcheck.z)	
-			if not wallposition:inWall(mappoint) then
+			local ewallcheck = myHero + ((Vector(myHero.x - unit.x, myHero.y - unit.y, myHero.z - unit.z):normalized()*400))	
+			if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
 				if unit then 
 					CastSpell(_E, unit.x, unit.z)
+					if (not EAble) and Config.wSub.AGCtrap then
+						CastSpell(_W, spell.endPos.x, spell.endPos.z)
+					end
 				else
 					CastSpell(_E, spell.endPos.x, spell.endPos.z)
+					if (not EAble) and Config.wSub.AGCtrap then
+						CastSpell(_W, spell.endPos.x, spell.endPos.z)
+					end
 				end
 			end
-		end
-		
-		if (not EAble) and Config.wSub.AGCtrap then
-			CastSpell(_W, spell.endPos.x, spell.endPos.z)
 		end
 	end
 	
@@ -894,7 +886,6 @@ end
 
 function Lucian:Menu()
 Config = scriptConfig("Lucianpoo", "Lucianpoo")
-orbConfig = scriptConfig("Lucianpoo Orbwalker", "Lucianpoo Orbwalker")
 
 Config:addSubMenu("Mana Manager", "manamanager")
 	Config.manamanager:addParam("minMac", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
@@ -916,31 +907,8 @@ Config:addSubMenu("Relentless Pursuit", "eSub")
 			Config.eSub.listSub:addParam(enemy.charName, enemy.charName, SCRIPT_PARAM_ONOFF, true)
 		end	
 	
-
 Config:addSubMenu("The Culling", "rSub")
 	Config.rSub:addParam("kill", "Lock R on Target", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("R"))
-
-orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SxOrbWalk", "MMA", "SAC" })	
-	if orbConfig.orbchoice == 1 then
-		require "SOW"
-		Orbwalker = SOW(VP)
-		Orbwalker:LoadToMenu(orbConfig)
-		orbConfig:addParam("drawrange", "Draw AA Range", SCRIPT_PARAM_ONOFF, true)
-		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
-		orbConfig:addParam("focustarget", "Focus Selected Target", SCRIPT_PARAM_ONOFF, true)
-		
-	end
-	if orbConfig.orbchoice == 2 then
-		orbConfig:addParam("drawtarget", "Draw Target Circle", SCRIPT_PARAM_ONOFF, true)
-		require "SxOrbWalk"
-		SxOrb = SxOrbWalk()
-		SxOrb:LoadToMenu(orbConfig)
-	end
-	if orbConfig.orbchoice == 3 then
-		orbConfig:addParam("orbwalk", "OrbWalker", SCRIPT_PARAM_ONKEYDOWN, false, 32)
-		orbConfig:addParam("hybrid", "HybridMode", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
-		orbConfig:addParam("laneclear", "LaneClear", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("A"))
-	end
 end
 
 function Lucian:OnTick()
@@ -975,7 +943,7 @@ function Lucian:OnDraw()
 	end
 		
 	if Config.eSub.drawejump and EAble then 
-		DrawCircle3D(myHero.x, myHero.y, myHero.z, 495, 3, ARGB(100, 25, 25, 195))
+		DrawCircle3D(myHero.x, myHero.y, myHero.z, 440, 3, ARGB(100, 25, 25, 195))
 	end
 end
 
@@ -1030,9 +998,8 @@ function Lucian:OnProcessSpell(unit, spell)
 	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
-			local ewallcheck = Vector(myHero.x, 0, myHero.z) + Vector(Vector(myHero.x, 0, myHero.z) - Vector(unit.x, 0, unit.z)):normalized()*400
-			local mappoint = Point(ewallcheck.x, ewallcheck.z)			
-			if not wallposition:inWall(mappoint) then
+			local ewallcheck = Vector(myHero.x, 0, myHero.z) + Vector(Vector(myHero.x, 0, myHero.z) - Vector(unit.x, 0, unit.z)):normalized()*400		
+			if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
 				if unit then 
 					local castpos = Vector(myHero) + Vector(Vector(myHero) - Vector(unit)):normalized()*400
 					if castpos then
@@ -1113,3 +1080,5 @@ end
  function Lucian:OnDeleteObj(object)
  end
 
+
+ 
