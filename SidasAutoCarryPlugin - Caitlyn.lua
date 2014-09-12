@@ -2,6 +2,7 @@ class 'Plugin'
 if myHero.charName ~= "Caitlyn" or not VIP_USER then return end
 
 local RRange = nil
+local LastPing = 0
 TIMERTYPE_ENDPOS = 1
 timedDrawings = {}
 local TELESPELLS = {
@@ -128,10 +129,8 @@ end
 
 function Plugin:__init()
 require "VPrediction"
-require "MapPosition"
 
 VP = VPrediction()
-Walls = MapPosition()
 MakeAGCTable()
 MakeCCTable()
 AutoCarry.Crosshair:SetSkillCrosshairRange(1400)
@@ -209,19 +208,20 @@ function Plugin:OnProcessSpell(unit, spell)
 	if Menu.eSub.AGConoff and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
-			local WallCheck = myHero + ((Vector(myHero.x - unit.x, 0, myHero.z - unit.z):normalized()*400))
-			local MapPoint = Point(WallCheck.x, WallCheck.z)	
-			if not Walls:inWall(MapPoint) then
+			local WallCheck = myHero + ((Vector(myHero.x - unit.x, myHero.y - unit.y, myHero.z - unit.z):normalized()*400))	
+			if not IsWall(D3DXVECTOR3(WallCheck.x, WallCheck.y, WallCheck.z)) then
 				if unit then 
 					Packet("S_CAST", { spellId = _E, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send()
+					if Menu.wSub.AGCtrap then
+						DelayAction(function() Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send() end, 0.2)
+					end	
 				else
 					Packet("S_CAST", { spellId = _E, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send()
+					if Menu.wSub.AGCtrap then
+						DelayAction(function() Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send() end, 0.2)
+					end	
 				end
-			end
-		end
-		
-		if Menu.wSub.AGCtrap then
-			DelayAction(function() Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send() end, 0.2)
+			end		
 		end
 	end
 	
@@ -239,7 +239,7 @@ end
 
 function OnGainBuff(unit, buff)
 	if unit.team ~= myHero.team and ValidTarget(unit, 800) and CCBUFFS[buff.name] then
-		Packet("S_CAST", { spellId = _W, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send()
+			Packet("S_CAST", { spellId = _W, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send()
 		if Menu.qSub.autoccQ and myManaPct() > Menu.manamanager.minMAC then
 			DelayAction(function() Packet("S_CAST", { spellId = _Q, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send() end, 0.2)
 		end
@@ -331,12 +331,11 @@ function NetToMouse()
 		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 		local WallCheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, 0, HeroPos.z - MPos.z):normalized()*495))
-		local MapPoint = Point(WallCheck.x, WallCheck.z)		
 		
 		if mTarget and ValidTarget(mTarget, 1300) and Menu.eSub.netSub.animcancel then
 			Packet("S_CAST", { spellId = _Q, toX = Target.x, toY = Target.z, fromX = Target.x, fromY = Target.z }):send()
 		end
-		if not Walls:inWall(MapPoint) then
+		if not IsWall(D3DXVECTOR3(WallCheck.x, WallCheck.y, WallCheck.z)) then
 			Packet("S_CAST", { spellId = _E, toX = DashPos.x, toY = DashPos.z, fromX = DashPos.x, fromY = DashPos.z }):send()
 		end
 	end
@@ -367,7 +366,13 @@ function AceintheHole()
 			if (Enemy.health * 1.08) < RDamage then
 				PrintFloatText(myHero, 0, "Press R For Killshot")
 				if Menu.rSub.pingkillable then
-					  Packet("R_PING", {x = Enemy.x, y = Enemy.z, type = PING_FALLBACK, playSound = true}):receive()
+					if (LastPing+4500) < GetTickCount() then
+						for i = 0.1, 0.7, 0.2 do
+						DelayAction(function() Packet("R_PING", {x = Enemy.x, y = Enemy.z, type = PING_DANGER}):receive() end, i)
+						LastPing = GetTickCount()
+						end
+					end					
+					
 					if ValidTarget(Enemy, RRange, true) and Menu.rSub.kill and (Enemy.health * 1.08) < RDamage then
 						Packet("S_CAST", { spellId = _R, targetNetworkId = Enemy.networkID }):send()
 					end	
