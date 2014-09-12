@@ -62,12 +62,11 @@ end
 
 function Plugin:__init()
 require "VPrediction"
-require "MapPosition"
 
 VP = VPrediction()
-Walls = MapPosition()
 MakeAGCTable()
 AutoCarry.Crosshair:SetSkillCrosshairRange(1400)
+AutoCarry.Data:AddResetSpell("LucianE")
 AdvancedCallback:bind('OnGainBuff', function(unit, buff) OnGainBuff(unit, buff) end)
 AdvancedCallback:bind('OnLoseBuff', function(unit, buff) OnLoseBuff(unit, buff) end)
 AdvancedCallback:bind('OnDash', function(unit, dash) OnDash(unit, dash) end)
@@ -108,9 +107,8 @@ function Plugin:OnProcessSpell(unit, spell)
 	if Menu.eSub.AGConoff and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
-			local ewallcheck = Vector(myHero.x, 0, myHero.z) + Vector(Vector(myHero.x, 0, myHero.z) - Vector(unit.x, 0, unit.z)):normalized()*400
-			local mappoint = Point(ewallcheck.x, ewallcheck.z)			
-			if not Walls:inWall(mappoint) then
+			local ewallcheck = Vector(myHero.x, myHero.y, myHero.z) + Vector(Vector(myHero.x, myHero.y, myHero.z) - Vector(unit.x, unit.y, unit.z)):normalized()*400		
+			if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
 				if unit then 
 					local CastPosition = Vector(myHero) + Vector(Vector(myHero) - Vector(unit)):normalized()*400
 					if CastPosition then
@@ -134,14 +132,12 @@ end
 function OnGainBuff(unit, buff)
 	if unit.isMe and buff.name == "lucianpassivebuff" then
 		LucianHasPassive = true
-		--AutoCarry.Plugins:RegisterBonusLastHitDamage(function() return myHero.totalDamage*2 end)
 	end
 end
 
 function OnLoseBuff(unit, buff)
 	if unit.isMe and buff.name == "lucianpassivebuff" then
 		LucianHasPassive = false
-		--AutoCarry.Plugins:RegisterBonusLastHitDamage(function() return 0 end)
 	end
 end
 
@@ -189,9 +185,8 @@ end
 
 function RelentlessPursuit()
 	if EAble then 
-		local ewallcheck = Vector(myHero.x, 0, myHero.z) + Vector(Vector(mousePos.x, 0, mousePos.z) - Vector(myHero.x, 0, myHero.z)):normalized()*440
-		local mappoint = Point(ewallcheck.x, ewallcheck.z)			
-		if not Walls:inWall(mappoint) then	
+		local ewallcheck = Vector(myHero.x, myHero.y, myHero.z) + Vector(Vector(mousePos.x, mousePos.y, mousePos.z) - Vector(myHero.x, myHero.y, myHero.z)):normalized()*440			
+		if ewallcheck and not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then	
 			Packet("S_CAST", { spellId = _E, toX = mousePos.x, toY = mousePos.z, fromX = mousePos.x, fromY = mousePos.z }):send()
 		end
 	end	
@@ -225,7 +220,6 @@ function LaneClearTarget()
 	if QAble then		
 		for i=1, 5 do
 			if enemyMinions.objects[i] and GetDistanceSqr(enemyMinions.objects[i]) < 360000 then
-				--print(""..AutoCarry.MyHero:GetTotalAttackDamageAgainstTarget(enemyMinions.objects[i]).."")
 				local QEndPos = Vector(myHero) + Vector(Vector(enemyMinions.objects[i]) - Vector(myHero)):normalized()*1100
 				if QEndPos and LaneClearHit(QEndPos) then	
 					Packet("S_CAST", { spellId = _Q, targetNetworkId = enemyMinions.objects[i].networkID }):send()
