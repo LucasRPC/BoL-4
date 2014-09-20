@@ -82,7 +82,7 @@ function OnTick()
 				FlashAttempted = false
 				if Menu.debug then 	
 					local TicksUsed = (TickCount -((FlashAttemptedTick+TickCount) - GetTickCount()))
-					print(TicksUsed)
+					print("Duration(ticks) - "..TicksUsed)
 				end
 			end
 		elseif CastFrom then
