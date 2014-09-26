@@ -419,7 +419,7 @@ function PrimaryInBase()
 end
 
 function PrimarySecondarySelection()
-	if PrimaryFollow and (PrimaryInBase() or AFKCheck()) then
+	if PrimaryFollow and PrimaryInBase() then -- or AFKCheck()
 		if SecondaryFollow == nil or SecondaryFollow.dead or IsRecalling(SecondaryFollow) then 
 			GetSecondaryFollow()
 		elseif SecondaryFollow then
@@ -612,8 +612,6 @@ end
 function InDanger()
 	if HaveTowerAgro then
 		return true
-	elseif _G.EzEvade.Evading then
-		return true	
 	elseif ClosestEnemy ~= nil and not ClosestEnemy.dead and ValidTarget(ClosestEnemy, 300) then
 		return true
 	elseif HeroAggro >= 2 then
@@ -651,6 +649,7 @@ end
 
 function OnTick()
 	if not Loaded then return end
+
 	
 	if ShouldRecall() and RecallPosition == nil and not GoingHome then
 		GetSafeRecallPos()
