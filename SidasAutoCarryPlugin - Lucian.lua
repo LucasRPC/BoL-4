@@ -50,7 +50,7 @@ local AGCLIST = {
 	["Zac"] = {gcName = "ZacE"},
 }
 local AGCTABLE = {
-	["SummonerFlash"] = true,
+	["summonerflash"] = true,
 }
 function MakeAGCTable()
 	for _, enemy in ipairs(GetEnemyHeroes()) do
@@ -83,7 +83,15 @@ function Plugin:OnTick()
 	elseif AutoCarry.Keys.MixedMode and Menu.manamanager.minMMM < myManaPct() then
 		PiercingLight()
 	elseif AutoCarry.Keys.LaneClear and Menu.manamanager.minMLC < myManaPct() then
-		LaneClearTarget()
+		if Menu.qSub.focusHeroes then
+			if Target and ValidTarget(Target) then
+				PiercingLight()
+			else
+				LaneClearTarget()
+			end
+		else
+			LaneClearTarget()
+		end		
 	end	
 		
 	if Menu.eSub.packetE then 
@@ -104,7 +112,7 @@ function Plugin:OnDraw()
 end
 
 function Plugin:OnProcessSpell(unit, spell)
-	if Menu.eSub.AGConoff and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] then
+	if Menu.eSub.AGConoff and EAble and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
 			local ewallcheck = Vector(myHero.x, myHero.y, myHero.z) + Vector(Vector(myHero.x, myHero.y, myHero.z) - Vector(unit.x, unit.y, unit.z)):normalized()*400		
@@ -148,8 +156,9 @@ function OnDash(unit, dash)
 end
 
 function PiercingLight()
+	if not QAble then return end
 	if Target and ValidTarget(Target, 640) then
-		if QAble and not Target.dead and not LucianHasPassive and AutoCarry.Orbwalker:IsAfterAttack() then
+		if not Target.dead and not LucianHasPassive and AutoCarry.Orbwalker:IsAfterAttack() then
 			Packet("S_CAST", { spellId = _Q, targetNetworkId = Target.networkID }):send()
 		end
 	elseif Target and GetDistanceSqr(Target) > 422500 and ValidTarget(Target, 1100) then		
@@ -268,6 +277,7 @@ Menu:addSubMenu("Mana Manager", "manamanager")
 Menu:addSubMenu("Piercing Light", "qSub")
 	Menu.qSub:addParam("qautocc", "AutoQ on CC", SCRIPT_PARAM_ONOFF, true)
 	Menu.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 3, 0, 6)
+	Menu.qSub:addParam("focusHeroes", "Focus Heroes over Minions(LaneClear)", SCRIPT_PARAM_ONOFF, true)
 Menu:addSubMenu("Ardent Blaze", "wSub")
 	Menu.wSub:addParam("wautocc", "AutoW on CC", SCRIPT_PARAM_ONOFF, true)
 Menu:addSubMenu("Relentless Pursuit", "eSub")
