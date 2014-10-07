@@ -3,8 +3,7 @@ if myHero.charName ~= "Caitlyn" or not VIP_USER then return end
 
 local RRange = nil
 local LastPing = 0
-TIMERTYPE_ENDPOS = 1
-timedDrawings = {}
+local trapDrawings = {}
 local TELESPELLS = {
 	["PantheonRFall"] = true,
 	["LeblancSlide"] = true,
@@ -53,7 +52,7 @@ local AGCLIST = {
 	["Zac"] = {gcName = "ZacE"},
 }
 local AGCTABLE = {
-	["SummonerFlash"] = true,
+	["summonerflash"] = true,
 }
 local CCBUFFS = {
 	["caitlynyordletrapdebuff"] = true,
@@ -142,15 +141,23 @@ function Plugin:OnTick()
 	enemyMinions = AutoCarry.Minions.EnemyMinions
 	Target = AutoCarry.Crosshair:GetTarget()
 	
-	if AutoCarry.Keys.AutoCarry and Menu.qSub.toggleQ and Menu.manamanager.minMAC < myManaPct() then
+	if AutoCarry.Keys.AutoCarry and Menu.qSub.toggleQ and QAble and Menu.manamanager.minMAC < myManaPct() then
 		Peacemaker()
 	elseif AutoCarry.Keys.MixedMode and Menu.qSub.toggleQ and Menu.manamanager.minMMM < myManaPct() then
 		Peacemaker()
 	elseif AutoCarry.Keys.LaneClear and Menu.qSub.toggleQ and Menu.manamanager.minMLC < myManaPct() then
-		LaneClearTarget()
+		if Menu.qSub.focusHeroes then
+			if Target and ValidTarget(Target) then
+				Peacemaker()
+			else
+				LaneClearTarget()
+			end
+		else
+			LaneClearTarget()
+		end		
 	end	
 	
-	if Menu.wSub.autoccW then CastW() end
+	if Menu.wSub.autoccW and WAble then CastW() end
 	if RAble then AceintheHole() end	
 	if Menu.eSub.netSub.net then NetToMouse() end	
 	if Menu.wSub.casttrap then TrapNearEnemy() end
@@ -162,7 +169,7 @@ function Plugin:OnDraw()
 	end
 	
 	if Menu.wSub.drawtrap then
-		for i, tDraw in pairs(timedDrawings) do
+		for i, tDraw in pairs(trapDrawings) do
 			if tDraw.startTime < os.clock() then
 				DrawText3D(tostring(math.ceil(tDraw.endTime - os.clock(),1)), tDraw.pos.x, tDraw.pos.y, (30+tDraw.pos.z), 24, ARGB(255, 255, 0, 0), true)
 				DrawCircle3D(tDraw.pos.x, tDraw.pos.y, tDraw.pos.z, 72, 1, ARGB(255, 255, 0, 0))
@@ -175,6 +182,7 @@ function Plugin:OnDraw()
 end
 
 function Plugin:OnCreateObj(object)
+	if not WAble then return end
 	if Menu.wSub.autoccW and object.name:find("LifeAura") then
 		for i=1, heroManager.iCount do
 			currentEnemy = heroManager:GetHero(i)
@@ -195,9 +203,9 @@ end
 		
 function Plugin:OnDeleteObj(object)
 	if object.charName:find("CaitlynTrap") and object.team == myHero.team then
-		for i, timedDr in pairs(timedDrawings) do
-			if GetDistance(timedDr.pos, object) < 65 then 
-            table.remove(timedDrawings, i)
+		for i, trap in pairs(trapDrawings) do
+			if GetDistance(trap.pos, object) < 65 then 
+            table.remove(trapDrawings, i)
             break
 			end
 		end
@@ -205,19 +213,19 @@ function Plugin:OnDeleteObj(object)
 end
 
 function Plugin:OnProcessSpell(unit, spell)
-	if Menu.eSub.AGConoff and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] then
-		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
+	if Menu.eSub.AGConoff and AGCTABLE[spell.name] and unit.team ~= myHero.team and Menu.eSub.listSub[unit.charName] and EAble then
+		local dist = GetShortestDistanceFromLineSegment(Vector(unit), Vector(spell.endPos), Vector(myHero))
 		if dist < 250 then
 			local WallCheck = myHero + ((Vector(myHero.x - unit.x, myHero.y - unit.y, myHero.z - unit.z):normalized()*400))	
 			if not IsWall(D3DXVECTOR3(WallCheck.x, WallCheck.y, WallCheck.z)) then
 				if unit then 
 					Packet("S_CAST", { spellId = _E, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send()
-					if Menu.wSub.AGCtrap then
+					if Menu.wSub.AGCtrap and WAble then
 						DelayAction(function() Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send() end, 0.2)
 					end	
 				else
 					Packet("S_CAST", { spellId = _E, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send()
-					if Menu.wSub.AGCtrap then
+					if Menu.wSub.AGCtrap and WAble then
 						DelayAction(function() Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send() end, 0.2)
 					end	
 				end
@@ -225,31 +233,30 @@ function Plugin:OnProcessSpell(unit, spell)
 		end
 	end
 	
-	if Menu.wSub.autoccW and TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
+	if WAble and Menu.wSub.autoccW and TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
 		Packet("S_CAST", { spellId = _W, toX = spell.endPos.x, toY = spell.endPos.z, fromX = spell.endPos.x, fromY = spell.endPos.z }):send()
 	end
 
-	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then 
-		local tType, duration, delay = timerType(spell.name)           
-		if tType == TIMERTYPE_ENDPOS then
-			addTimedDrawPos(spell.endPos.x, spell.endPos.y, spell.endPos.z, duration, delay)
-		end
+	if unit and unit.isMe and spell.name == "CaitlynYordleTrap" then
+		local tmpID = math.random(1,10000)
+		table.insert(trapDrawings, {id = tmpID, startTime = os.clock(), endTime = os.clock() + 240, pos = Vector(spell.endPos.x, spell.endPos.y, spell.endPos.z)})
+		DelayAction(function() removeTrapTimer(tmpID) end, 240)
 	end
 end
 
 function OnGainBuff(unit, buff)
-	if unit.team ~= myHero.team and ValidTarget(unit, 800) and CCBUFFS[buff.name] then
+	if unit.team ~= myHero.team and unit.type == myHero.type and ValidTarget(unit, 800) and CCBUFFS[buff.name] and WAble then
 			Packet("S_CAST", { spellId = _W, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send()
-		if Menu.qSub.autoccQ and myManaPct() > Menu.manamanager.minMAC then
+		if Menu.qSub.autoccQ and myManaPct() > Menu.manamanager.minMAC and QAble then
 			DelayAction(function() Packet("S_CAST", { spellId = _Q, toX = unit.x, toY = unit.z, fromX = unit.x, fromY = unit.z }):send() end, 0.2)
 		end
 	end
 end
 
 function Peacemaker()
-	if Target and ValidTarget(Target, 1300) then
+	if Target and ValidTarget(Target, 1300) and Target.type == myHero.type then
 		local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(Target, 0.632, 80, 1300, 2225, myHero)
-		if QAble and HitChance >= Menu.qSub.hit and not Target.dead and (AutoCarry.Orbwalker:IsAfterAttack() or (GetDistanceSqr(Target) > 490000 and AutoCarry.Keys.AutoCarry))then
+		if HitChance >= Menu.qSub.hit and not Target.dead and (AutoCarry.Orbwalker:IsAfterAttack() or (GetDistanceSqr(Target) > 490000 and AutoCarry.Keys.AutoCarry)) then
 			Packet("S_CAST", { spellId = _Q, toX = CastPosition.x, toY = CastPosition.z, fromX = CastPosition.x, fromY = CastPosition.z }):send()
 		end
 	end
@@ -269,7 +276,7 @@ end
 function LaneClearHit(pos)
 	local n = 0
 	for i=1, #enemyMinions.objects do
-		local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(pos.x, pos.z), Vector(enemyMinions.objects[i].x, enemyMinions.objects[i].z))
+		local dist = GetShortestDistanceFromLineSegment(Vector(myHero), pos, Vector(enemyMinions.objects[i]))
 		if dist <= 80 then
 			n = n + 1
 			if n >= Menu.qSub.minMinions then					
@@ -280,20 +287,20 @@ function LaneClearHit(pos)
 end
 
 function TrapNearEnemy()
-	if WAble then		
-		local distance = 2500000
+	if WAble then
 		local closestEnemy = nil
 		for i=1, heroManager.iCount do
 			currentEnemy = heroManager:GetHero(i)
-			if currentEnemy.team ~= myHero.team and not currentEnemy.dead and GetDistance(currentEnemy) <= 500 then
-				if GetDistance(currentEnemy) <= distance then
-					distance = GetDistance(currentEnemy)
+			if currentEnemy.team ~= myHero.team and not currentEnemy.dead then
+				if closestEnemy == nil then
+					closestEnemy = currentEnemy
+				elseif closestEnemy and GetDistanceSqr(closestEnemy) > GetDistanceSqr(currentEnemy) then
 					closestEnemy = currentEnemy
 				end
 			end
 		end		
 		
-		if closestEnemy then
+		if closestEnemy and GetDistanceSqr(closestEnemy) < math.pow(500, 2) then
 			local targetPos = VP:CalculateTargetPosition(closestEnemy, 1.25, 600, math.huge, myHero, "circular")	
 			if targetPos then 	
 				Packet("S_CAST", { spellId = _W, toX = targetPos.x, toY = targetPos.z, fromX = targetPos.x, fromY = targetPos.z }):send()
@@ -305,9 +312,9 @@ end
 function CastW()
 	for i = 1, heroManager.iCount do
 		local Enemy = heroManager:getHero(i)
-		if WAble and ValidTarget(Enemy, 800, true) and IsOnCC(Enemy) then
+		if ValidTarget(Enemy, 800, true) and IsOnCC(Enemy) then
 			Packet("S_CAST", { spellId = _W, toX = Enemy.x, toY = Enemy.z, fromX = Enemy.x, fromY = Enemy.z }):send()
-			if Menu.qSub.autoccQ and myManaPct() > Menu.manamanager.minMAC then
+			if Menu.qSub.autoccQ and QAble and myManaPct() > Menu.manamanager.minMAC then
 				DelayAction(function() Packet("S_CAST", { spellId = _Q, toX = Enemy.x, toY = Enemy.z, fromX = Enemy.x, fromY = Enemy.z }):send() end, 0.2)
 			end
 		end
@@ -331,8 +338,7 @@ function NetToMouse()
 		local HeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 		local WallCheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, 0, HeroPos.z - MPos.z):normalized()*495))
-		
-		if mTarget and ValidTarget(mTarget, 1300) and Menu.eSub.netSub.animcancel then
+		if Target and ValidTarget(Target, 1300) and Menu.eSub.netSub.animcancel then
 			Packet("S_CAST", { spellId = _Q, toX = Target.x, toY = Target.z, fromX = Target.x, fromY = Target.z }):send()
 		end
 		if not IsWall(D3DXVECTOR3(WallCheck.x, WallCheck.y, WallCheck.z)) then
@@ -352,7 +358,7 @@ function AceintheHole()
     CheckRLevel()
 	
 	if Menu.rSub.damagetillr and Target and ValidTarget(Target, RRange) then
-		local RDamage1 = getDmg("R",Target,myHero)
+		local RDamage1 = getDmg("R", Target, myHero)
 		if (1.08 * Target.health) > RDamage1 then
 			local rfloattext = tostring(math.floor((1.08 * Target.health) - RDamage1))
 			PrintFloatText(Target, 0, ""..rfloattext.."")
@@ -368,8 +374,8 @@ function AceintheHole()
 				if Menu.rSub.pingkillable then
 					if (LastPing+4500) < GetTickCount() then
 						for i = 0.1, 0.7, 0.2 do
-						DelayAction(function() Packet("R_PING", {x = Enemy.x, y = Enemy.z, type = PING_DANGER}):receive() end, i)
-						LastPing = GetTickCount()
+							DelayAction(function() Packet("R_PING", {x = Enemy.x, y = Enemy.z, type = PING_DANGER}):receive() end, i)
+							LastPing = GetTickCount()
 						end
 					end					
 					
@@ -393,29 +399,17 @@ end
 
 function myManaPct() return (myHero.mana * 100) / myHero.maxMana end
 
-function removeTimedDraw(timerID)
-    for i, timedDr in pairs(timedDrawings) do -- remove a timer from the timed drawings table
-        if timedDr.id == timerID then
-            table.remove(timedDrawings, i)
+function removeTrapTimer(timerID)
+    for i, trap in pairs(trapDrawings) do -- remove a timer from the timed drawings table
+        if trap.id == timerID then
+            table.remove(trapDrawings, i)
             break
         end
     end
 end
 
-function timerType(spellName)
-    if spellName == "CaitlynYordleTrap" then -- check if a spell timer is supported, returning target type, duration and delay
-        return TIMERTYPE_ENDPOS, 240	
-	end
-end
-
-function addTimedDrawPos(posX, posY, posZ, duration, delay)
-    local tmpID = math.random(1,10000) -- add a new timer in the timed drawings table (with position)
-    table.insert(timedDrawings, {id = tmpID, startTime = os.clock() + (delay or 0), endTime = os.clock() + (delay or 0) + duration, pos = Vector(posX, posY, posZ)})
-    DelayAction(function() removeTimedDraw(tmpID) end, duration)
-end
-
 function GetShortestDistanceFromLineSegment(v1, v2, v3)
-	local a = math.rad(Vector(v1):angleBetween(Vector(v3), Vector(v2)))		
+	local a = math.rad(v1:angleBetween(v3, v2))
 	local d
 	if a < 1.04 then 
 		if GetDistanceSqr(v1, v2) > GetDistanceSqr(v1, v3) then
@@ -432,13 +426,14 @@ end
 
 Menu = AutoCarry.Plugins:RegisterPlugin(Plugin(), "Caitlyn")
 Menu:addSubMenu("Mana Manager", "manamanager")
-	Menu.manamanager:addParam("minMAC", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)	
+	Menu.manamanager:addParam("minMAC", "AutoCarry Mana Manager %", SCRIPT_PARAM_SLICE, 15, 0, 100)
 	Menu.manamanager:addParam("minMMM", "Mixed Mode Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 	Menu.manamanager:addParam("minMLC", "LaneClear Mana Manager %", SCRIPT_PARAM_SLICE, 50, 0, 100)
 
 Menu:addSubMenu("Piltover Peacemaker", "qSub")
 	Menu.qSub:addParam("autoccQ", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 	Menu.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
+	Menu.qSub:addParam("focusHeroes", "Focus Heroes over Minions(LaneClear)", SCRIPT_PARAM_ONOFF, true)
 	Menu.qSub:addParam("toggleQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, true, string.byte("X"))
 	Menu.qSub:permaShow("toggleQ")
 	Menu.qSub:addParam("hit", "Q - VPrediction Hitchance", SCRIPT_PARAM_LIST, 2, { "Low", "High", "Target Slowed", "Immobile", "Dashing" })
