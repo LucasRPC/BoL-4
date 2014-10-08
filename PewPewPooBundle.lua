@@ -1,20 +1,3 @@
---[[CREDITS:
-	All the Lib/Orbwalk Creators:
-		honda7
-		klokje
-		Sida
-		Manciuszz
-		Superx321
-	Other Caitlyn Scripters: (I've learned a lot from them)
-		MixsStar
-		Toy
-		How I met Katarina
-		dbman
-	Others: 
-		Bilbao -  cause everything he writes on the forum seems so damn helpful
-		redprince - for the trap timers
-		Sida again - For being awesome.
-]]
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX     AutoUpdate    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -25,7 +8,7 @@ local SupportedChars = {
 
 if not SupportedChars[myHero.charName] then return end
 
-local sversion = "0.41"
+local sversion = "0.42"
 local AUTOUPDATE = true
 local UPDATE_HOST = "raw.github.com"
 local MESSAGE_HOST = "pastebin.com"
@@ -209,7 +192,7 @@ local AGCLIST = {
 	["Zac"] = {gcName = "ZacE"},
 }
 local AGCSPELLS = {
-	["SummonerFlash"] = true,
+	["summonerflash"] = true,
 }
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -265,15 +248,15 @@ function Checks()
 	
 --///////////////////////////////////////////////////////////////////SAC\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\	
 	if orbConfig.orbchoice == 4 and _G.AutoCarry and _G.AutoCarry.Crosshair and _G.AutoCarry.Crosshair.Skills_Crosshair 
-	and _G.AutoCarry.Crosshair.Skills_Crosshair.target and _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type then 		
+	and _G.AutoCarry.Crosshair.Skills_Crosshair.target and _G.AutoCarry.Crosshair.Skills_Crosshair.target.type == myHero.type and ValidTarget(_G.AutoCarry.Crosshair.Skills_Crosshair.target, 1300) then 		
 			mTarget = _G.AutoCarry.Crosshair.Skills_Crosshair.target
 --///////////////////////////////////////////////////////////////////MMA\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-	elseif orbConfig.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type then 
+	elseif orbConfig.orbchoice == 3 and _G.MMA_Target and _G.MMA_Target.type == myHero.type and ValidTarget(_G.MMA_Target, 1300) then 
 		mTarget = _G.MMA_Target	
 --///////////////////////////////////////////////////////////////////SxO\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 	elseif orbConfig.orbchoice == 2 and SxOrb then
 		sxTarget = SxOrb:GetTarget()
-		if sxTarget and sxTarget.type == myHero.type then
+		if sxTarget and sxTarget.type == myHero.type and ValidTarget(sxTarget, 1300) then
 			mTarget = sxTarget
 		elseif not mTarget then 
 			local best, damage = nil, 99
@@ -395,7 +378,7 @@ function GetAfterAA()
 end
 
 function OrbwalkMenu()
-orbConfig = scriptConfig("Caitlynpoo Orbwalker", "Caitlynpoo Orbwalker")
+orbConfig = scriptConfig("PewPewBundle Orbwalker", "PewPewBundle Orbwalker")
 orbConfig:addParam("orbchoice", "Select Orbwalker (Requires Reload)", SCRIPT_PARAM_LIST, 1, { "SOW", "SxOrbWalk", "MMA", "SAC" })	
 	if orbConfig.orbchoice == 1 then
 		require "SOW"
@@ -451,6 +434,7 @@ Config:addSubMenu("Mana Manager", "manamanager")
 Config:addSubMenu("Piltover Peacemaker", "qSub")
 	Config.qSub:addParam("Qonoff", "AutoPeacemaker on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 6, 0, 10)
+	Config.qSub:addParam("focusHeroes", "Focus Heroes over Minions(LaneClear)", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("smartQ", "Q Cast Options", SCRIPT_PARAM_LIST, 1, { "SmartQ v0.4", "Toggle" })
 	Config.qSub:addParam("dumbQ", "Toggle Q Hotkey", SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("X"))
 	Config.qSub:addParam("usepro", "Use Prodiction (Requires Reload)", SCRIPT_PARAM_ONOFF, false)
@@ -497,8 +481,16 @@ function Caitlyn:OnTick()
 	
 	if GetOrbwalkMode() < 3 then
 		Caitlyn:Peacemaker()
-	elseif GetOrbwalkMode() == 3 then
-		Caitlyn:LaneClearTarget()
+	elseif GetOrbwalkMode() == 3 then	
+		if Config.qSub.focusHeroes then
+			if mTarget and ValidTarget(mTarget) then
+				Caitlyn:Peacemaker()
+			else
+				Caitlyn:LaneClearTarget()
+			end
+		else
+			Caitlyn:LaneClearTarget()
+		end	
 	end	
 		
 	if Config.wSub.onoff then 
@@ -533,7 +525,7 @@ function Caitlyn:NetToMouse()
 		local DashPos = HeroPos + ( HeroPos - MPos )*(500/GetDistance(mousePos))
 		local ewallcheck = HeroPos + (-1 * (Vector(HeroPos.x - MPos.x, HeroPos.y - MPos.y, HeroPos.z - MPos.z):normalized()*495))	
 		
-		if mTarget and ValidTarget(mTarget, 1300) and Config.eSub.netSub.animcancel then
+		if QAble and mTarget and Config.eSub.netSub.animcancel then
 			CastSpell(_Q, mTarget.x, mTarget.z)
 		end
 		if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
@@ -549,7 +541,7 @@ function Caitlyn:OnDraw()
 		Orbwalker:DrawAARange(3, ARGB(100, 35, 250, 11))
 	end
 	
-	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 2) and orbConfig.drawtarget and mTarget and ValidTarget(mTarget) then
+	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 2) and orbConfig.drawtarget and mTarget then
 		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, ((GetDistance(mTarget, mTarget.minBBox)/2) + 30), 3, ARGB(100, 185, 4, 4))
 	end
 	
@@ -580,7 +572,7 @@ end
 function Caitlyn:AceintheHole()
     Caitlyn:CheckRLevel()
 	
-	if Config.rSub.damagetillr and mTarget and ValidTarget(mTarget, self.RRange) then
+	if Config.rSub.damagetillr and mTarget then
 		local RDamage1 = getDmg("R",mTarget,myHero)
 		if (1.08 * mTarget.health) > RDamage1 then
 			local rfloattext = tostring(math.floor((1.08 * mTarget.health) - RDamage1))
@@ -598,10 +590,10 @@ function Caitlyn:AceintheHole()
 				if Config.rSub.pingkillable and (self.LastPing+pingbuffer) < GetTickCount() then
 					PingSignal(PING_NORMAL, Enemy.x, Enemy.y, Enemy.z,2)
 					self.LastPing = GetTickCount()
-					if ValidTarget(Enemy, self.RRange, true) and Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
+					if Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
 						CastSpell(_R, Enemy) 
 					end	
-				elseif ValidTarget(Enemy, self.RRange, true) and Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
+				elseif Config.rSub.kill and (Enemy.health * 1.08) < RDamage then
 					CastSpell(_R, Enemy) 
 				end		
 			end
@@ -610,10 +602,11 @@ function Caitlyn:AceintheHole()
 end
 
 function Caitlyn:Peacemaker()
-	if mTarget and ValidTarget(mTarget, 1300) then
+	if not QAble then return end
+	if mTarget then
 		local QendPos = myHero + (Vector(mTarget.x - myHero.x, 0, mTarget.z - myHero.z):normalized()*1300)
 		local CastPos, Hit = Caitlyn:GetSelectedPrediction(mTarget)
-		if QAble and Hit >= Config.qSub.hit and not mTarget.dead and (GetAfterAA() or (GetDistanceSqr(mTarget) > 490000 and GetOrbwalkMode() == 1))then
+		if Hit >= Config.qSub.hit and not mTarget.dead and (GetAfterAA() or (GetDistanceSqr(mTarget) > 490000 and GetOrbwalkMode() == 1))then
 			if Config.qSub.smartQ == 1 then
 				if self.QCollision <= 1 then
 					CastSpell(_Q, CastPos.x, CastPos.z)
@@ -662,11 +655,12 @@ function Caitlyn:LaneClearHit(pos)
 end
 
 function Caitlyn:CastW()
+	if not WAble then return end
 	for i = 1, heroManager.iCount do
 		local Enemy = heroManager:getHero(i)
 		if WAble and ValidTarget(Enemy, 800, true) and IsOnCC(Enemy) then
 			CastSpell(_W, Enemy.x, Enemy.z)
-			if Config.qSub.Qonoff and myManaPct() > Config.manamanager.minMac then
+			if QAble and Config.qSub.Qonoff and myManaPct() > Config.manamanager.minMac then
 				CastSpell(_Q, Enemy.x, Enemy.z)
 			end
 		end
@@ -674,6 +668,7 @@ function Caitlyn:CastW()
 end
 
 function Caitlyn:OnCreateObj(object)
+	if not WAble then return end
 	if Config.wSub.onoff and object.name:find("LifeAura") then
 		for i=1, heroManager.iCount do
 			currentEnemy = heroManager:GetHero(i)
@@ -754,13 +749,15 @@ function Caitlyn:OnProcessSpell(unit, spell)
 			local ewallcheck = myHero + ((Vector(myHero.x - unit.x, myHero.y - unit.y, myHero.z - unit.z):normalized()*400))	
 			if not IsWall(D3DXVECTOR3(ewallcheck.x, ewallcheck.y, ewallcheck.z)) then
 				if unit then 
-					CastSpell(_E, unit.x, unit.z)
-					if (not EAble) and Config.wSub.AGCtrap then
+					if EAble then 
+						CastSpell(_E, unit.x, unit.z)
+					elseif (not EAble) and WAble and Config.wSub.AGCtrap then
 						CastSpell(_W, spell.endPos.x, spell.endPos.z)
 					end
 				else
-					CastSpell(_E, spell.endPos.x, spell.endPos.z)
-					if (not EAble) and Config.wSub.AGCtrap then
+					if EAble then 
+						CastSpell(_E, unit.x, unit.z)
+					elseif (not EAble) and WAble and Config.wSub.AGCtrap then
 						CastSpell(_W, spell.endPos.x, spell.endPos.z)
 					end
 				end
@@ -768,7 +765,7 @@ function Caitlyn:OnProcessSpell(unit, spell)
 		end
 	end
 	
-	if Config.wSub.onoff and self.TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
+	if WAble and Config.wSub.onoff and self.TELESPELLS[spell.name] and unit.team ~= myHero.team and GetDistanceSqr(myHero, spell.endPos) <= 640000 then
 		CastSpell(_W, spell.endPos.x, spell.endPos.z)
 	end
 
@@ -895,6 +892,7 @@ Config:addSubMenu("Mana Manager", "manamanager")
 Config:addSubMenu("Piercing Light", "qSub")
 	Config.qSub:addParam("qautocc", "AutoQ on CC", SCRIPT_PARAM_ONOFF, true)
 	Config.qSub:addParam("minMinions", "Min. Minions - Q LaneClear(0=OFF)", SCRIPT_PARAM_SLICE, 3, 0, 6)
+	Config.qSub:addParam("focusHeroes", "Focus Heroes over Minions(LaneClear)", SCRIPT_PARAM_ONOFF, true)
 
 Config:addSubMenu("Ardent Blaze", "wSub")
 	Config.wSub:addParam("wautocc", "AutoW on CC", SCRIPT_PARAM_ONOFF, true)
@@ -916,14 +914,21 @@ function Lucian:OnTick()
 	enemyMinions:update()
 	Lucian:CastAutoCC()
 	
-	
 	if GetOrbwalkMode() < 2 then
 		Lucian:ArdentBlaze()
 		Lucian:PiercingLight()
 	elseif GetOrbwalkMode() < 3 then
 		Lucian:PiercingLight()
 	elseif GetOrbwalkMode() < 4 then
-		Lucian:LaneClearTarget()
+		if Config.qSub.focusHeroes then
+			if mTarget and ValidTarget(mTarget) then
+				Lucian:PiercingLight()
+			else
+				Lucian:LaneClearTarget()
+			end
+		else
+			Lucian:LaneClearTarget()
+		end	
 	end	
 		
 	if Config.rSub.kill then
@@ -938,7 +943,7 @@ function Lucian:OnDraw()
 		Orbwalker:DrawAARange(3, ARGB(100, 35, 250, 11))
 	end
 	
-	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 2) and orbConfig.drawtarget and mTarget and ValidTarget(mTarget) then
+	if (orbConfig.orbchoice == 1 or orbConfig.orbchoice == 2) and orbConfig.drawtarget and mTarget then
 		DrawCircle3D(mTarget.x, mTarget.y, mTarget.z, ((GetDistance(mTarget, mTarget.minBBox)/2) + 30), 3, ARGB(100, 185, 4, 4))
 	end
 		
@@ -948,21 +953,24 @@ function Lucian:OnDraw()
 end
 
 function Lucian:PiercingLight()
-	if mTarget and ValidTarget(mTarget, 640) then
-		if QAble and not mTarget.dead and (Lucian:HasPassive() or GetAfterAA()) then
-			CastSpell(_Q, mTarget)
-		end
-	elseif mTarget and GetDistanceSqr(mTarget) > 422500 and ValidTarget(mTarget, 1100) then		
-		local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.1, 50, 1100, math.huge, myHero, true) 
-		for i, minion in ipairs(enemyMinions.objects) do
-			if minion and GetDistanceSqr(minion) < 360000 then
-				local QEndPos = Vector(myHero) + Vector(Vector(minion) - Vector(myHero)):normalized()*1100
-				if QEndPos then	
-					for i=1, heroManager.iCount do
-						currentEnemy = heroManager:GetHero(i)
-						local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(QEndPos.x, QEndPos.z), Vector(Position.x, Position.z))
-						if currentEnemy.team ~= myHero.team and not currentEnemy.dead and dist < 25 then
-							CastSpell(_Q, minion)
+	if not QAble then return end
+	if mTarget then
+		if GetDistanceSqr(mTarget) < 422500 then
+			if not mTarget.dead and (Lucian:HasPassive() or GetAfterAA()) then
+				CastSpell(_Q, mTarget)
+			end
+		else		
+			local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.1, 50, 1100, math.huge, myHero, true) 
+			for i, minion in ipairs(enemyMinions.objects) do
+				if minion and GetDistanceSqr(minion) < 360000 then
+					local QEndPos = Vector(myHero) + Vector(Vector(minion) - Vector(myHero)):normalized()*1100
+					if QEndPos then	
+						for i=1, heroManager.iCount do
+							currentEnemy = heroManager:GetHero(i)
+							local dist = GetShortestDistanceFromLineSegment(Vector(myHero.x, myHero.z), Vector(QEndPos.x, QEndPos.z), Vector(Position.x, Position.z))
+							if currentEnemy.team ~= myHero.team and not currentEnemy.dead and dist < 25 then
+								CastSpell(_Q, minion)
+							end
 						end
 					end
 				end
@@ -972,9 +980,10 @@ function Lucian:PiercingLight()
 end
 
 function Lucian:ArdentBlaze()
-	if mTarget and ValidTarget(mTarget, 1000) then
+	if not WAble then return end
+	if mTarget then
 		local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.2, 50, 1000, 1200, myHero)
-		if WAble and HitChance >= 1 and not mTarget.dead then
+		if HitChance >= 1 and not mTarget.dead then
 			if (Lucian:HasPassive() or GetAfterAA()) then
 				if not VP:CheckMinionCollision(mTarget, CastPosition, 0.1, 50, 1000, 1200, myHero, false, true) then
 					CastSpell(_W, CastPosition.x, CastPosition.z)
@@ -995,6 +1004,7 @@ function Lucian:HasPassive()
 end
 
 function Lucian:OnProcessSpell(unit, spell)
+	if not EAble then return end
 	if Config.eSub.AGConoff and AGCSPELLS[spell.name] and unit.team ~= myHero.team and Config.eSub.listSub[unit.charName] then
 		local dist = GetShortestDistanceFromLineSegment(Vector(unit.x, unit.z), Vector(spell.endPos.x, spell.endPos.z), Vector(myHero.x, myHero.z))
 		if dist < 250 then
@@ -1019,13 +1029,13 @@ end
 function Lucian:CastAutoCC()
 	for i = 1, heroManager.iCount do
 		local Enemy = heroManager:getHero(i)
-		if Config.qSub.qautocc and QAble and ValidTarget(Enemy, 600) and IsOnCC(Enemy) and Lucian:HasPassive() and myManaPct() > Config.manamanager.minMac  then
-			CastSpell(_Q, Enemy)
+		if Config.qSub.qautocc and IsOnCC(Enemy) and Lucian:HasPassive() and myManaPct() > Config.manamanager.minMac then 
+			if QAble and ValidTarget(Enemy, 600) then
+				CastSpell(_Q, Enemy)
+			elseif WAble and ValidTarget(Enemy, 1000) then
+				CastSpell(_W, Enemy.x, Enemy.z)
+			end
 		end
-		
-		if Config.wSub.wautocc and WAble and ValidTarget(Enemy, 1000) and IsOnCC(Enemy) and Lucian:HasPassive() and myManaPct() > Config.manamanager.minMac then
-			CastSpell(_W, Enemy.x, Enemy.z)
-		end	
 	end
 end
 
@@ -1050,8 +1060,6 @@ function Lucian:LaneClearHit(pos)
 			n = n + 1
 			if n >= Config.qSub.minMinions then					
 				return true
-			--else
-				--return false
 			end
 		end
 	end
@@ -1059,9 +1067,12 @@ function Lucian:LaneClearHit(pos)
 end
 
 function Lucian:TheCulling()	
-	if RAble and mTarget and ValidTarget(mTarget, 1350) then
+	if RAble and mTarget then
 		local CastPosition,  HitChance,  Position = VP:GetLineCastPosition(mTarget, 0.2, 50, 1200, 2000, myHero)
 		if CastPosition and HitChance >= 1 and (self.LastCull+10000) < GetTickCount() then
+			if GetInventoryItemIsCastable(3142) then
+				CastSpell(GetInventorySlotItem(3142))
+			end
 			CastSpell(_R, CastPosition.x, CastPosition.z)
 			self.LastCull = GetTickCount()
 			self.CullingAngle = Vector(Vector(myHero.x, 0, myHero.z) - Vector(CastPosition.x, 0, CastPosition.z)):normalized()
