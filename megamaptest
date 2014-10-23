@@ -335,13 +335,13 @@ local fixerino = {
 
 function SRinterior()
 local polyTable = Geometry.Polygons()
-	for i=1, #fixerino, 1 do
+	for i=1, #fixerino, 1 do --change table from fixerino to innerwalls or one of the structures, this was just an attempt to repair broken polygons
 		local addPoly = Geometry.Polygon()
 		for k=1, #fixerino[i], 1 do
 			addPoly:Add(fixerino[i][k].x, fixerino[i][k].y)
 		end
 		local hmmmm = PolygonNormalize(addPoly)
-		polyTable:Add(hmmmm)
+		polyTable:Add(hmmmm) 
 	end
 
 
