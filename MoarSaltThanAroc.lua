@@ -18,21 +18,36 @@
 				--Very simple HUD to track Cooldowns with minimal FPS cost, skills and summoners.
 		Object Timers:
 				Summoners Rift:
+						--Tracks Inhibitor respawn.
 						--Tracks any jungle camp you have vision of clearing.
 						--If Dragon or Baron are cleared without your team having vision, will grab respawn timer from the buff.
 				Twisted Treeline: 
+						--Tracks Inhibitor respawn.
 						--Tracks any jungle camp you have vision of clearing.
-						--Tracks centre health relic.
-				Howling Abyss/Crystal Scar:
+						--Tracks center health relic.
+				Howling Abyss:
+						--Tracks Inhibitor respawn.
 						--Tracks health relics.
+				Crystal Scar:
+						--Tracks health relics.
+		
+		***** Update 1
+		
+		-Added Inhibitor timers
+		-Added option to display ward timers on minimap instead of marker
+		-Added trinket buy/sell utility
+		-Fixed bug not displaying dragon timer from FoW if it was the 5th dragon buff
 --]]
 
-local loadMsg = ''
+local loadMsg, MainMenu = '', nil
 function OnLoad()
+	MainMenu = scriptConfig('Pewtility', 'Pewtility')
+	
 	WARD()
 	MISS()
 	SKILLS()
 	TIMERS()
+	TRINKET()
 	
 	print('<font color=\'#0099FF\'>[Loaded]</font> <font color=\'#FF6600\'>'..loadMsg:sub(1,#loadMsg-2)..'.</font>')
 end
@@ -59,18 +74,19 @@ function WARD:__init()
 	self.known = {}
 	self.wM = self:Menu()
 	AddDrawCallback(function() self:Draw() end)
-	AddDeleteObjCallback(function(o) self:DeleteObj(o) end)
 	AddProcessSpellCallback(function(u, s) self:ProcessSpell(u, s) end)
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	loadMsg = loadMsg..'WardTracker, '
 end
 
 function WARD:Menu()
-	local wM = scriptConfig('Ward Tracker', 'Ward Tracker')
+	MainMenu:addSubMenu('Ward Tracker', 'WardTracker')
+	local wM = MainMenu.WardTracker
 	wM:addParam('draw', 'Enable Ward Timers', SCRIPT_PARAM_ONOFF, true)
 	wM:addParam('type', 'Timer Type', SCRIPT_PARAM_LIST, 1, { 'Seconds', 'Minutes' })
 	wM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	wM:addParam('mapsize', 'Minimap Marker Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
+	wM:addParam('maptype', 'Minimap Marker Type', SCRIPT_PARAM_LIST, 1, { 'Marker', 'Timer' })
 	return wM
 end
 
@@ -125,15 +141,16 @@ function WARD:RecvPacket(p)
 				charName 	= o.source.charName,
 			}
 		end
+		return
 	end
-	--[[
-	if p.header == 0xCD then
-		p.pos=2
-		if self.known[p:DecodeF()] then
-			p:Block()
-			return
+	if p.header == 0x8D then
+		p.pos = 2
+		local id = p:DecodeF()
+		if self.known[id] then
+			self.known[id] = nil
 		end
-	end]]
+		return
+	end
 end
 
 function WARD:Draw()
@@ -146,17 +163,11 @@ function WARD:Draw()
 		local tText = (self.wM.type == 1) and tostring(math.ceil(timer)) or minutes..':'..seconds
 		local text = (o.endTime ~= math.huge and o.charName) and tText..'\n'..o.charName or o.charName
 		DrawText3D(text, o.pos.x, o.pos.y, o.pos.z+10, self.wM.size, o.color, true)
-		DrawText('o', self.wM.mapsize, o.minimap.x-(self.wM.mapsize/6), o.minimap.y-(self.wM.mapsize/6), o.color)
+		DrawText((self.wM.mapTpe == 1 or o.endTime == math.huge) and 'o' or tText, self.wM.mapsize, o.minimap.x-(self.wM.mapsize/6), o.minimap.y-(self.wM.mapsize/6), o.color)
 		self:DrawHex(o.pos.x, o.pos.y, o.pos.z, o.color)
 		if o.endTime < os.clock() then
 			self.known[i] = nil
 		end
-	end
-end
-
-function WARD:DeleteObj(o)
-	if self.known[o.networkID] then
-		self.known[o.networkID] = nil
 	end
 end
 
@@ -212,7 +223,8 @@ function MISS:__init()
 end
 
 function MISS:Menu()
-	local mM = scriptConfig('Missing Enemies', 'Missing Enemies')
+	MainMenu:addSubMenu('Missing Enemies', 'MissTracker')
+	local mM = MainMenu.MissTracker
 	mM:addParam('draw', 'Enable Missing Timers', SCRIPT_PARAM_ONOFF, true)
 	mM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	mM:addParam('RGB', 'Text Color', SCRIPT_PARAM_COLOR, {255,255,255,255})	
@@ -256,13 +268,14 @@ function MISS:RecvPacket(p)
 		if p:Decode1() ~= 0 then
 			p.pos = 54
 			local o = objManager:GetObjectByNetworkId(p:DecodeF())
-			self.activeRecalls[o.networkID] = o.team ~= myHero.team and self.recallTimes[str] and os.clock()+self.recallTimes[str] or os.clock()+7.9 or nil
+			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
+			self.activeRecalls[o.networkID] = self.recallTimes[str] and os.clock()+self.recallTimes[str] or os.clock()+7.9 or nil
 			return
 		else
 			p.pos = 54
 			local o = objManager:GetObjectByNetworkId(p:DecodeF())
-			if o == nil or o.team == myHero.team then return end
-			if self.activeRecalls[o.networkID] > os.clock() then
+			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
+			if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID] > os.clock() then
 				self.activeRecalls[o.networkID] = nil
 				return
 			else
@@ -309,7 +322,8 @@ function SKILLS:__init()
 end
 
 function SKILLS:Menu()
-	local sM = scriptConfig('Cooldown Tracker', 'Cooldown Tracker')
+	MainMenu:addSubMenu('Cooldown Tracker', 'CooldownTracker')
+	local sM = MainMenu.CooldownTracker
 	sM:addParam('draw', 'Enable Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)
 	return sM
 end
@@ -362,16 +376,25 @@ function TIMERS:__init()
 			Vector(7850, 60, 9500),Vector(7100, 60, 10900),Vector(6400, 60, 12250),Vector(4950, 60, 10400),Vector(2200, 60, 8500),Vector(12600, 60, 6400),Vector(10500, 60, 5170),Vector(4400, 60, 9600),
 		}
 		self.times = {300,100,100,300,100,360,300,100,100,300,100,420,100,100,180,180}
+		self.inhibs = { [4291968000] = 100, [4283048192] = 101, [4287824896] = 102, [4284978176] = 200, [4294938368] = 201, [4280724480] = 202,}
+		self.inhibPos = { [100] = Vector(1171, 91, 3571), [101] = Vector(3203, 92, 3208), [102] = Vector(3452, 89, 1236), [200] = Vector(11261, 88, 13676), [201] = Vector(11598, 89, 11667), [202] = Vector(13604, 89, 11316),}
+		self.inhibTime = 300
 	elseif self.map == 'twistedTreeline' then
 		self.pos = {
 			Vector(4414, 60, 5774), Vector(5088, 60, 8065), Vector(6148, 60, 5993), Vector(11008, 60, 5775), Vector(10341, 60, 8084), Vector(9239, 60, 6022), Vector(7711, 60, 6722), Vector(7711, 60, 10080),
-		}
+		}	
 		self.times = {75,75,75,75,75,75,90,300,}
+		self.inhibs = { [4287824896] = 100, [4291968000] = 101, [4280724480] = 200, [4284978176] = 201,}
+		self.inhibPos = { [100] = Vector(2126, 11, 6146), [101] = Vector(2146, 11, 8420), [200] = Vector(13285, 17, 6124), [201] = Vector(13275, 17, 8416),}
+		self.inhibTime = 240
 	elseif self.map == 'howlingAbyss' then
 		self.pos = {
 			Vector(7582, -100, 6785), Vector(5929, -100, 5190), Vector(8893, -100, 7889), Vector(4790, -100, 3934),
 		}
 		self.times = {40,40,40,40,}
+		self.inhibs = { [4283048192] = 100, [4294938368] = 200, }
+		self.inhibPos = { [100] = Vector(3110, -201, 3189), [200] = Vector(9689, -190, 9524), }
+		self.inhibTime = 300
 	elseif self.map == 'crystalScar' then
 		self.pos = {
 			 [102] = Vector(5022, -100, 7778), [103] = Vector(8859, -100, 7788),  [104] = Vector(6962, -100, 4089),  [100] = Vector(4948, -100, 9329),  [101] = Vector(8972, -100, 9329), 
@@ -382,7 +405,6 @@ function TIMERS:__init()
 			 [102] = -5, [103] = -5, [104] = -5, [100] = 30, [101] = 30, [112] = 30, [108] = 30, [109] = 30, [105] = 30, [106] = 30, [107] = 30, [110] = 30, [111] = 30,
 		}
 	end
-	
 	self.activeTimers = {}
 	self.checkLastDragon = false
 	self.checkLastBaron = false
@@ -394,7 +416,8 @@ function TIMERS:__init()
 end
 
 function TIMERS:Menu()
-	local tM = scriptConfig('Object Timers', 'Object Timers')
+	MainMenu:addSubMenu('Object Timers', 'ObjectTimers')
+	local tM = MainMenu.ObjectTimers
 	tM:addParam('draw', 'Enable Object Timers', SCRIPT_PARAM_ONOFF, true)
 	tM:addParam('type', 'Timer Type', SCRIPT_PARAM_LIST, 1, { 'Seconds', 'Minutes' })
 	tM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
@@ -420,26 +443,29 @@ end
 
 function TIMERS:Tick()
 	if self.checkLastDragon then
+		local hD = {['h'] = nil, ['d'] = 0, ['b'] = 0,}
 		for i=1, heroManager.iCount do
 			local h = heroManager:getHero(i)
 			if h and h.team ~= myHero.team and h.visible then
-				local highestDrag = {0,0}
 				for j=1, h.buffCount do
 					local b = h:getBuff(j)
 					if b and b.name and b.name:lower():find('dragonslayerbuff') then
-						for d=4,1,-1 do 
-							if b.name:find(tostring(d)) and d>highestDrag[1] then
-								highestDrag[1]=d
-								highestDrag[2]=j
-								break
+						for d=5,1,-1 do
+							if b.name:lower():find('v'..tostring(d)) and d>hD.d then
+								hD.d=d
+								hD.b=j
+								hD.h=h
 							end
 						end
 					end
 				end
-				local b = h:getBuff(highestDrag[2])
+			end
+		end
+		if hD.h then
+			local b = hD.h:getBuff(hD.b)
+			if b.startT+356 > os.clock() then
 				self.activeTimers[6] = {spawnTime = b.startT+356, pos = self.pos[6], minimap = GetMinimap(self.pos[6]),}
-				self.checkLastDragon = false	
-				break
+				self.checkLastDragon = false
 			end
 		end
 	end
@@ -452,7 +478,7 @@ function TIMERS:Tick()
 					if b and b.name and b.name:lower():find('exaltedwithbaronnashor') then
 						self.activeTimers[12] = {spawnTime = b.startT+416, pos = self.pos[12], minimap = GetMinimap(self.pos[12]),}
 						self.checkLastBaron = false
-						break
+						return
 					end
 				end
 			end
@@ -469,10 +495,73 @@ function TIMERS:RecvPacket(p)
 		if o then
 			self.activeTimers[camp] = {spawnTime = os.clock()+self.times[camp], pos = self.pos[camp], minimap = GetMinimap(self.pos[camp]),}
 			return
-		elseif camp == 6 and self.map == 'summonersRift' then
+		elseif camp == 6 and self.map == 'summonerRift' then
 			self.checkLastDragon = true
-		elseif camp == 12 and self.map == 'summonersRift' then
+			return
+		elseif camp == 12 and self.map == 'summonerRift' then
 			self.checkLastBaron = true
+			return
+		end
+	end
+	if p.header == 0xF4 then
+		p.pos=2
+		local inhib = p:Decode4()
+		if self.inhibs[inhib] then
+			self.activeTimers[self.inhibs[inhib]] = {spawnTime = os.clock()+self.inhibTime, pos = self.inhibPos[self.inhibs[inhib]], minimap = GetMinimap(self.inhibPos[self.inhibs[inhib]]),}
+		end
+		return
+	end
+end
+
+class 'TRINKET'
+
+function TRINKET:__init()
+	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, }
+	self.currentTrinket = 0
+	self.trM = self:Menu()
+	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then BuyItem(3339+self.trM.type) end
+	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
+	loadMsg = loadMsg..'TrinketHelper, '
+end
+
+function TRINKET:Menu()
+	MainMenu:addSubMenu('Trinket Helper', 'Trinket')
+	local trM = MainMenu.Trinket
+	trM:addParam('ward', 'Buy Trinket on Game Start', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('type', 'Trinket on Game Start', SCRIPT_PARAM_LIST, 1, { 'Ward Totem', 'Sweeper', 'ScryingOrb' })	
+	trM:addParam('timer', 'Buy Sweeper at x Minutes', SCRIPT_PARAM_SLICE, 10, 1, 60)
+	trM:addParam('scryorb', 'Buy ScryingOrb On/Off', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('timer2', 'Buy ScryingOrb at x Minutes', SCRIPT_PARAM_SLICE, 40, 10, 60)
+	trM:addParam('sightstone', 'Buy Sweeper on Sightstone', SCRIPT_PARAM_ONOFF, true)
+	return trM
+end
+
+function TRINKET:RecvPacket(p)
+	if p.header == 0x129 then
+		p.pos=2
+		if p:DecodeF() == myHero.networkID then
+			p.pos=11
+			local itemID = p:Decode4()
+			if self.trinketID[itemID] then
+				self.currentTrinket = itemID
+			end
+			local gameTime = os.clock()/60
+			if self.currentTrinket == 3340 and gameTime >= self.trM.timer then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3341) end, 0.2)
+				return
+			end
+			if (self.currentTrinket == 3340 or self.currentTrinket == 3341) and self.trM.scryorb and gameTime >= self.trM.timer2 then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3342) end, 0.2)
+				return
+			end
+			if self.trM.sightstone and self.currentTrinket == 3340 and itemID == 2049 then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3341) end, 0.2)
+				return
+			end
 		end
 	end
 end
+
