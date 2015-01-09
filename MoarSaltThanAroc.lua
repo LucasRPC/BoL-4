@@ -516,7 +516,7 @@ end
 class 'TRINKET'
 
 function TRINKET:__init()
-	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, }
+	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, [3361] = true, [3362] = true, [3363] = true, [3364] = true, }
 	self.currentTrinket = 0
 	self.trM = self:Menu()
 	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then BuyItem(3339+self.trM.type) end
