@@ -208,6 +208,8 @@ function MISS:__init()
 	end
 	self.recallTimes = {
 		['recall'] = 7.9,
+		['odinrecall'] = 4.4,
+		['odinrecallimproved'] = 3.9,
 		['recallimproved'] = 6.9,
 		['superrecall'] = 3.9,
 	}
@@ -228,6 +230,7 @@ function MISS:Menu()
 	mM:addParam('draw', 'Enable Missing Timers', SCRIPT_PARAM_ONOFF, true)
 	mM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	mM:addParam('RGB', 'Text Color', SCRIPT_PARAM_COLOR, {255,255,255,255})	
+	mM:addParam('recall', 'Display Recall Status', SCRIPT_PARAM_ONOFF, true)
 	return mM	
 end
 
@@ -269,13 +272,13 @@ function MISS:RecvPacket(p)
 			p.pos = 54
 			local o = objManager:GetObjectByNetworkId(p:DecodeF())
 			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
-			self.activeRecalls[o.networkID] = self.recallTimes[str] and os.clock()+self.recallTimes[str] or os.clock()+7.9 or nil
+			self.activeRecalls[o.networkID] = {name = o.charName, startT = os.clock(), endT = self.recallTimes[str:lower()] and os.clock()+self.recallTimes[str:lower()] or os.clock()+7.9,}
 			return
 		else
 			p.pos = 54
 			local o = objManager:GetObjectByNetworkId(p:DecodeF())
 			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
-			if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID] > os.clock() then
+			if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID].endT > os.clock() then
 				self.activeRecalls[o.networkID] = nil
 				return
 			else
@@ -303,16 +306,59 @@ function MISS:Draw()
 			end
 		end
 	end
+	if self.mM.recall then
+		local minimap = GetMinimap(0, 18000)
+		local count = 0
+		for NetID, info in pairs(self.activeRecalls) do
+			local yOffset = count*-30
+			local recallTime = info.endT-info.startT
+			local currentTime = info.endT-os.clock()
+			local percent = currentTime/recallTime
+			local x2 = minimap.x+((WINDOW_W-10-minimap.x)*percent)
+			if x2 > minimap.x then
+				DrawLine(minimap.x, minimap.y+yOffset, x2, minimap.y+yOffset, 16, ARGB(255,255*percent,255-(255*percent),0))
+				local Lines = {
+					D3DXVECTOR2(minimap.x-2, minimap.y-8+yOffset), 
+					D3DXVECTOR2(WINDOW_W-10, minimap.y-8+yOffset), 
+					D3DXVECTOR2(WINDOW_W-10, minimap.y+8+yOffset), 
+					D3DXVECTOR2(minimap.x-2, minimap.y+8+yOffset),
+					D3DXVECTOR2(minimap.x-2, minimap.y-8+yOffset), 
+				}
+				DrawLines2(Lines, 2, ARGB(255,255,255,255))
+				DrawText(info.name..' '..tostring(math.ceil(percent*100))..'%', 12, (minimap.x+WINDOW_W-60)/2, minimap.y-6+yOffset, ARGB(255,255,255,255))
+			end
+			count = count + 1
+		end
+	end
 end
 
 class 'SKILLS'
 
 function SKILLS:__init()
-	self.enemies = {}	
+	self.enemies = {}
+	self.sumText = {
+		['summonerdot']      		= 'Ign',
+		['summonerexhaust']  		= 'Exh',
+		['summonerflash']    		= 'Fla',
+		['summonerheal']     		= 'Hea',
+		['summonersmite']    		= 'Smi',
+		['summonerbarrier']  		= 'Bar',
+		['summonerclairvoyance']    = 'Cla',
+		['summonermana']     		= 'Cla',
+		['summonerteleport']     	= ' TP',
+		['summonerrevive']     		= 'Rev',
+		['summonerhaste']     		= 'Gho',
+		['summonerboost']     		= 'Cle',
+		
+	}
 	for i=1, heroManager.iCount do
 		local h = heroManager:getHero(i)
 		if h.team ~= myHero.team then
-			self.enemies[#self.enemies+1] = {hero = h, sum1 = h:GetSpellData(SUMMONER_1).name:sub(9,9):upper(), sum2 = h:GetSpellData(SUMMONER_2).name:sub(9,9):upper(),}
+			self.enemies[#self.enemies+1] = {
+				hero = h,
+				sum1 = self.sumText[h:GetSpellData(SUMMONER_1).name:lower()],
+				sum2 = self.sumText[h:GetSpellData(SUMMONER_2).name:lower()],
+			}
 		end
 	end
 	self.sM = self:Menu()
@@ -344,16 +390,31 @@ function SKILLS:Draw()
 						x = barData.x-22+(i*27)
 						y = barData.y+6
 						Lines = {D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}
+						text = data.currentCd == 0 and text or tostring(math.ceil(data.cd-(data.cd-data.currentCd)))
+						text = #text>1 and text or ' '..text
+						DrawText(text, 12, x, y, color)
+						DrawLines2(Lines, 2, color)					
 					else
 						text = info['sum'..tostring(i-3)]
 						x = barData.x-76+((i-2)*27)
 						y = barData.y+38
-						Lines = {D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}
+						if data.currentCd == 0 then
+							Lines = {D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}
+							DrawLines2(Lines, 2, color)
+						else
+							Lines = {}
+							local cd = math.ceil(data.currentCd*100/data.cd/2)
+							for j=1, 13 do Lines[#Lines+1] = D3DXVECTOR2(x-4, y+j) end
+							for j=1, 24 do Lines[#Lines+1] = D3DXVECTOR2(x-4+j, y+13) end
+							for j=1, 13 do Lines[#Lines+1] = D3DXVECTOR2(x+20, y+13-j) end
+							local LinesRed, LinesYellow = {}, {}
+							for j=1, cd do LinesRed[#LinesRed+1] = Lines[j] end
+							for j=cd, #Lines do LinesYellow[#LinesYellow+1] = Lines[j] end
+							DrawLines2(LinesYellow, 2, ARGB(255,255,255,0))
+							DrawLines2(LinesRed, 2, ARGB(255,255,0,0))
+						end
+						DrawText(text, 12, x-2, y, color)
 					end
-					text = data.currentCd == 0 and text or tostring(math.ceil(data.cd-(data.cd-data.currentCd)))
-					text = #text>1 and text or ' '..text
-					DrawText(text, 12, x, y, color)
-					DrawLines2(Lines, 2, color)
 				end
 			end
 		end
@@ -412,6 +473,8 @@ function TIMERS:__init()
 	AddTickCallback(function() self:Tick() end)
 	AddDrawCallback(function() self:Draw() end)
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
+	AddMsgCallback(function(m,k) self:WndMsg(m,k) end)
+	
 	loadMsg = loadMsg..'ObjectTimers, '
 end
 
@@ -423,7 +486,9 @@ function TIMERS:Menu()
 	tM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	tM:addParam('RGB', 'Text Color', SCRIPT_PARAM_COLOR, {255,255,255,255})	
 	tM:addParam('mapsize', 'Minimap Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
-	tM:addParam('mapRGB', 'Minimap Text Color', SCRIPT_PARAM_COLOR, {255,255,255,255})	
+	tM:addParam('mapRGB', 'Minimap Text Color', SCRIPT_PARAM_COLOR, {255,255,255,255})
+	tM:addParam('modKey', 'Modifier Key(Default: Alt)', SCRIPT_PARAM_ONKEYDOWN, false, 18)
+	tM:addParam('', 'ModKey+LeftClick a camp to start a timer.', SCRIPT_PARAM_INFO, '')
 	return tM
 end
 
@@ -513,13 +578,27 @@ function TIMERS:RecvPacket(p)
 	end
 end
 
+function TIMERS:WndMsg(m,k)
+	if m == 513 and k == 1 and IsKeyDown(self.tM._param[7].key) then --17 ctrl
+		local cP = GetCursorPos()
+		for camp, pos in ipairs(self.pos) do
+			local miniMap = GetMinimap(pos)
+			if math.abs(cP.x-miniMap.x) < 10 and math.abs(cP.y-miniMap.y) < 10 then
+				self.activeTimers[camp] = {spawnTime = os.clock()+self.times[camp], pos = pos, minimap = miniMap,}
+			end
+		end
+	end
+end
+
 class 'TRINKET'
 
 function TRINKET:__init()
 	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, [3361] = true, [3362] = true, [3363] = true, [3364] = true, }
 	self.currentTrinket = 0
 	self.trM = self:Menu()
-	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then BuyItem(3339+self.trM.type) end
+	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then 
+		DelayAction(function() BuyItem(3339+self.trM.type) end, 1)
+	end
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	loadMsg = loadMsg..'TrinketHelper, '
 end
@@ -528,10 +607,11 @@ function TRINKET:Menu()
 	MainMenu:addSubMenu('Trinket Helper', 'Trinket')
 	local trM = MainMenu.Trinket
 	trM:addParam('ward', 'Buy Trinket on Game Start', SCRIPT_PARAM_ONOFF, true)
-	trM:addParam('type', 'Trinket on Game Start', SCRIPT_PARAM_LIST, 1, { 'Ward Totem', 'Sweeper', 'ScryingOrb' })	
-	trM:addParam('timer', 'Buy Sweeper at x Minutes', SCRIPT_PARAM_SLICE, 10, 1, 60)
-	trM:addParam('scryorb', 'Buy ScryingOrb On/Off', SCRIPT_PARAM_ONOFF, true)
-	trM:addParam('timer2', 'Buy ScryingOrb at x Minutes', SCRIPT_PARAM_SLICE, 40, 10, 60)
+	trM:addParam('type', 'Trinket on Game Start', SCRIPT_PARAM_LIST, 1, { 'Ward Totem', 'Sweeper', 'ScryingOrb' })
+	trM:addParam('sweeper', 'Enable Sweeper Purchase', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('timer', 'Buy Sweeper after x Minutes', SCRIPT_PARAM_SLICE, 10, 1, 60)
+	trM:addParam('scryorb', 'Enable ScryingOrb Purchase', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('timer2', 'Buy ScryingOrb after x Minutes', SCRIPT_PARAM_SLICE, 40, 10, 60)
 	trM:addParam('sightstone', 'Buy Sweeper on Sightstone', SCRIPT_PARAM_ONOFF, true)
 	return trM
 end
@@ -546,7 +626,7 @@ function TRINKET:RecvPacket(p)
 				self.currentTrinket = itemID
 			end
 			local gameTime = os.clock()/60
-			if self.currentTrinket == 3340 and gameTime >= self.trM.timer then
+			if self.trM and self.currentTrinket == 3340 and gameTime >= self.trM.timer then
 				SellItem(ITEM_7)
 				DelayAction(function() BuyItem(3341) end, 0.2)
 				return
@@ -556,7 +636,7 @@ function TRINKET:RecvPacket(p)
 				DelayAction(function() BuyItem(3342) end, 0.2)
 				return
 			end
-			if self.trM.sightstone and self.currentTrinket == 3340 and itemID == 2049 then
+			if self.trM.sweeper and self.trM.sightstone and self.currentTrinket == 3340 and itemID == 2049 then
 				SellItem(ITEM_7)
 				DelayAction(function() BuyItem(3341) end, 0.2)
 				return
