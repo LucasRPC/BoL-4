@@ -37,6 +37,12 @@
 		-Added option to display ward timers on minimap instead of marker
 		-Added trinket buy/sell utility
 		-Fixed bug not displaying dragon timer from FoW if it was the 5th dragon buff
+		
+		***** Update 2
+		
+		--Fixed all packets
+		--Removed Trinket Helper for this version as Buy/SellItem are nonfunctional
+		--Added side HUD for ally ult/summoner cooldowns.
 --]]
 
 local loadMsg, MainMenu = '', nil
@@ -47,8 +53,7 @@ function OnLoad()
 	MISS()
 	SKILLS()
 	TIMERS()
-	TRINKET()
-	
+		
 	print('<font color=\'#0099FF\'>[Loaded]</font> <font color=\'#FF6600\'>'..loadMsg:sub(1,#loadMsg-2)..'.</font>')
 end
 
@@ -75,7 +80,9 @@ function WARD:__init()
 	self.wM = self:Menu()
 	AddDrawCallback(function() self:Draw() end)
 	AddProcessSpellCallback(function(u, s) self:ProcessSpell(u, s) end)
-	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
+	--AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
+	AddCreateObjCallback(function(o) self:CreateObj(o) end)
+	AddDeleteObjCallback(function(o) self:DeleteObj(o) end)
 	loadMsg = loadMsg..'WardTracker, '
 end
 
@@ -90,8 +97,35 @@ function WARD:Menu()
 	return wM
 end
 
-function WARD:RecvPacket(p)
-	if p.header == 0x58 then
+function WARD:CreateObj(o)
+	if o.team ~= myHero.team and self.types[o.charName] then
+		local timeReduction = 0
+		local charName
+		for id, ward in pairs(self.known) do
+			if (ward.pos.x == o.x and ward.pos.z == o.z)then
+				timeReduction = (ward and self.types[o.charName]) and self.types[o.charName].duration - (ward.endTime-os.clock()) or 0
+				charName = ward.charName
+				self.known[id] = nil
+			end
+		end
+		self.known[o.networkID] = {
+			pos 		= Vector(o.x, o.y, o.z),
+			minimap   	= GetMinimap(Vector(o.x, o.y, o.z)), 
+			color 		= self.types[o.charName].color, 
+			endTime 	= (self.types[o.charName].duration ~= math.huge) and os.clock()+self.types[o.charName].duration-timeReduction or os.clock()+self.types[o.charName].duration,
+			charName 	= charName or 'Unkown', 
+		}	
+	end
+end
+
+function WARD:DeleteObj(o)
+	if self.known[o.networkID] then
+		self.known[o.networkID] = nil
+	end
+end
+
+function WARD:RecvPacket(p) --4.21
+		if p.header == 0x58 then
 		local o = {}
 		p.pos=2
 		o.networkID = p:DecodeF()
@@ -206,6 +240,18 @@ function MISS:__init()
 			self.recallEndPos = GetMinimap(Vector(o.pos))
 		end
 	end
+	self.recallLongs = {
+		[530554793] = 1,
+		[530554794] = 2,
+		[530554792] = 3,
+		[530554787] = 4,
+		[530554785] = 5,
+		[530554786] = 6,
+		[530554784] = 7,
+		[530554767] = 8,
+		[530554765] = 9,
+		[530554766] = 10,
+	}
 	self.recallTimes = {
 		['recall'] = 7.9,
 		['odinrecall'] = 4.4,
@@ -213,7 +259,7 @@ function MISS:__init()
 		['recallimproved'] = 6.9,
 		['superrecall'] = 3.9,
 	}
-	for i=1, heroManager.iCount do
+	for i=1, heroManager.iCount do ---??
 		if heroManager:getHero(i).team ~= myHero.team then
 			self.missing[heroManager:getHero(i).networkID] = nil
 		end
@@ -235,23 +281,27 @@ function MISS:Menu()
 end
 
 function MISS:RecvPacket(p)
-	if p.header == 0xCD then --losevision
+	if p.header == 0x8B then --losevision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
-		if o and o.type == myHero.type and not o.dead and o.team ~= myHero.team then
-			self.missing[o.networkID] = {pos = GetMinimap(Vector(o.pos)), name = o.charName, mTime = os.clock(),}
-			return
+		if o and o.type == myHero.type and o.team ~= myHero.team then
+			if o.dead then
+				self.missing[o.networkID] = {
+					pos = self.recallEndPos,
+					name = o.charName, 
+					mTime = os.clock(),
+				}				
+			else
+				self.missing[o.networkID] = {
+					pos = GetMinimap(Vector(o.pos)),
+					name = o.charName, 
+					mTime = os.clock(),
+				}
+				return
+			end
 		end	
 	end
-	if p.header == 0x5D then --respawn
-		p.pos = 2
-		local o = objManager:GetObjectByNetworkId(p:DecodeF())
-		if o and o.type == myHero.type and o.team ~= myHero.team then
-			self.missing[o.networkID] = {pos = GetMinimap(Vector(p:DecodeF(),0,p:DecodeF())), name = o.charName, mTime = os.clock(),}
-			return
-		end
-	end
-	if p.header == 0xFC then --gainvision
+	if p.header == 0xBD then --gainvision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
 		if o and o.type == myHero.type and o.team ~= myHero.team then
@@ -259,32 +309,38 @@ function MISS:RecvPacket(p)
 			return
 		end
 	end
-	if p.header == 0x44 then --recall
-		p.pos = 30
+	if p.header == 0x22 then --recall
+		p.pos = 60
 		local str = ''
 		for i=1, p.size do
 			local char = p:Decode1()
 			if char == 0 then break end
 			str=str..string.char(char)
 		end
-		p.pos = 46
-		if p:Decode1() ~= 0 then
-			p.pos = 54
-			local o = objManager:GetObjectByNetworkId(p:DecodeF())
-			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
-			self.activeRecalls[o.networkID] = {name = o.charName, startT = os.clock(), endT = self.recallTimes[str:lower()] and os.clock()+self.recallTimes[str:lower()] or os.clock()+7.9,}
-			return
-		else
-			p.pos = 54
-			local o = objManager:GetObjectByNetworkId(p:DecodeF())
-			if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
-			if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID].endT > os.clock() then
-				self.activeRecalls[o.networkID] = nil
+		p.pos = 55
+		local id = p:Decode4()
+		p.pos = 76
+		if self.recallLongs[id] then
+			if p:Decode1() ~= 0 then
+				local o = heroManager:getHero(self.recallLongs[id])
+				if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
+				self.activeRecalls[o.networkID] = {
+					name = o.charName,
+					startT = os.clock(),
+					endT = self.recallTimes[str:lower()] and os.clock()+self.recallTimes[str:lower()] or os.clock()+7.9,
+				}
 				return
 			else
-				self.missing[o.networkID] = {pos = self.recallEndPos, name = o.charName, mTime = os.clock(),}
-				self.activeRecalls[o.networkID] = nil
-				return
+				local o = heroManager:getHero(self.recallLongs[id])
+				if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
+				if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID].endT > os.clock() then
+					self.activeRecalls[o.networkID] = nil
+					return
+				else
+					self.missing[o.networkID] = {pos = self.recallEndPos, name = o.charName, mTime = os.clock(),}
+					self.activeRecalls[o.networkID] = nil
+					return
+				end
 			end
 		end
 	end
@@ -309,7 +365,7 @@ function MISS:Draw()
 	if self.mM.recall then
 		local minimap = GetMinimap(0, 18000)
 		local count = 0
-		for NetID, info in pairs(self.activeRecalls) do
+		for _, info in pairs(self.activeRecalls) do
 			local yOffset = count*-30
 			local recallTime = info.endT-info.startT
 			local currentTime = info.endT-os.clock()
@@ -336,6 +392,7 @@ class 'SKILLS'
 
 function SKILLS:__init()
 	self.enemies = {}
+	self.allies = {}
 	self.sumText = {
 		['summonerdot']      		= 'Ign',
 		['summonerexhaust']  		= 'Exh',
@@ -359,8 +416,38 @@ function SKILLS:__init()
 				sum1 = self.sumText[h:GetSpellData(SUMMONER_1).name:lower()],
 				sum2 = self.sumText[h:GetSpellData(SUMMONER_2).name:lower()],
 			}
+		elseif h ~= myHero then
+			self.allies[#self.allies+1] = {
+				hero = h,
+				sum1 = self.sumText[h:GetSpellData(SUMMONER_1).name:lower()],
+				sum2 = self.sumText[h:GetSpellData(SUMMONER_2).name:lower()],
+			}		
 		end
 	end
+	self:HudData()
+	self.AllyHud = {
+		['xLeft']   	= math.floor((29  * (WINDOW_H / 1080))  * self.HudScale),
+		['xRight']  	= math.floor((49  * (WINDOW_H / 1080))  * self.HudScale),
+		['yUp']     	= math.floor((102 * (WINDOW_H / 1080)) * self.HudScale),
+		['size']    	= math.floor((42  * (WINDOW_H / 1080))  * self.HudScale),
+		['skill']   	= math.floor((13  * (WINDOW_H / 1080))  * self.HudScale),
+		['lineOffset'] 	= math.floor(((8  * (WINDOW_H / 1080))  * self.HudScale) / 2),
+		['lineWidth']   = math.floor(7.5 * self.HudScale),
+	}
+	self.HeroOffsets = {
+		['alistar']  = -4,  	['annie']       = -4,  	['blitzcrank'] = -4,
+		['brand']    = -3,   	['cassiopeia']  = -2, 	['darius']     = -2,
+		['drmundo']  =  1,  	['galio']       =  1,  	['garen']      =  1,
+		['jarvaniv'] =  2,  	['jax']         = -4,   ['lux']        = -4, --  TO CHECK
+		['lucian']   = -4,  	['kayle']       = -5,  	['tristana']   = -3, --aatrox, ahri, akali, anivia, diana, draven, elise, evelyn, fiora, fizz, gangplank, 
+		['malzahar'] = -2,  	['missfortune'] = -4,   ['morgana']    = -2, --gnar, gragas, hecarim, heimerdinger, janna, jayce, jinx, kalista, karma, kassadin, katarina, kennen
+		['nunu']     = -2,      ['renekton']    = -2,	['soraka']     = -5, --khazix, leblanc, leesin, lissandra, lulu, maokai, mordekaiser, nami, nautilus, nocturne, olaf, orianna,
+		['ryze']     = -3,      ['shen']		= -4,	['shyvana']    = -1, --pantheon, poppy, quinn, rammus, reksai, rengar, riven, rumble, sejuani, shaco, singed, sion, skarner, sona
+		['swain']    = -3,		['trundle']     =  4,   ['xinzhao']    =  7, --syndra, talon, teemo, thresh, tryndamere, twistedfate, twitch, urgot, varus, vayne, velkoz, vi, 
+		['ziggs']    = -3,		['zilean']      = -2,	['braum']      = -3, --volibear, xerath, yasuo, yorick, zac, zed
+		['corki']    = -4,		['viktor']      = -3,	['azir']       = -2,
+		['kalista']  = -4,
+	}
 	self.sM = self:Menu()
 	self.toText = {' Q ',' W ',' E ',' R '}
 	AddDrawCallback(function() self:Draw() end)
@@ -388,7 +475,8 @@ function SKILLS:Draw()
 					if i<=_R then
 						text = self.toText[i+1]
 						x = barData.x-22+(i*27)
-						y = barData.y+6
+						local offset = self.HeroOffsets[enemy.charName:lower()] or 0
+						y = barData.y+6+offset
 						Lines = {D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}
 						text = data.currentCd == 0 and text or tostring(math.ceil(data.cd-(data.cd-data.currentCd)))
 						text = #text>1 and text or ' '..text
@@ -397,7 +485,8 @@ function SKILLS:Draw()
 					else
 						text = info['sum'..tostring(i-3)]
 						x = barData.x-76+((i-2)*27)
-						y = barData.y+38
+						local offset = self.HeroOffsets[enemy.charName:lower()] or 0
+						y = barData.y+38+offset
 						if data.currentCd == 0 then
 							Lines = {D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}
 							DrawLines2(Lines, 2, color)
@@ -419,6 +508,32 @@ function SKILLS:Draw()
 			end
 		end
 	end
+	for i, info in ipairs(self.allies) do
+		for j=_R, SUMMONER_2 do
+			local data = info.hero:GetSpellData(j)
+			local y = ((j - 3) * self.AllyHud.skill) + (self.AllyHud.yUp + (self.AllyHud.size * (i - 1)))
+			local Lines = {
+				D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset),
+				D3DXVECTOR2(self.AllyHud.xRight, y + self.AllyHud.lineOffset),
+				D3DXVECTOR2(self.AllyHud.xRight, y - self.AllyHud.lineOffset),
+				D3DXVECTOR2(self.AllyHud.xLeft,  y - self.AllyHud.lineOffset),
+				D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset),
+			}
+			local offset = math.floor(self.HudScale*0.75)
+			DrawLines2(Lines, 1+offset, ARGB(150,255,255,255))
+			if data.currentCd == 0 then
+				DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xRight, y, self.AllyHud.lineWidth, ARGB(150,0,255,0))
+			else
+				local cd = data.currentCd/data.cd
+				DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, self.AllyHud.lineWidth, ARGB(150,255,0,0))
+				DrawLine(self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, self.AllyHud.xRight, y, self.AllyHud.lineWidth, ARGB(150,255,255,0))				
+			end
+			if j ~= _R then
+				text = info['sum'..tostring(j-3)]
+				DrawText(text, math.floor(8 * self.HudScale), self.AllyHud.xLeft + self.AllyHud.lineOffset, y - self.AllyHud.lineOffset, ARGB(255,255,255,255))
+			end
+		end
+	end
 end
 
 function SKILLS:BarData(enemy)
@@ -427,43 +542,156 @@ function SKILLS:BarData(enemy)
 	return {['x'] = math.floor(barPos.x+(barPosOffset.x-0.55)*70), ['y'] = math.floor(barPos.y+(barPosOffset.y-0.5)*45),}
 end
 
+function SKILLS:HudData()
+	local gameSettings = GetGameSettings()
+	if gameSettings and gameSettings.General and gameSettings.General.Width and gameSettings.General.Height then
+		windowWidth, windowHeight = gameSettings.General.Width, gameSettings.General.Height
+		local path = GAME_PATH .. 'DATA\\menu\\hud\\hud' .. windowWidth .. 'x' .. windowHeight .. '.ini'
+		local hudSettings = ReadIni(path)
+		if hudSettings and hudSettings.Globals and hudSettings.Globals.GlobalScale then 
+			self.HudScale = hudSettings.Globals.GlobalScale + 1
+		end
+	end
+end
+
 class 'TIMERS'
 
 function TIMERS:__init()
 	self.map = GetGame().map.shortName
 	if self.map == 'summonerRift' then
 		self.pos = {
-			Vector(3850, 60, 7880),Vector(3800, 60, 6500),Vector(7000, 60, 5400),Vector(7800, 60, 4000),Vector(8400, 60, 2700),Vector(9866, 60, 4414),Vector(10950, 60, 7030),Vector(11000, 60, 8400),
-			Vector(7850, 60, 9500),Vector(7100, 60, 10900),Vector(6400, 60, 12250),Vector(4950, 60, 10400),Vector(2200, 60, 8500),Vector(12600, 60, 6400),Vector(10500, 60, 5170),Vector(4400, 60, 9600),
+			[233] = Vector(3850, 60, 7880),		--bottom blue
+			[7]   = Vector(3800, 60, 6500), 	--bottom wolves
+			[208] = Vector(7000, 60, 5400),		--bottom raptors
+			[152] = Vector(7800, 60, 4000), 	--bottom red
+			[110] = Vector(8400, 60, 2700), 	--bottom krugs
+			[102] = Vector(9866, 60, 4414),		--dragon
+			[174] = Vector(10950, 60, 7030),	--top blue
+			[93]  = Vector(11000, 60, 8400),	--top wolves
+			[192] = Vector(7850, 60, 9500),		--top raptors
+			[136] = Vector(7100, 60, 10900),	--top red
+			[84]  = Vector(6400, 60, 12250),	--top krugs
+			[194] = Vector(4950, 60, 10400),	--baron
+			[82]  = Vector(2200, 60, 8500),		--bottom frog
+			[79]  = Vector(12600, 60, 6400),	--top frog
+			[190] = Vector(10500, 60, 5170),	--bottom crab
+			[38]  = Vector(4400, 60, 9600),		--top crab
 		}
-		self.times = {300,100,100,300,100,360,300,100,100,300,100,420,100,100,180,180}
-		self.inhibs = { [4291968000] = 100, [4283048192] = 101, [4287824896] = 102, [4284978176] = 200, [4294938368] = 201, [4280724480] = 202,}
-		self.inhibPos = { [100] = Vector(1171, 91, 3571), [101] = Vector(3203, 92, 3208), [102] = Vector(3452, 89, 1236), [200] = Vector(11261, 88, 13676), [201] = Vector(11598, 89, 11667), [202] = Vector(13604, 89, 11316),}
+		self.times = {
+			[233] = 300,
+			[7]   = 100,
+			[208] = 100,
+			[152] = 300,
+			[110] = 100,
+			[102] = 360,
+			[174] = 300,
+			[93]  = 100,
+			[192] = 100,
+			[136] = 300,
+			[84]  = 100,
+			[194] = 420,
+			[82]  = 100,
+			[79]  = 100,
+			[190] = 180,
+			[38]  = 180
+		}
+		self.inhibs = {
+			[4291968000] = 100,
+			[4283048192] = 101, 
+			[4287824896] = 102, 
+			[4284978176] = 200,
+			[4294938368] = 201, 
+			[4280724480] = 202,
+		}
+		self.inhibPos = {
+			[100] = Vector(1171, 91, 3571), 
+			[101] = Vector(3203, 92, 3208), 
+			[102] = Vector(3452, 89, 1236), 
+			[200] = Vector(11261, 88, 13676), 
+			[201] = Vector(11598, 89, 11667),
+			[202] = Vector(13604, 89, 11316),
+		}
 		self.inhibTime = 300
 	elseif self.map == 'twistedTreeline' then
 		self.pos = {
-			Vector(4414, 60, 5774), Vector(5088, 60, 8065), Vector(6148, 60, 5993), Vector(11008, 60, 5775), Vector(10341, 60, 8084), Vector(9239, 60, 6022), Vector(7711, 60, 6722), Vector(7711, 60, 10080),
+			[233] = Vector(4414, 60, 5774), 
+			[7]   = Vector(5088, 60, 8065), 
+			[208] = Vector(6148, 60, 5993), 
+			[152] = Vector(11008, 60, 5775),
+			[110] = Vector(10341, 60, 8084), 
+			[102] = Vector(9239, 60, 6022), 
+			[174] = Vector(7711, 60, 6722), 
+			[93]  = Vector(7711, 60, 10080),
 		}	
-		self.times = {75,75,75,75,75,75,90,300,}
-		self.inhibs = { [4287824896] = 100, [4291968000] = 101, [4280724480] = 200, [4284978176] = 201,}
-		self.inhibPos = { [100] = Vector(2126, 11, 6146), [101] = Vector(2146, 11, 8420), [200] = Vector(13285, 17, 6124), [201] = Vector(13275, 17, 8416),}
+		self.times = {
+			[233] = 75,
+			[7]   = 75,
+			[208] = 75,
+			[152] = 75,
+			[110] = 75,
+			[102] = 75,
+			[174] = 90,
+			[93]  = 300,
+		}
+		self.inhibs = { 
+			[4287824896] = 100, 
+			[4291968000] = 101, 
+			[4280724480] = 200, 
+			[4284978176] = 201,
+		}
+		self.inhibPos = { 
+			[100] = Vector(2126, 11, 6146), 
+			[101] = Vector(2146, 11, 8420), 
+			[200] = Vector(13285, 17, 6124), 
+			[201] = Vector(13275, 17, 8416),
+		}
 		self.inhibTime = 240
 	elseif self.map == 'howlingAbyss' then
 		self.pos = {
-			Vector(7582, -100, 6785), Vector(5929, -100, 5190), Vector(8893, -100, 7889), Vector(4790, -100, 3934),
-		}
-		self.times = {40,40,40,40,}
-		self.inhibs = { [4283048192] = 100, [4294938368] = 200, }
-		self.inhibPos = { [100] = Vector(3110, -201, 3189), [200] = Vector(9689, -190, 9524), }
-		self.inhibTime = 300
-	elseif self.map == 'crystalScar' then
-		self.pos = {
-			 [102] = Vector(5022, -100, 7778), [103] = Vector(8859, -100, 7788),  [104] = Vector(6962, -100, 4089),  [100] = Vector(4948, -100, 9329),  [101] = Vector(8972, -100, 9329), 
-			 [112] = Vector(6949, -100, 2855), [108] = Vector(6947, -100, 12116), [109] = Vector(12881, -100, 8294), [105] = Vector(10242, -100, 1519), [106] = Vector(3639, -100, 1490), 
-			 [107] = Vector(1027, -100, 8288), [110] = Vector(4324, -100, 5500),  [111] = Vector(9573, -100, 5530), 
+			[233] = Vector(7582, -100, 6785), 
+			[7]   = Vector(5929, -100, 5190), 
+			[208] = Vector(8893, -100, 7889), 
+			[152] = Vector(4790, -100, 3934),
 		}
 		self.times = {
-			 [102] = -5, [103] = -5, [104] = -5, [100] = 30, [101] = 30, [112] = 30, [108] = 30, [109] = 30, [105] = 30, [106] = 30, [107] = 30, [110] = 30, [111] = 30,
+			[233] = 40,
+			[7]   = 40,
+			[208] = 40,
+			[152] = 40,
+		}
+		self.inhibs = { 
+			[4283048192] = 100, 
+			[4294938368] = 200, 
+		}
+		self.inhibPos = { 
+			[100] = Vector(3110, -201, 3189), 
+			[200] = Vector(9689, -190, 9524),
+		}
+		self.inhibTime = 300
+	elseif self.map == 'crystalScar' then
+		self.pos = { 
+			 [122] = Vector(4948, -100, 9329),  
+			 [70]  = Vector(8972, -100, 9329), 
+			 [203] = Vector(6949, -100, 2855), 
+			 [81]  = Vector(6947, -100, 12116),
+			 [160] = Vector(12881, -100, 8294), 
+			 [96]  = Vector(10242, -100, 1519), 
+			 [202] = Vector(3639, -100, 1490), 
+			 [145] = Vector(1027, -100, 8288), 
+			 [197] = Vector(4324, -100, 5500),
+			 [244] = Vector(9573, -100, 5530), 
+		}
+		self.times = {
+			 [122] = 30, 
+			 [70]  = 30, 
+			 [203] = 30,
+			 [81]  = 30, 
+			 [160] = 30, 
+			 [96]  = 30, 
+			 [202] = 30, 
+			 [145] = 30, 
+			 [197] = 30, 
+			 [244] = 30,
 		}
 	end
 	self.activeTimers = {}
@@ -552,23 +780,25 @@ function TIMERS:Tick()
 end
 
 function TIMERS:RecvPacket(p)
-	if p.header == 0x93 then
-		p.pos=6
+	if p.header == 0xAB then
+		p.pos = 10
+		local hasVision = p:Decode4()
+		p.pos = 19
 		local camp = p:Decode1()
-		p.pos=10
-		local o = objManager:GetObjectByNetworkId(p:DecodeF())
-		if o then
-			self.activeTimers[camp] = {spawnTime = os.clock()+self.times[camp], pos = self.pos[camp], minimap = GetMinimap(self.pos[camp]),}
-			return
-		elseif camp == 6 and self.map == 'summonerRift' then
-			self.checkLastDragon = true
-			return
-		elseif camp == 12 and self.map == 'summonerRift' then
-			self.checkLastBaron = true
-			return
+		if self.pos[camp] then
+			if hasVision ~= 2678038528 then
+				self.activeTimers[camp] = {spawnTime = os.clock()+self.times[camp], pos = self.pos[camp], minimap = GetMinimap(self.pos[camp]),}
+				return
+			elseif camp == 102 and self.map == 'summonerRift' then
+				self.checkLastDragon = true
+				return
+			elseif camp == 194 and self.map == 'summonerRift' then
+				self.checkLastBaron = true
+				return
+			end
 		end
 	end
-	if p.header == 0xF4 then
+	if p.header == 0xC6 then
 		p.pos=2
 		local inhib = p:Decode4()
 		if self.inhibs[inhib] then
@@ -585,61 +815,6 @@ function TIMERS:WndMsg(m,k)
 			local miniMap = GetMinimap(pos)
 			if math.abs(cP.x-miniMap.x) < 10 and math.abs(cP.y-miniMap.y) < 10 then
 				self.activeTimers[camp] = {spawnTime = os.clock()+self.times[camp], pos = pos, minimap = miniMap,}
-			end
-		end
-	end
-end
-
-class 'TRINKET'
-
-function TRINKET:__init()
-	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, [3361] = true, [3362] = true, [3363] = true, [3364] = true, }
-	self.currentTrinket = 0
-	self.trM = self:Menu()
-	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then 
-		DelayAction(function() BuyItem(3339+self.trM.type) end, 1)
-	end
-	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
-	loadMsg = loadMsg..'TrinketHelper, '
-end
-
-function TRINKET:Menu()
-	MainMenu:addSubMenu('Trinket Helper', 'Trinket')
-	local trM = MainMenu.Trinket
-	trM:addParam('ward', 'Buy Trinket on Game Start', SCRIPT_PARAM_ONOFF, true)
-	trM:addParam('type', 'Trinket on Game Start', SCRIPT_PARAM_LIST, 1, { 'Ward Totem', 'Sweeper', 'ScryingOrb' })
-	trM:addParam('sweeper', 'Enable Sweeper Purchase', SCRIPT_PARAM_ONOFF, true)
-	trM:addParam('timer', 'Buy Sweeper after x Minutes', SCRIPT_PARAM_SLICE, 10, 1, 60)
-	trM:addParam('scryorb', 'Enable ScryingOrb Purchase', SCRIPT_PARAM_ONOFF, true)
-	trM:addParam('timer2', 'Buy ScryingOrb after x Minutes', SCRIPT_PARAM_SLICE, 40, 10, 60)
-	trM:addParam('sightstone', 'Buy Sweeper on Sightstone', SCRIPT_PARAM_ONOFF, true)
-	return trM
-end
-
-function TRINKET:RecvPacket(p)
-	if p.header == 0x129 then
-		p.pos=2
-		if p:DecodeF() == myHero.networkID then
-			p.pos=11
-			local itemID = p:Decode4()
-			if self.trinketID[itemID] then
-				self.currentTrinket = itemID
-			end
-			local gameTime = os.clock()/60
-			if self.trM and self.currentTrinket == 3340 and gameTime >= self.trM.timer then
-				SellItem(ITEM_7)
-				DelayAction(function() BuyItem(3341) end, 0.2)
-				return
-			end
-			if (self.currentTrinket == 3340 or self.currentTrinket == 3341) and self.trM.scryorb and gameTime >= self.trM.timer2 then
-				SellItem(ITEM_7)
-				DelayAction(function() BuyItem(3342) end, 0.2)
-				return
-			end
-			if self.trM.sweeper and self.trM.sightstone and self.currentTrinket == 3340 and itemID == 2049 then
-				SellItem(ITEM_7)
-				DelayAction(function() BuyItem(3341) end, 0.2)
-				return
 			end
 		end
 	end
