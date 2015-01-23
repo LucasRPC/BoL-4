@@ -3,3016 +3,816 @@
     <Environment ignoreCase="no" startFunc="(" stopFunc=")" paramSeparator="," terminal=";" additionalWordChar = ".:"/>
     <AutoComplete language="LUA">
         <KeyWord name="and" func="no" />
-
-        <KeyWord name="assert" func="yes">
-            <Overload retVal="void" descr="
-Issues an error when the value of its argument v is false (i.e., nil or false);
-otherwise, returns all its arguments. message is an error message; when absent, it 
-defaults to 'assertion failed!'">
-                <Param name="Bool:v"/>
-                <Param name="String:[message]"/>
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="assert(bool,String:[message])" func="no" />
         <KeyWord name="break" func="no" />
-        <KeyWord name="collectgarbage" func="yes">
-            <Overload retVal="void" descr="This function is a generic interface to the garbage collector.
-It performs different functions according to its first argument, opt:
-
-    * 'stop': stops the garbage collector.
-    * 'restart': restarts the garbage collector.
-    * 'collect': performs a full garbage-collection cycle.
-    * 'count': returns the total memory in use by Lua (in Kbytes).
-    * 'step': performs a garbage-collection step. The step 'size' is controlled by arg
-        (larger values mean more steps) in a non-specified way. If you want to control
-        the step size you must experimentally tune the value of arg. Returns true if
-        the step finished a collection cycle.
-    * 'setpause': sets arg as the new value for the pause of the collector (see §2.10).
-        Returns the previous value for pause.
-    * 'setstepmul': sets arg as the new value for the step multiplier of the collector
-        (see §2.10). Returns the previous value for step.
-">
-                <Param name="String:opt"/>
-                <Param name="[arg]"/>
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.create" func="yes">
-            <Overload retVal="void" descr="
-Creates a new coroutine, with body f. f must be a Lua function. Returns this new
-coroutine, an object with type 'thread'.
-">
-                <Param name="Function:f" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.resume" func="yes">
-            <Overload retVal="void" descr="
-Starts or continues the execution of coroutine co. The first time you resume a
-coroutine, it starts running its body. The values val1, ··· are passed as the 
-arguments to the body function. If the coroutine has yielded, resume restarts it; the 
-values val1, ··· are passed as the results from the yield.
-
-If the coroutine runs without any errors, resume returns true plus any values passed 
-to yield (if the coroutine yields) or any values returned by the body function (if the
-coroutine terminates). If there is any error, resume returns false plus the error 
-message.
-">
-                <Param name="co" />
-                <Param name="[, val, ...]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.running" func="yes">
-            <Overload retVal="void" descr="
-Returns the running coroutine, or nil when called by the main thread. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.status" func="yes">
-            <Overload retVal="void" descr="
-Returns the status of coroutine co, as a string: 'running', if the coroutine is running (that is, it called status); 
-'suspended', if the coroutine is suspended in a call to yield, or if it has not started running yet; 
-'normal' if the coroutine is active but not running (that is, it has resumed another coroutine); and 
-'dead' if the coroutine has finished its body function, or if it has stopped with an error. 
-        ">
-                <Param name="co" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.wrap" func="yes">
-            <Overload retVal="void" descr="
-Creates a new coroutine, with body f. f must be a Lua function. Returns a function that resumes 
-the coroutine each time it is called. Any arguments passed to the function behave as the extra 
-arguments to resume. Returns the same values returned by resume, except the first boolean. In 
-case of error, propagates the error. 
-        ">
-                <Param name="f" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="coroutine.yield" func="yes">
-            <Overload retVal="void" descr="
-Suspends the execution of the calling coroutine. The coroutine cannot be running a C function, a 
-metamethod, or an iterator. Any arguments to yield are passed as extra results to resume. 
-        ">
-                <Param name="..." />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.debug" func="yes">
-            <Overload retVal="void" descr="
-Enters an interactive mode with the user, running each string that the user enters. Using 
-simple commands and other debug facilities, the user can inspect global and local variables, 
-change their values, evaluate expressions, and so on. A line containing only the word cont 
-finishes this function, so that the caller continues its execution.
-
-Note that commands for debug.debug are not lexically nested within any function, and so 
-have no direct access to local variables. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getfenv" func="yes">
-            <Overload retVal="void" descr="
-Returns the environment of object o. 
-        ">
-                <Param name="o" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.gethook" func="yes">
-            <Overload retVal="void" descr="
-Returns the current hook settings of the thread, as three values: the current hook function, the 
-current hook mask, and the current hook count (as set by the debug.sethook function). 
-        ">
-                <Param name="[thread]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getinfo" func="yes">
-            <Overload retVal="void" descr="
-Returns a table with information about a function. You can give the function directly, or you 
-can give a number as the value of function, which means the function running at level function 
-of the call stack of the given thread: level 0 is the current function (getinfo itself); level 1 
-is the function that called getinfo; and so on. If function is a number larger than the number 
-of active functions, then getinfo returns nil.
-
-The returned table can contain all the fields returned by lua_getinfo, with the string what 
-describing which fields to fill in. The default for what is to get all information available, 
-except the table of valid lines. If present, the option 'f' adds a field named func with the 
-function itself. If present, the option 'L' adds a field named activelines with the table of 
-valid lines.
-
-For instance, the expression debug.getinfo(1,'n').name returns a table with a name for the current 
-function, if a reasonable name can be found, and the expression debug.getinfo(print) returns a table 
-with all available information about the print function. 
-        ">
-                <Param name="[thread,]" />
-                <Param name="function" />
-                <Param name="[, what]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getlocal" func="yes">
-            <Overload retVal="void" descr="
-This function returns the name and the value of the local variable with index local of the function 
-at level level of the stack. (The first parameter or local variable has index 1, and so on, until the 
-last active local variable.) The function returns nil if there is no local variable with the given index, 
-and raises an error when called with a level out of range. (You can call debug.getinfo to check whether 
-the level is valid.)
-
-Variable names starting with '(' (open parentheses) represent internal variables (loop control variables, 
-temporaries, and C function locals). 
-        ">
-                <Param name="[thread,]" />
-                <Param name="level" />
-                <Param name="local" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getmetatable" func="yes">
-            <Overload retVal="void" descr="
-Returns the metatable of the given object or nil if it does not have a metatable. 
-        ">
-                <Param name="object" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getregistry" func="yes">
-            <Overload retVal="void" descr="
-Returns the registry table (see §3.5). 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.getupvalue" func="yes">
-            <Overload retVal="void" descr="
-This function returns the name and the value of the upvalue with index up of the function 
-func. The function returns nil if there is no upvalue with the given index. 
-        ">
-                <Param name="func" />
-                <Param name="up" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.setfenv" func="yes">
-            <Overload retVal="void" descr="
-Sets the environment of the given object to the given table. Returns object. 
-        ">
-                <Param name="object" />
-                <Param name="table" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.sethook" func="yes">
-            <Overload retVal="void" descr="
-Sets the given function as a hook. The string mask and the number count describe when the hook 
-will be called. The string mask may have the following characters, with the given meaning:
-
-    * 'c': the hook is called every time Lua calls a function;
-    * 'r': the hook is called every time Lua returns from a function;
-    * 'l': the hook is called every time Lua enters a new line of code.
-
-With a count different from zero, the hook is called after every count instructions.
-
-When called without arguments, debug.sethook turns off the hook.
-
-When the hook is called, its first parameter is a string describing the event that has triggered 
-its call: 'call', 'return' (or 'tail return', when simulating a return from a tail call), 'line', 
-and 'count'. For line events, the hook also gets the new line number as its second parameter. 
-Inside a hook, you can call getinfo with level 2 to get more information about the running function 
-(level 0 is the getinfo function, and level 1 is the hook function), unless the event is 'tail return'. 
-In this case, Lua is only simulating the return, and a call to getinfo will return invalid data. 
-        ">
-                <Param name="[thread,]" />
-                <Param name="hook" />
-                <Param name="mask" />
-                <Param name="[, count]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.setlocal" func="yes">
-            <Overload retVal="void" descr="
-This function assigns the value value to the local variable with index local of the function at level 
-level of the stack. The function returns nil if there is no local variable with the given index, and 
-raises an error when called with a level out of range. (You can call getinfo to check whether the level 
-is valid.) Otherwise, it returns the name of the local variable. 
-        ">
-                <Param name="[thread,]" />
-                <Param name="level" />
-                <Param name="local" />
-                <Param name="value" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.setmetatable" func="yes">
-            <Overload retVal="void" descr="
-Sets the metatable for the given object to the given table (which can be nil). 
-        ">
-                <Param name="object" />
-                <Param name="table" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.setupvalue" func="yes">
-            <Overload retVal="void" descr="
-This function assigns the value value to the upvalue with index up of the function func. The function 
-returns nil if there is no upvalue with the given index. Otherwise, it returns the name of the upvalue. 
-        ">
-                <Param name="func" />
-                <Param name="up" />
-                <Param name="value" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="debug.traceback" func="yes">
-            <Overload retVal="void" descr="
-Returns a string with a traceback of the call stack. An optional message string is appended at the 
-beginning of the traceback. An optional level number tells at which level to start the traceback 
-(default is 1, the function calling traceback). 
-        ">
-                <Param name="[thread,]" />
-                <Param name="[message]" />
-                <Param name="[, level]" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="collectgarbage(string:opt,[arg])" func="no" />
+        <KeyWord name="coroutine.create(function:f)" func="no" />
+        <KeyWord name="coroutine.resume(co,[,val,...])" func="no" />
+        <KeyWord name="coroutine.running()" func="no" />
+        <KeyWord name="coroutine.status(co)" func="no" />
+        <KeyWord name="coroutine.wrap(f)" func="no" />
+        <KeyWord name="coroutine.yield(...)" func="no" />
         <KeyWord name="do" func="no" />
-
-        <KeyWord name="dofile" func="yes">
-            <Overload retVal="void" descr="
-Opens the named file and executes its contents as a Lua chunk. When called without arguments, dofile 
-executes the contents of the standard input (stdin). Returns all values returned by the chunk. In case 
-of errors, dofile propagates the error to its caller (that is, dofile does not run in protected mode). 
-        ">
-                <Param name="filename" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="dofile(filename)" func="no" />
         <KeyWord name="else" func="no" />
         <KeyWord name="elseif" func="no" />
         <KeyWord name="end" func="no" />
-
-        <KeyWord name="error" func="yes">
-            <Overload retVal="void" descr="
-Terminates the last protected function called and returns message as the error message. 
-Function error never returns.
-
-Usually, error adds some information about the error position at the beginning of the message. 
-The level argument specifies how to get the error position. With level 1 (the default), the error 
-position is where the error function was called. Level 2 points the error to where the function 
-that called error was called; and so on. Passing a level 0 avoids the addition of error position 
-information to the message. 
-        ">
-                <Param name="message" />
-                <Param name="[, level]" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="error(message,[level])" func="no" />
         <KeyWord name="false" func="no" />
-
-        <KeyWord name="file:close" func="yes">
-            <Overload retVal="void" descr="
-Closes file. Note that files are automatically closed when their handles are garbage collected, 
-but that takes an unpredictable amount of time to happen. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="file:flush" func="yes">
-            <Overload retVal="void" descr="
-Saves any written data to file. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="file:lines" func="yes">
-            <Overload retVal="void" descr="
-Returns an iterator function that, each time it is called, returns a new line from the file. 
-Therefore, the construction
-for line in file:lines() do body end
-will iterate over all lines of the file. (Unlike io.lines, this function does not close the file when the loop ends.) 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="file:read" func="yes">
-            <Overload retVal="void" descr="
-Reads the file file, according to the given formats, which specify what to read. For each format, 
-the function returns a string (or a number) with the characters read, or nil if it cannot read data 
-with the specified format. When called without formats, it uses a default format that reads the entire 
-next line (see below).
-
-The available formats are
-
-    * '*n': reads a number; this is the only format that returns a number instead of a string.
-    * '*a': reads the whole file, starting at the current position. On end of file, it returns the empty string.
-    * '*l': reads the next line (skipping the end of line), returning nil on end of file. This is the default format.
-    * number: reads a string with up to this number of characters, returning nil on end of file. If number is zero, it 
-            reads nothing and returns an empty string, or nil on end of file.
-
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="file:seek" func="yes">
-            <Overload retVal="void" descr="
-Sets and gets the file position, measured from the beginning of the file, to the position given by offset 
-plus a base specified by the string whence, as follows:
-
-    * 'set': base is position 0 (beginning of the file);
-    * 'cur': base is current position;
-    * 'end': base is end of file;
-
-In case of success, function seek returns the final file position, measured in bytes from the beginning of the 
-file. If this function fails, it returns nil, plus a string describing the error.
-
-The default value for whence is 'cur', and for offset is 0. Therefore, the call file:seek() returns the 
-current file position, without changing it; the call file:seek('set') sets the position to the beginning 
-of the file (and returns 0); and the call file:seek('end') sets the position to the end of the file, and 
-returns its size. 
-        ">
-                <Param name="[whence]" />
-                <Param name="[, offset]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="file:setvbuf" func="yes">
-            <Overload retVal="void" descr="
-Sets the buffering mode for an output file. There are three available modes:
-
-    * 'no': no buffering; the result of any output operation appears immediately.
-    * 'full': full buffering; output operation is performed only when the buffer is full 
-            (or when you explicitly flush the file (see io.flush)).
-    * 'line': line buffering; output is buffered until a newline is output or there is any input 
-            from some special files (such as a terminal device).
-
-For the last two cases, size specifies the size of the buffer, in bytes. The default is an appropriate size. 
-        ">
-                <Param name="mode" />
-                <Param name="[, size]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="file:write" func="yes">
-            <Overload retVal="void" descr="
-Writes the value of each of its arguments to the file. The arguments must be strings or numbers. To write 
-other values, use tostring or string.format before write. 
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="file:close()" func="no" />
+        <KeyWord name="file:flush()" func="no" />
+        <KeyWord name="file:lines()" func="no" />
+        <KeyWord name="file:read(...)" func="no" />
+        <KeyWord name="file:seek([whence,[offset]])" func="no" />
+        <KeyWord name="file:setvbuf(mode,[size])" func="no" />
+        <KeyWord name="file:write(...)" func="no" />
         <KeyWord name="for" func="no" />
         <KeyWord name="function" func="no" />
-
-        <KeyWord name="getfenv" func="yes">
-            <Overload retVal="void" descr="
-Returns the current environment in use by the function. f can be a Lua function or a number that specifies 
-the function at that stack level: Level 1 is the function calling getfenv. If the given function is not a 
-Lua function, or if f is 0, getfenv returns the global environment. The default for f is 1. 
-        ">
-                <Param name="[f]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="getmetatable" func="yes">
-            <Overload retVal="void" descr="
-If object does not have a metatable, returns nil. Otherwise, if the object's metatable has a '__metatable' 
-field, returns the associated value. Otherwise, returns the metatable of the given object. 
-        ">
-                <Param name="object" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="getfenv(f)" func="no" />
+        <KeyWord name="getmetatable(object)" func="no" />
         <KeyWord name="if" func="no" />
         <KeyWord name="in" func="no" />
-
-        <KeyWord name="io.close" func="yes">
-            <Overload retVal="void" descr="
-Equivalent to file:close(). Without a file, closes the default output file. 
-        ">
-                <Param name="[file]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.flush" func="yes">
-            <Overload retVal="void" descr="
-Equivalent to file:flush over the default output file. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="io.input" func="yes">
-            <Overload retVal="void" descr="
-When called with a file name, it opens the named file (in text mode), and sets its handle as the default 
-input file. When called with a file handle, it simply sets this file handle as the default input file. When 
-called without parameters, it returns the current default input file.
-
-In case of errors this function raises the error, instead of returning an error code. 
-        ">
-                <Param name="[file]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.lines" func="yes">
-            <Overload retVal="void" descr="
-Opens the given file name in read mode and returns an iterator function that, each time it is called, 
-returns a new line from the file. Therefore, the construction
-
-     for line in io.lines(filename) do body end
-
-will iterate over all lines of the file. When the iterator function detects the end of file, it returns 
-nil (to finish the loop) and automatically closes the file.
-
-The call io.lines() (with no file name) is equivalent to io.input():lines(); that is, it iterates over 
-the lines of the default input file. In this case it does not close the file when the loop ends. 
-        ">
-                <Param name="[filename]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.open" func="yes">
-            <Overload retVal="void" descr="
-This function opens a file, in the mode specified in the string mode. It returns a new file handle, 
-or, in case of errors, nil plus an error message.
-
-The mode string can be any of the following:
-
-    * 'r': read mode (the default);
-    * 'w': write mode;
-    * 'a': append mode;
-    * 'r+': update mode, all previous data is preserved;
-    * 'w+': update mode, all previous data is erased;
-    * 'a+': append update mode, previous data is preserved, writing is only allowed at the end of file.
-
-The mode string can also have a 'b' at the end, which is needed in some systems to open the file in 
-binary mode. This string is exactly what is used in the standard C function fopen. 
-        ">
-                <Param name="filename" />
-                <Param name="[, mode]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.output" func="yes">
-            <Overload retVal="void" descr="
-Similar to io.input, but operates over the default output file. 
-        ">
-                <Param name="[file]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.popen" func="yes">
-            <Overload retVal="void" descr="
-Starts program prog in a separated process and returns a file handle that you can use to read data from 
-this program (if mode is 'r', the default) or to write data to this program (if mode is 'w').
-
-This function is system dependent and is not available on all platforms. 
-        ">
-                <Param name="prog" />
-                <Param name="[, mode]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.read" func="yes">
-            <Overload retVal="void" descr="
-Equivalent to io.input():read. 
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.tmpfile" func="yes">
-            <Overload retVal="void" descr="
-Returns a handle for a temporary file. This file is opened in update mode and it is automatically 
-removed when the program ends. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="io.type" func="yes">
-            <Overload retVal="void" descr="
-Checks whether obj is a valid file handle. Returns the string 'file' if obj is an open file handle, 
-'closed file' if obj is a closed file handle, or nil if obj is not a file handle. 
-        ">
-                <Param name="obj" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="io.write" func="yes">
-            <Overload retVal="void" descr="
-Equivalent to io.output():write. 
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="ipairs" func="yes">
-            <Overload retVal="void" descr="
-Returns three values: an iterator function, the table t, and 0, so that the construction
-
-     for i,v in ipairs(t) do body end
-
-will iterate over the pairs (1,t[1]), (2,t[2]), ···, up to the first integer key absent from the table. 
-        ">
-                <Param name="t" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="load" func="yes">
-            <Overload retVal="void" descr="
-Loads a chunk using function func to get its pieces. Each call to func must return a string that 
-concatenates with previous results. A return of an empty string, nil, or no value signals the end of 
-the chunk.
-
-If there are no errors, returns the compiled chunk as a function; otherwise, returns nil plus the error 
-message. The environment of the returned function is the global environment.
-
-chunkname is used as the chunk name for error messages and debug information. When absent, 
-it defaults to '=(load)'. 
-        ">
-                <Param name="func" />
-                <Param name="[, chunkname]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="loadfile" func="yes">
-            <Overload retVal="void" descr="
-Similar to load, but gets the chunk from file filename or from the standard input, 
-if no file name is given. 
-        ">
-                <Param name="[filename]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="loadstring" func="yes">
-            <Overload retVal="void" descr="
-Similar to load, but gets the chunk from the given string.
-To load and run a given string, use the idiom
-     assert(loadstring(s))()
-When absent, chunkname defaults to the given string. 
-        ">
-                <Param name="string" />
-                <Param name="[, chunkname]" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="io.close(file)" func="no" />
+        <KeyWord name="io.flush()" func="no" />
+        <KeyWord name="io.input([file])" func="no" />
+        <KeyWord name="io.lines(filename)" func="no" />
+        <KeyWord name="io.open(filename,[mode])" func="no" />
+        <KeyWord name="io.output([file])" func="no" />
+        <KeyWord name="io.popen(prog,[,mode])" func="no" />
+        <KeyWord name="io.read(...)" func="no" />
+        <KeyWord name="io.tmpfile()" func="no" />
+        <KeyWord name="io.type(obj)" func="no" />
+        <KeyWord name="io.write(...)" func="no" />
+        <KeyWord name="ipairs(t)" func="no" />
+        <KeyWord name="load(func,[chunkname])" func="no" />
+        <KeyWord name="loadfile([filename])" func="no" />
+        <KeyWord name="loadstring(string,chunkname)" func="no" />
         <KeyWord name="local" func="no" />
-
-        <KeyWord name="math.abs" func="yes">
-            <Overload retVal="void" descr="
-Returns the absolute value of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.acos" func="yes">
-            <Overload retVal="void" descr="
-Returns the arc cosine of x (in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.asin" func="yes">
-            <Overload retVal="void" descr="
-Returns the arc sine of x (in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.atan" func="yes">
-            <Overload retVal="void" descr="
-Returns the arc tangent of x (in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.atan2" func="yes">
-            <Overload retVal="void" descr="
-Returns the arc tangent of y/x (in radians), but uses the signs of both parameters to 
-find the quadrant of the result. (It also handles correctly the case of x being zero.) 
-        ">
-                <Param name="y" />
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.ceil" func="yes">
-            <Overload retVal="void" descr="
-Returns the smallest integer larger than or equal to x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.cos" func="yes">
-            <Overload retVal="void" descr="
-Returns the cosine of x (assumed to be in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.cosh" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the hyperbolic cosine of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.deg" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the angle x (given in radians) in degrees. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.exp" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the value ex. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.floor" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the largest integer smaller than or equal to x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.fmod" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the remainder of the division of x by y that rounds the quotient towards zero. 
-        ">
-                <Param name="x" />
-                <Param name="y" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.frexp" func="yes">
-
-            <Overload retVal="void" descr="
-Returns m and e such that x = m2e, e is an integer and the absolute value of m is in 
-the range [0.5, 1) (or zero when x is zero). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.huge" func="no" />
-
-        <KeyWord name="math.ldexp" func="yes">
-
-            <Overload retVal="void" descr="
-Returns m2e (e should be an integer). 
-        ">
-                <Param name="m" />
-                <Param name="e" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.log" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the natural logarithm of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.log10" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the base-10 logarithm of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.max" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the maximum value among its arguments. 
-        ">
-                <Param name="x" />
-                <Param name="..." />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.min" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the minimum value among its arguments. 
-        ">
-                <Param name="x" />
-                <Param name="..." />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.modf" func="yes">
-
-            <Overload retVal="void" descr="
-Returns two numbers, the integral part of x and the fractional part of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="math.abs(x)" func="no" />
+        <KeyWord name="math.acos(x)" func="no" />
+        <KeyWord name="math.asin(x)" func="no" />
+        <KeyWord name="math.atan(x)" func="no" />
+        <KeyWord name="math.atan2(x)" func="no" />
+        <KeyWord name="math.ceil(x)" func="no" />
+        <KeyWord name="math.cos(x)" func="no" />
+        <KeyWord name="math.cosh(x)" func="no" />
+        <KeyWord name="math.deg(x)" func="no" />
+        <KeyWord name="math.exp(x)" func="no" />
+        <KeyWord name="math.floor(x)" func="no" />
+        <KeyWord name="math.fmod(x,y)" func="no" />
+        <KeyWord name="math.frexp(x)" func="no" />
+        <KeyWord name="math.huge()" func="no" />
+        <KeyWord name="math.ldexp(m,e)" func="no" />
+        <KeyWord name="math.log(x)" func="no" />
+        <KeyWord name="math.log10(x)" func="no" />
+        <KeyWord name="math.max(x,...)" func="no" />
+        <KeyWord name="math.min(x,...)" func="no" />
+        <KeyWord name="math.modf(x)" func="no" />
         <KeyWord name="math.pi" func="no" />
-
-        <KeyWord name="math.pow" func="yes">
-
-            <Overload retVal="void" descr="
-Returns xy. (You can also use the expression x^y to compute this value.) 
-        ">
-                <Param name="x" />
-                <Param name="y" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.rad" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the angle x (given in degrees) in radians. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.random" func="yes">
-
-            <Overload retVal="void" descr="
-This function is an interface to the simple pseudo-random generator function rand 
-provided by ANSI C. (No guarantees can be given for its statistical properties.)
-
-When called without arguments, returns a uniform pseudo-random real number in the 
-range [0,1). When called with an integer number m, math.random returns a uniform 
-pseudo-random integer in the range [1, m]. When called with two integer numbers m and 
-n, math.random returns a uniform pseudo-random integer in the range [m, n]. 
-        ">
-                <Param name="[m [, n]]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.randomseed" func="yes">
-
-            <Overload retVal="void" descr="
-Sets x as the 'seed' for the pseudo-random generator: equal seeds produce equal 
-sequences of numbers. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.sin" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the sine of x (assumed to be in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.sinh" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the hyperbolic sine of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.sqrt" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the square root of x. (You can also use the expression x^0.5 to compute this value.) 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.tan" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the tangent of x (assumed to be in radians). 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="math.tanh" func="yes">
-            <Overload retVal="void" descr="
-Returns the hyperbolic tangent of x. 
-        ">
-                <Param name="x" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="module" func="yes">
-            <Overload retVal="void" descr="
-Creates a module. If there is a table in package.loaded[name], this table is the module. 
-Otherwise, if there is a global table t with the given name, this table is the module. 
-Otherwise creates a new table t and sets it as the value of the global name and the value 
-of package.loaded[name]. This function also initializes t._NAME with the given name, t._M 
-with the module (t itself), and t._PACKAGE with the package name (the full module name 
-minus last component; see below). Finally, module sets t as the new environment of the 
-current function and the new value of package.loaded[name], so that require returns t.
-
-If name is a compound name (that is, one with components separated by dots), module creates 
-(or reuses, if they already exist) tables for each component. For instance, if name is a.b.c, 
-then module stores the module table in field c of field b of global a.
-
-This function can receive optional options after the module name, where each option is a 
-function to be applied over the module. 
-        ">
-                <Param name="name" />
-                <Param name="[, ···]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="next" func="yes">
-
-            <Overload retVal="void" descr="
-Allows a program to traverse all fields of a table. Its first argument is a table and its second 
-argument is an index in this table. next returns the next index of the table and its associated 
-value. When called with nil as its second argument, next returns an initial index and its associated 
-value. When called with the last index, or with nil in an empty table, next returns nil. If the 
-second argument is absent, then it is interpreted as nil. In particular, you can use next(t) to 
-check whether a table is empty.
-
-The order in which the indices are enumerated is not specified, even for numeric indices. (To 
-traverse a table in numeric order, use a numerical for or the ipairs function.)
-
-The behavior of next is undefined if, during the traversal, you assign any value to a non-existent 
-field in the table. You may however modify existing fields. In particular, you may clear existing 
-fields. 
-        ">
-                <Param name="table" />
-                <Param name="[, index]" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="math.pow(x,y)" func="no" />
+        <KeyWord name="math.rad(x)" func="no" />
+        <KeyWord name="math.random(max,min)" func="no" />
+        <KeyWord name="math.randomseed(x)" func="no" />
+        <KeyWord name="math.sin(x)" func="no" />
+        <KeyWord name="math.sinh(x)" func="no" />
+        <KeyWord name="math.sqrt(x)" func="no" />
+        <KeyWord name="math.tan(x)" func="no" />
+        <KeyWord name="math.tanh(x)" func="no" />
+        <KeyWord name="module(name,[...])" func="no" />
         <KeyWord name="nil" func="no" />
         <KeyWord name="not" func="no" />
         <KeyWord name="or" func="no" />
-
-        <KeyWord name="os.clock" func="yes">
-            <Overload retVal="void" descr="
-Returns an approximation of the amount in seconds of CPU time used by the program. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="os.date" func="yes">
-
-            <Overload retVal="void" descr="
-Returns a string or a table containing date and time, formatted according to the given string format.
-
-If the time argument is present, this is the time to be formatted (see the os.time function 
-for a description of this value). Otherwise, date formats the current time.
-
-If format starts with '!', then the date is formatted in Coordinated Universal Time. After this 
-optional character, if format is the string '*t', then date returns a table with the following fields: 
-year (four digits), 
-month (1--12), 
-day (1--31), 
-hour (0--23), 
-min (0--59), 
-sec (0--61), 
-wday (weekday, Sunday is 1), 
-yday (day of the year), and 
-isdst (daylight saving flag, a boolean).
-
-If format is not '*t', then date returns the date as a string, formatted according to the same 
-rules as the C function strftime.
-
-When called without arguments, date returns a reasonable date and time representation that 
-depends on the host system and on the current locale (that is, os.date() is equivalent to os.date('%c')). 
-        ">
-                <Param name="[format [, time]]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.difftime" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the number of seconds from time t1 to time t2. In POSIX, Windows, and some other systems, 
-this value is exactly t2-t1. 
-        ">
-                <Param name="t2" />
-                <Param name="t1" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.execute" func="yes">
-
-            <Overload retVal="void" descr="
-This function is equivalent to the C function system. It passes command to be executed by an operating 
-system shell. It returns a status code, which is system-dependent. If command is absent, then it returns 
-nonzero if a shell is available and zero otherwise. 
-        ">
-                <Param name="[command]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.exit" func="yes">
-
-            <Overload retVal="void" descr="
-Calls the C function exit, with an optional code, to terminate the host program. The default 
-value for code is the success code. 
-        ">
-                <Param name="[code]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.getenv" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the value of the process environment variable varname, or nil if the variable is not defined. 
-        ">
-                <Param name="varname" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.remove" func="yes">
-
-            <Overload retVal="void" descr="
-Deletes the file or directory with the given name. Directories must be empty to be removed. If this 
-function fails, it returns nil, plus a string describing the error. 
-        ">
-                <Param name="filename" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.rename" func="yes">
-
-            <Overload retVal="void" descr="
-Renames file or directory named oldname to newname. If this function fails, it returns nil, plus a 
-string describing the error. 
-        ">
-                <Param name="oldname" />
-                <Param name="newname" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.setlocale" func="yes">
-
-            <Overload retVal="void" descr="
-Sets the current locale of the program. locale is a string specifying a locale; category is an optional 
-string describing which category to change: 'all', 'collate', 'ctype', 'monetary', 'numeric', or 'time'; 
-the default category is 'all'. The function returns the name of the new locale, or nil if the request 
-cannot be honored.
-
-If locale is the empty string, the current locale is set to an implementation-defined native locale. If 
-locale is the string 'C', the current locale is set to the standard C locale.
-
-When called with nil as the first argument, this function only returns the name of the current locale 
-for the given category. 
-        ">
-                <Param name="locale" />
-                <Param name="[, category]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.time" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the current time when called without arguments, or a time representing the date and time specified 
-by the given table. This table must have fields year, month, and day, and may have fields hour, min, sec, 
-and isdst (for a description of these fields, see the os.date function).
-
-The returned value is a number, whose meaning depends on your system. In POSIX, Windows, and some other 
-systems, this number counts the number of seconds since some given start time (the 'epoch'). 
-In other systems, the meaning is not specified, and the number returned by time can be used only as an 
-argument to date and difftime. 
-        ">
-                <Param name="[table]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="os.tmpname" func="yes">
-            <Overload retVal="void" descr="
-Returns a string with a file name that can be used for a temporary file. The file must be explicitly 
-opened before its use and explicitly removed when no longer needed.
-
-On some systems (POSIX), this function also creates a file with that name, to avoid security risks. 
-(Someone else might create the file with wrong permissions in the time between getting the name and 
-creating the file.) You still have to open the file to use it and to remove it (even if you do not use it).
-
-When possible, you may prefer to use io.tmpfile, which automatically removes the file when the program ends. 
-        "></Overload>
-        </KeyWord>
-
-        <KeyWord name="package.cpath" func="no" />
-
-        <KeyWord name="package.loaded" func="no" />
-
-        <KeyWord name="package.loaders" func="no" />
-
-        <KeyWord name="package.loadlib" func="yes">
-            (libname, funcname)
-
-            <Overload retVal="void" descr="
-Dynamically links the host program with the C library libname. Inside this library, looks for a function 
-funcname and returns this function as a C function. (So, funcname must follow the protocol (see lua_CFunction)).
-
-This is a low-level function. It completely bypasses the package and module system. Unlike require, it 
-does not perform any path searching and does not automatically adds extensions. libname must be the complete 
-file name of the C library, including if necessary a path and extension. funcname must be the exact name 
-exported by the C library (which may depend on the C compiler and linker used).
-
-This function is not supported by ANSI C. As such, it is only available on some platforms (Windows, 
-Linux, Mac OS X, Solaris, BSD, plus other Unix systems that support the dlfcn standard). 
-        ">
-                <Param name="libname" />
-                <Param name="funcname" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="package.path" func="no" />
-
-        <KeyWord name="package.preload" func="no" />
-
-        <KeyWord name="package.seeall" func="yes">
-            (module)
-
-            <Overload retVal="void" descr="
-Sets a metatable for module with its __index field referring to the global environment, so that this 
-module inherits values from the global environment. To be used as an option to function module. 
-        ">
-                <Param name="module" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="pairs" func="yes">
-
-            <Overload retVal="void" descr="
-Returns three values: the next function, the table t, and nil, so that the construction
-
-     for k,v in pairs(t) do body end
-
-will iterate over all key–value pairs of table t.
-
-See function next for the caveats of modifying the table during its traversal. 
-        ">
-                <Param name="t" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="pcall" func="yes">
-
-            <Overload retVal="void" descr="
-Calls function f with the given arguments in protected mode. This means that any error 
-inside f is not propagated; instead, pcall catches the error and returns a status code. 
-Its first result is the status code (a boolean), which is true if the call succeeds without 
-errors. In such case, pcall also returns all results from the call, after this first result. 
-In case of any error, pcall returns false plus the error message. 
-        ">
-                <Param name="f" />
-                <Param name="arg1" />
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="print" func="yes">
-            <Overload retVal="void" descr="
-Receives any number of arguments, and prints their values to stdout, using the tostring 
-function to convert them to strings. print is not intended for formatted output, but only 
-as a quick way to show a value, typically for debugging. For formatted output, use string.format. 
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="rawequal" func="yes">
-            <Overload retVal="void" descr="
-Checks whether v1 is equal to v2, without invoking any metamethod. Returns a boolean. 
-        ">
-                <Param name="v1" />
-                <Param name="v2" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="rawget" func="yes">
-            <Overload retVal="void" descr="
-Gets the real value of table[index], without invoking any metamethod. table must be a 
-table; index may be any value. 
-        ">
-                <Param name="table" />
-                <Param name="index" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="rawset" func="yes">
-            <Overload retVal="void" descr="
-Sets the real value of table[index] to value, without invoking any metamethod. table must 
-be a table, index any value different from nil, and value any Lua value.
-
-This function returns table. 
-        ">
-                <Param name="table" />
-                <Param name="index" />
-                <Param name="value" />
-            </Overload>
-        </KeyWord>
-
+        <KeyWord name="os.clock()" func="no" />
+        <KeyWord name="os.date([format[,time]])" func="no" />
+        <KeyWord name="os.difftime(t1,t2)" func="no" />
+        <KeyWord name="os.execute([command])" func="no" />
+        <KeyWord name="os.exit([code])" func="no" />
+        <KeyWord name="os.getenv(varname)" func="no" />
+        <KeyWord name="os.remove(filename)" func="no" />
+        <KeyWord name="os.rename(oldname,newname)" func="no" />
+        <KeyWord name="os.tmpname()" func="no" />
+        <KeyWord name="pairs(t)" func="no" />
+        <KeyWord name="pcall(f,arg1,...)" func="no" />
+        <KeyWord name="print(...)" func="no" />
+        <KeyWord name="rawequal(v1,v2)" func="no" />
+        <KeyWord name="rawget(table,index)" func="no" />
+        <KeyWord name="rawset(table,index,value)" func="no" />
         <KeyWord name="repeat" func="no" />
-
-        <KeyWord name="require" func="yes">
-
-            <Overload retVal="void" descr="
-Loads the given module. The function starts by looking into the package.loaded table to 
-determine whether modname is already loaded. If it is, then require returns the value stored 
-at package.loaded[modname]. Otherwise, it tries to find a loader for the module.
-
-To find a loader, require is guided by the package.loaders array. By changing this array, 
-we can change how require looks for a module. The following explanation is based on the 
-default configuration for package.loaders.
-
-First require queries package.preload[modname]. If it has a value, this value (which should 
-be a function) is the loader. Otherwise require searches for a Lua loader using the path 
-stored in package.path. If that also fails, it searches for a C loader using the path stored 
-in package.cpath. If that also fails, it tries an all-in-one loader (see package.loaders).
-
-Once a loader is found, require calls the loader with a single argument, modname. If the 
-loader returns any value, require assigns the returned value to package.loaded[modname]. 
-If the loader returns no value and has not assigned any value to package.loaded[modname], 
-then require assigns true to this entry. In any case, require returns the final value of 
-package.loaded[modname].
-
-If there is any error loading or running the module, or if it cannot find any loader for 
-the module, then require signals an error. 
-        ">
-                <Param name="modname" />
-            </Overload>
-        </KeyWord>
-
-
+        <KeyWord name="require(modname)" func="no" />
         <KeyWord name="return" func="no" />
-
-        <KeyWord name="select" func="yes">
-
-            <Overload retVal="void" descr="
-If index is a number, returns all arguments after argument number index. Otherwise, index 
-must be the string '#', and select returns the total number of extra arguments it received. 
-        ">
-                <Param name="index" />
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="setfenv" func="yes">
-
-            <Overload retVal="void" descr="
-Sets the environment to be used by the given function. f can be a Lua function or a number 
-that specifies the function at that stack level: Level 1 is the function calling setfenv. 
-setfenv returns the given function.
-
-As a special case, when f is 0 setfenv changes the environment of the running thread. 
-In this case, setfenv returns no values. 
-        ">
-                <Param name="f" />
-                <Param name="table" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="setmetatable" func="yes">
-
-            <Overload retVal="void" descr="
-Sets the metatable for the given table. (You cannot change the metatable of other types 
-from Lua, only from C.) If metatable is nil, removes the metatable of the given table. 
-If the original metatable has a '__metatable' field, raises an error.
-
-This function returns table. 
-        ">
-                <Param name="table" />
-                <Param name="metatable" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.byte" func="yes">
-            <Overload retVal="void" descr="
-Returns the internal numerical codes of the characters s[i], s[i+1], ···, s[j]. The default 
-value for i is 1; the default value for j is i.
-
-Note that numerical codes are not necessarily portable across platforms. 
-        ">
-                <Param name="s [, i [, j]]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.char" func="yes">
-            <Overload retVal="void" descr="
-Receives zero or more integers. Returns a string with length equal to the number of arguments, 
-in which each character has the internal numerical code equal to its corresponding argument.
-
-Note that numerical codes are not necessarily portable across platforms. 
-        ">
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.dump" func="yes">
-
-            <Overload retVal="void" descr="
-Returns a string containing a binary representation of the given function, so that a later 
-loadstring on this string returns a copy of the function. function must be a Lua function 
-without upvalues. 
-        ">
-                <Param name="function" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.find" func="yes">
-            <Overload retVal="void" descr="
-Looks for the first match of pattern in the string s. If it finds a match, then find returns 
-the indices of s where this occurrence starts and ends; otherwise, it returns nil. A third, 
-optional numerical argument init specifies where to start the search; its default value is 1 
-and can be negative. A value of true as a fourth, optional argument plain turns off the 
-pattern matching facilities, so the function does a plain 'find substring' operation, with 
-no characters in pattern being considered 'magic'. Note that if plain is given, then init 
-must be given as well.
-
-If the pattern has captures, then in a successful match the captured values are also returned, 
-after the two indices. 
-        ">
-                <Param name="s" />
-                <Param name="pattern" />
-                <Param name="[, init [, plain]]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.format" func="yes">
-            <Overload retVal="void" descr="
-Returns a formatted version of its variable number of arguments following the description 
-given in its first argument (which must be a string). The format string follows the same 
-rules as the printf family of standard C functions. The only differences are that the options/modifiers 
-*, l, L, n, p, and h are not supported and that there is an extra option, q. The q option formats 
-a string in a form suitable to be safely read back by the Lua interpreter: the string is 
-written between double quotes, and all double quotes, newlines, embedded zeros, and backslashes 
-in the string are correctly escaped when written. For instance, the call
-
-     string.format('%q', 'a string with ''quotes'' and \n new line')
-
-will produce the string:
-
-     'a string with \''quotes\'' and \
-      new line'
-
-The options c, d, E, e, f, g, G, i, o, u, X, and x all expect a number as argument, whereas 
-q and s expect a string.
-
-This function does not accept string values containing embedded zeros, except as arguments 
-to the q option. 
-        ">
-                <Param name="formatstring" />
-                <Param name="···" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.gmatch" func="yes">
-            <Overload retVal="void" descr="
-Returns an iterator function that, each time it is called, returns the next captures from 
-pattern over string s. If pattern specifies no captures, then the whole match is produced 
-in each call.
-
-As an example, the following loop
-
-     s = 'hello world from Lua'
-     for w in string.gmatch(s, '%a+') do
-       print(w)
-     end
-
-will iterate over all the words from string s, printing one per line. The next example collects 
-all pairs key=value from the given string into a table:
-
-     t = {}
-     s = 'from=world, to=Lua'
-     for k, v in string.gmatch(s, '(%w+)=(%w+)') do
-       t[k] = v
-     end
-
-For this function, a '^' at the start of a pattern does not work as an anchor, as this would 
-prevent the iteration. 
-        ">
-                <Param name="s" />
-                <Param name="pattern" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.gsub" func="yes">
-            <Overload retVal="void" descr="
-Returns a copy of s in which all (or the first n, if given) occurrences of the pattern have 
-been replaced by a replacement string specified by repl, which can be a string, a table, or 
-a function. gsub also returns, as its second value, the total number of matches that occurred.
-
-Look at the online documentation for this function.
-">
-                <Param name="s" />
-                <Param name="pattern" />
-                <Param name="repl" />
-                <Param name="[, n]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.len" func="yes">
-            <Overload retVal="void" descr="
-Receives a string and returns its length. The empty string '' has length 0. Embedded zeros are 
-counted, so 'a\000bc\000' has length 5. 
-        ">
-                <Param name="s" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.lower" func="yes">
-            <Overload retVal="void" descr="
-Receives a string and returns a copy of this string with all uppercase letters changed to 
-lowercase. All other characters are left unchanged. The definition of what an uppercase 
-letter is depends on the current locale. 
-        ">
-                <Param name="s" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.match" func="yes">
-            <Overload retVal="void" descr="
-Looks for the first match of pattern in the string s. If it finds one, then match returns the 
-captures from the pattern; otherwise it returns nil. If pattern specifies no captures, then 
-the whole match is returned. A third, optional numerical argument init specifies where to 
-start the search; its default value is 1 and can be negative. 
-        ">
-                <Param name="s" />
-                <Param name="pattern" />
-                <Param name="[, init]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.rep" func="yes">
-            <Overload retVal="void" descr="
-Returns a string that is the concatenation of n copies of the string s. 
-        ">
-                <Param name="s" />
-                <Param name="n" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.reverse" func="yes">
-            <Overload retVal="void" descr="
-Returns a string that is the string s reversed. 
-        ">
-                <Param name="s" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.sub" func="yes">
-            <Overload retVal="void" descr="
-Returns the substring of s that starts at i and continues until j; i and j can be negative. 
-If j is absent, then it is assumed to be equal to -1 (which is the same as the string length). 
-In particular, the call string.sub(s,1,j) returns a prefix of s with length j, and string.sub(s, -i) 
-returns a suffix of s with length i. 
-        ">
-                <Param name="s" />
-                <Param name="i" />
-                <Param name="[, j]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="string.upper" func="yes">
-            <Overload retVal="void" descr="
-Receives a string and returns a copy of this string with all lowercase letters changed to 
-uppercase. All other characters are left unchanged. The definition of what a lowercase letter 
-is depends on the current locale. 
-        ">
-                <Param name="s" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="table.concat" func="yes">
-            <Overload retVal="void" descr="
-Given an array where all elements are strings or numbers, returns table[i]..sep..table[i+1] ··· sep..table[j]. 
-The default value for sep is the empty string, the default for i is 1, and the default for j is the length 
-of the table. If i is greater than j, returns the empty string. 
-        ">
-                <Param name="table" />
-                <Param name="[, sep [, i [, j]]]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="table.insert" func="yes">
-
-            <Overload retVal="void" descr="
-Inserts element value at position pos in table, shifting up other elements to open space, 
-if necessary. The default value for pos is n+1, where n is the length of the table (see §2.5.5), 
-so that a call table.insert(t,x) inserts x at the end of table t. 
-        ">
-                <Param name="table" />
-                <Param name="[pos,]" />
-                <Param name="value" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="table.maxn" func="yes">
-
-            <Overload retVal="void" descr="
-Returns the largest positive numerical index of the given table, or zero if the table has no 
-positive numerical indices. (To do its job this function does a linear traversal of the whole table.) 
-        ">
-                <Param name="table" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="table.remove" func="yes">
-
-            <Overload retVal="void" descr="
-Removes from table the element at position pos, shifting down other elements to close the space, 
-if necessary. Returns the value of the removed element. The default value for pos is n, where n 
-is the length of the table, so that a call table.remove(t) removes the last element of table t. 
-        ">
-                <Param name="table" />
-                <Param name="[, pos]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="table.sort" func="yes">
-            <Overload retVal="void" descr="
-Sorts table elements in a given order, in-place, from table[1] to table[n], where n is the length 
-of the table. If comp is given, then it must be a function that receives two table elements, and 
-returns true when the first is less than the second (so that not comp(a[i+1],a[i]) will be true 
-after the sort). If comp is not given, then the standard Lua operator lessthan is used instead.
-
-The sort algorithm is not stable; that is, elements considered equal by the given order may have 
-their relative positions changed by the sort. 
-        ">
-                <Param name="table" />
-                <Param name="[, comp]" />
-            </Overload>
-        </KeyWord>
+        <KeyWord name="select(index,...)" func="no" />
+        <KeyWord name="setfenv(f,table)" func="no" />
+        <KeyWord name="setmetatable(table,metatable)" func="no" />
+        <KeyWord name="string.byte(s,[,i[,j]])" func="no" />
+        <KeyWord name="string.char(...)" func="no" />
+        <KeyWord name="string.dump(function)" func="no" />
+        <KeyWord name="string.find(s,pattern,[init,[,plain]])" func="no" />
+        <KeyWord name="string.format(formatstring,...)" func="no" />
+        <KeyWord name="string.gmatch(s,pattern)" func="no" />
+        <KeyWord name="string.gsub(s,pattern,repl,[,n])" func="no" />
+        <KeyWord name="string.len(s)" func="no" />
+        <KeyWord name="string.lower(s)" func="no" />
+        <KeyWord name="string.match(s,pattern,[,int])" func="no" />
+        <KeyWord name="string.rep(s,n)" func="no" />
+        <KeyWord name="string.reverse(s)" func="no" />
+        <KeyWord name="string.sub(s,i,[j])" func="no" />
+        <KeyWord name="string.upper(s)" func="no" />
+        <KeyWord name="table.concat(table,sep,[,i[,j]])" func="no" />
+        <KeyWord name="table.insert(table,[pos,],value)" func="no" />
+        <KeyWord name="table.maxn(table)" func="no" />
+        <KeyWord name="table.remove(table,[,pos])" func="no" />
+        <KeyWord name="table.sort(table,[,comp])" func="no" />
         <KeyWord name="then" func="no" />
-        <KeyWord name="tonumber" func="yes">
-            <Overload retVal="void" descr="
-Tries to convert its argument to a number. If the argument is already a number or a string 
-convertible to a number, then tonumber returns this number; otherwise, it returns nil.
-
-An optional argument specifies the base to interpret the numeral. The base may be any integer 
-between 2 and 36, inclusive. In bases above 10, the letter 'A' (in either upper or lower case) 
-represents 10, 'B' represents 11, and so forth, with 'Z' representing 35. In base 10 (the default), 
-the number can have a decimal part, as well as an optional exponent part (see §2.1). In other 
-bases, only unsigned integers are accepted. 
-        ">
-                <Param name="e" />
-                <Param name="[, base]" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="tostring" func="yes">
-            <Overload retVal="void" descr="
-Receives an argument of any type and converts it to a string in a reasonable format. For complete 
-control of how numbers are converted, use string.format.
-
-If the metatable of e has a '__tostring' field, then tostring calls the corresponding value with 
-e as argument, and uses the result of the call as its result. 
-        ">
-                <Param name="e" />
-            </Overload>
-        </KeyWord>
+        <KeyWord name="tonumber(e,[,base])" func="no" />
+        <KeyWord name="tostring(e)" func="no" />
         <KeyWord name="true" func="no" />
-        <KeyWord name="type" func="yes">
-            <Overload retVal="void" descr="
-Returns the type of its only argument, coded as a string. The possible results of this function 
-are 'nil' (a string, not the value nil), 'number', 'string', 'boolean', 'table', 'function', 'thread', and 'userdata'. 
-        ">
-                <Param name="v" />
-            </Overload>
-        </KeyWord>
-
-        <KeyWord name="unpack" func="yes">
-            <Overload retVal="void" descr="
-Returns the elements from the given table. This function is equivalent to
-
-     return list[i], list[i+1], ···, list[j]
-
-except that the above code can be written only for a fixed number of elements. By default, i is 1 and 
-j is the length of the list, as defined by the length operator (see §2.5.5). 
-        ">
-                <Param name="list" />
-                <Param name="[, i [, j]]" />
-            </Overload>
-        </KeyWord>
+        <KeyWord name="type(v)" func="no" />
+        <KeyWord name="unpack" func="no" />
         <KeyWord name="until" func="no" />
         <KeyWord name="while" func="no" />
-        <KeyWord name="xpcall" func="yes">
-
-            <Overload retVal="void" descr="
-This function is similar to pcall, except that you can set a new error handler.
-
-xpcall calls function f in protected mode, using err as the error handler. Any error inside f is 
-not propagated; instead, xpcall catches the error, calls the err function with the original error 
-object, and returns a status code. Its first result is the status code (a boolean), which is true 
-if the call succeeds without errors. In this case, xpcall also returns all results from the call, 
-after this first result. In case of any error, xpcall returns false plus the result from err. 
-        ">
-                <Param name="f" />
-                <Param name="err" />
-            </Overload>
-        </KeyWord>
-		<KeyWord name = "dead" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is dead.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "team" func="yes">
-			<Overload retVal="ETeam" descr="Returns the team of the unit.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "valid" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is valid.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "index" func="yes">
-			<Overload retVal="int" descr="Returns the unit index.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "nextIndex" func="yes">
-			<Overload retVal="int" descr="Returns the next unit index.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "visible" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is visible.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "level" func="yes">
-			<Overload retVal="int" descr="Returns the unit or spell level.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "name" func="yes">
-			<Overload retVal="string" descr="Returns the player or spell name.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "charName" func="yes">
-			<Overload retVal="string" descr="Returns the character name.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "type" func="yes">
-			<Overload retVal="string" descr="Returns the unit type.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "pos" func="yes">
-			<Overload retVal="D3DXVECTOR3 or int" descr="
-Returns the unit position.
-OR
-Position of the reading pointer.
-			">
-				<Param name="unit.member or CLoLPacket.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "visionPos" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="
-Returns the unit server position.
-Members:
-x
-y
-z			
-			">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "x" func="yes">
-			<Overload retVal="float" descr="Returns the x position axis.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "y" func="yes">
-			<Overload retVal="float" descr="Returns the y position axis.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "z" func="yes">
-			<Overload retVal="float" descr="Returns the z position axis.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "minBBox" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="Returns the unit minimum bounding box.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "maxBBox" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="Returns the unit maximum bounding box.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "buffCount" func="yes">
-			<Overload retVal="int" descr="Returns the unit buff count.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "networkID" func="yes">
-			<Overload retVal="DWORD" descr="Returns the unit network ID.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bInvulnerable" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is invulnerable.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bPhysImune" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is physically immune.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bMagicImune" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is magically immune.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "controlled" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is controlled by the local player.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isMelee" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is melee.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isRanged" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is ranged.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isAI" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is AI (Bot).">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isMe" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is the local player.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "canAttack" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit can attack.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "canCast" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit can cast.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "canMove" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit can move.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isStealthed" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is stealthed.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isRevealSpecificUnit" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is RevealSpecificUnit.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isTaunted" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is taunted.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isCharmed" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is charmed.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isFeared" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is feared.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isAsleep" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is asleep.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isNearSight" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is nearSight.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isGhosted" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is ghosted.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isNoRender" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit has no Render flag.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isFleeing" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is fleeing.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "isForceRenderParticles" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is forceRenderParticles.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bTargetable" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is targetable.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bTargetableToTeam" func="yes">
-			<Overload retVal="bool" descr="Returns if the unit is targetableToTeam.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "range" func="yes">
-			<Overload retVal="float" descr="Returns the unit range.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "deathTimer" func="yes">
-			<Overload retVal="float" descr="Returns the unit deathTimer.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "minionScore" func="yes">
-			<Overload retVal="float" descr="Returns the unit minionScore.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "currentSpell" func="yes">
-			<Overload retVal="int" descr="Returns the unit currentSpell.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "collisionRadius" func="yes">
-			<Overload retVal="float" descr="Returns the unit collision radius.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "collisionHeight" func="yes">
-			<Overload retVal="float" descr="Returns the unit collision height.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "pathCollisionRadius" func="yes">
-			<Overload retVal="float" descr="Returns the unit path Collision Radius.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "visionRadius" func="yes">
-			<Overload retVal="float" descr="Returns the unit vision radius.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "cdr" func="yes">
-			<Overload retVal="float" descr="Returns the unit cooldown reduction.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "health" func="yes">
-			<Overload retVal="float" descr="Returns the unit current health.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "maxHealth" func="yes">
-			<Overload retVal="float" descr="Returns the unit maximum health.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "mana" func="yes">
-			<Overload retVal="float" descr="Returns the unit current mana.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "maxMana" func="yes">
-			<Overload retVal="float" descr="Returns the unit maximum mana.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "parType" func="yes">
-			<Overload retVal="PARType" descr="Returns the unit resource type.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "hpPool" func="yes">
-			<Overload retVal="float" descr="Returns the unit hp pool.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "hpRegen" func="yes">
-			<Overload retVal="float" descr="Returns the unit hp regeneration rate.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "mpRegen" func="yes">
-			<Overload retVal="float" descr="Returns the unit mp regeneration rate.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "critChance" func="yes">
-			<Overload retVal="float" descr="Returns the unit critical chance.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "critDmg" func="yes">
-			<Overload retVal="float" descr="Returns the unit critical damage.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "attackSpeed" func="yes">
-			<Overload retVal="float" descr="Returns the unit attack speed.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "expBonus" func="yes">
-			<Overload retVal="float" descr="Returns the unit exp bonus.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "lifeSteal" func="yes">
-			<Overload retVal="float" descr="Returns the unit life steal.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "spellVamp" func="yes">
-			<Overload retVal="float" descr="Returns the unit spellvamp.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "physReduction" func="yes">
-			<Overload retVal="float" descr="Returns the unit physical reduction.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "magicReduction" func="yes">
-			<Overload retVal="float" descr="Returns the unit magical reduction.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "armorPen" func="yes">
-			<Overload retVal="float" descr="Returns the unit armor penetration.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "magicPen" func="yes">
-			<Overload retVal="float" descr="Returns the unit magic penetration.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "armorPenPercent" func="yes">
-			<Overload retVal="float" descr="Returns the unit armor penetration percent.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "magicPenPercent" func="yes">
-			<Overload retVal="float" descr="Returns the unit magic penetration percent.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "totalDamage" func="yes">
-			<Overload retVal="float" descr="Returns the unit total damage.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "addDamage" func="yes">
-			<Overload retVal="float" descr="Returns the unit added damage.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ap" func="yes">
-			<Overload retVal="float" descr="Returns the unit Ability Power.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "damage" func="yes">
-			<Overload retVal="float" descr="Returns the unit damage.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "armor" func="yes">
-			<Overload retVal="float" descr="Returns the unit armor.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "magicArmor" func="yes">
-			<Overload retVal="float" descr="Returns the unit magic armor.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ms" func="yes">
-			<Overload retVal="float" descr="Returns the unit movement speed.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "gold" func="yes">
-			<Overload retVal="float" descr="Returns the local unit current gold.">
-				<Param name="unit.member" />
-			</Overload>
-		</KeyWord>
-        <KeyWord name="Attack" func="yes">
-            <Overload retVal="void" descr="Issues an Attack Command.">
-				<Param name="&Unit" />
-                <Param name="Unit" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="AttackMoveTo" func="yes">
-            <Overload retVal="void" descr="Issues an AttackMove command.">
-				<Param name="&Unit" />
-                <Param name="float x" />
-                <Param name="float z" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="MoveTo" func="yes">
-            <Overload retVal="void" descr="Issues a Move command.">
-				<Param name="&Unit" />
-                <Param name="float x" />
-                <Param name="float z" />
-            </Overload>
-        </KeyWord>
-		<KeyWord name = "StopPosition" func="yes">
-			<Overload retVal="void" descr="Stops movement.">
-				<Param name="&Unit" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "HoldPosition" func="yes">
-			<Overload retVal="void" descr="Holds movement.">
-				<Param name="&Unit" />
-			</Overload>
-		</KeyWord>
-        <KeyWord name="CanUseSpell" func="yes">
-            <Overload retVal="int" descr="
-Returns the spell status.
-Returns:
-	READY
-	NOT_LEARNED
-	SUPRESSED
-	COOLDOWN
-	NO_MANA
-			">
-				<Param name="&Unit" />
-                <Param name="int Spell" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="CalcDamage" func="yes">
-            <Overload retVal="float" descr="Calculates the damage that would be dealt to target.">
-				<Param name="&Unit" />
-                <Param name="Unit" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="CalcMagicDamage" func="yes">
-            <Overload retVal="float" descr="Calculates the damage that would be dealt to target.">
-				<Param name="&Unit" />
-                <Param name="Unit" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="getBuff" func="yes">
-            <Overload retVal="Buff" descr="
-Returns the buff object.
-Members:
-.valid  -Returns if the buff is valid.
-.startT -Returns the buff start time.
-.endT   -Returns the buff end time.
-.name   -Returns the buffs name.
-			">
-				<Param name="&Unit" />
-                <Param name="int bSlot" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="getInventorySlot" func="yes">
-            <Overload retVal="int" descr="Gets the itemID at inventory.">
-				<Param name="&Unit" />
-                <Param name="int ItemID" />
-            </Overload>
-        </KeyWord>
-        <KeyWord name="getItem" func="yes">
-            <Overload retVal="LoLItem" descr="Returns the item object from inventory.">
-				<Param name="&Unit" />
-                <Param name="int iSlot" />
-            </Overload>
-        </KeyWord>
-		<KeyWord name = "GetSpellData" func="yes">
-			<Overload retVal="mixed" descr="
-Returns the spell name.
-Members:
-.name            -Returns the spells name.
-.mana            -Returns the spells mana cost.
-.cd              -Returns the spells total cooldown.
-.range           -Returns the spells range.
-.channelDuration -Returns the spells channel time.
-.currentCd       -Returns the spells current cooldown.
-.isToggleSpell   -Returns if the spell is a toggle spell.
-			">
-				<Param name="&Unit" />
-                <Param name="int Spell" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "startPos" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="Returns the spell source position.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "endPos" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="Returns the spell destination position.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "projectileID" func="yes">
-			<Overload retVal="float" descr="Returns the projectile networkID.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "target" func="yes">
-			<Overload retVal="Unit" descr="Returns the target.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "windUpTime" func="yes">
-			<Overload retVal="float" descr="Returns the spell wind up time.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "animationTime" func="yes">
-			<Overload retVal="float" descr="Returns the spell animation time.">
-				<Param name="spell.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "header" func="yes">
-			<Overload retVal="WORD" descr="The header of the packet.">
-				<Param name="CLoLPacket.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "bBlock" func="yes">
-			<Overload retVal="bool" descr="Boolean if the packet should be blocked.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "size" func="yes">
-			<Overload retVal="int" descr="Size of the Packet.">
-				<Param name="CLoLPacket.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "dwArg1" func="yes">
-			<Overload retVal="int" descr="First Packet Argument.">
-				<Param name="CLoLPacket.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "dwArg2" func="yes">
-			<Overload retVal="int" descr="Second Packet Argument.">
-				<Param name="CLoLPacket.member" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Block" func="yes">
-			<Overload retVal="void" descr="Blocks the packet.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Hide" func="yes">
-			<Overload retVal="void" descr="Hide the packet from subsequent callbacks.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "skip" func="yes">
-			<Overload retVal="void" descr="Add the offset to the reading pointer.">
-				<Param name="&CLoLPacket" />
-				<Param name="int" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "getRemaining" func="yes">
-			<Overload retVal="int" descr="Get the count of remaining bytes.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "setPos" func="yes">
-			<Overload retVal="void" descr="Set the position of the reading pointer.">
-				<Param name="&CLoLPacket" />
-				<Param name="int Pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Encode1" func="yes">
-			<Overload retVal="void" descr="Writes 1 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="BYTE vByte" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Encode2" func="yes">
-			<Overload retVal="void" descr="Writes 2 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="WORD vWord" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Encode4" func="yes">
-			<Overload retVal="void" descr="Writes 4 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="DWORD vDword" />
-
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "EncodeF" func="yes">
-			<Overload retVal="void" descr="Writes 4 byte to the packet as float.">
-				<Param name="&CLoLPacket" />
-				<Param name="float vFloat" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "EncodeStr" func="yes">
-			<Overload retVal="void" descr="Writes a null terminator string to the packet.">
-				<Param name="&CLoLPacket" />
-				<Param name="string String" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Decode1" func="yes">
-			<Overload retVal="BYTE" descr="Reads 1 byte from the packet as int.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Decode2" func="yes">
-			<Overload retVal="WORD" descr="Reads 2 byte from the packet as int.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Decode4" func="yes">
-			<Overload retVal="DWORD" descr="Reads 4 byte from the packet as int.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DecodeF" func="yes">
-			<Overload retVal="float" descr="Reads 4 byte from the packet as float.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DecodeStr" func="yes">
-			<Overload retVal="string" descr="Reads a null terminator string from the packet.">
-				<Param name="&CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Replace1" func="yes">
-			<Overload retVal="void" descr="Replaces 1 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="BYTE vByte" />
-				<Param name="int pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Replace2" func="yes">
-			<Overload retVal="void" descr="Replaces 2 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="WORD vWord" />
-				<Param name="int pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "Replace4" func="yes">
-			<Overload retVal="void" descr="Replaces 4 byte to the packet as int.">
-				<Param name="&CLoLPacket" />
-				<Param name="DWORD vDword" />
-				<Param name="int pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ReplaceF" func="yes">
-			<Overload retVal="void" descr="Replaces 4 byte to the packet as float.">
-				<Param name="&CLoLPacket" />
-				<Param name="float vFloat" />
-				<Param name="int pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ReplaceStr" func="yes">
-			<Overload retVal="void" descr="Replaces a null terminator string to the packet.">
-				<Param name="&CLoLPacket" />
-				<Param name="string String" />
-				<Param name="int pos" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "D3DXVECTOR4" func="yes">
-			<Overload retVal="D3DXVECTOR4" descr="Default constructor, takes 4 axis.">
-				<Param name="float x" />
-				<Param name="float y" />
-				<Param name="float z" />
-				<Param name="float w" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "D3DXVECTOR3" func="yes">
-			<Overload retVal="D3DXVECTOR3" descr="Default constructor, takes 3 axis.">
-				<Param name="float x" />
-				<Param name="float y" />
-				<Param name="float z" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "D3DXVECTOR2" func="yes">
-			<Overload retVal="D3DXVECTOR2" descr="Default constructor, takes 2 axis.">
-				<Param name="float x" />
-				<Param name="float y" />
-			</Overload>
-		</KeyWord>
-        <KeyWord name="LIB_PATH" func="no" />
-        <KeyWord name="SCRIPT_PATH" func="no" />
-        <KeyWord name="SPRITE_PATH" func="no" />
-        <KeyWord name="BOL_PATH" func="no" />
-        <KeyWord name="GAME_PATH" func="no" />
-        <KeyWord name="VIP_USER" func="no" />
-        <KeyWord name="TARGET_LOW_HP" func="no" />
-        <KeyWord name="TARGET_MOST_AP" func="no" />
-        <KeyWord name="TARGET_MOST_AD" func="no" />
-        <KeyWord name="TARGET_LESS_CAST" func="no" />
-        <KeyWord name="TARGET_NEAR_MOUSE" func="no" />
-        <KeyWord name="TARGET_PRIORITY" func="no" />
-        <KeyWord name="TARGET_LOW_HP_PRIORITY" func="no" />
-        <KeyWord name="TARGET_LESS_CAST_PRIORITY" func="no" />
-        <KeyWord name="TARGET_DEAD" func="no" />
-        <KeyWord name="TARGET_CLOSEST" func="no" />
-        <KeyWord name="DAMAGE_MAGIC" func="no" />
-        <KeyWord name="DAMAGE_PHYSICAL" func="no" />	
-        <KeyWord name="MINION_ALL" func="no" />
-        <KeyWord name="MINION_ENEMY" func="no" />
-        <KeyWord name="MINION_ALLY" func="no" />
-        <KeyWord name="MINION_JUNGLE" func="no" />
-        <KeyWord name="MINION_OTHER" func="no" />
-        <KeyWord name="MINION_SORT_HEALTH_ASC" func="no" />
-        <KeyWord name="MINION_SORT_HEALTH_DEC" func="no" />
-        <KeyWord name="MINION_SORT_MAXHEALTH_DEC" func="no" />
-        <KeyWord name="MINION_SORT_MAXHEALTH_ASC" func="no" />
-        <KeyWord name="MINION_SORT_AD_ASC" func="no" />
-        <KeyWord name="MINION_SORT_AD_DEC" func="no" />
-        <KeyWord name="SCRIPT_PARAM_ONOFF" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_ONKEYDOWN" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_ONKEYTOGGLE" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_SLICE" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_INFO" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_COLOR" func="no" />	
-        <KeyWord name="SCRIPT_PARAM_LIST" func="no" />
-		<KeyWord name = "GetDistanceSqr" func="yes">
-			<Overload retVal="float Distance" descr="Returns the squared distance between two objects or vectors.">
-				<Param name="object Unit" />
-				<Param name="object Unit" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetDistance" func="yes">
-			<Overload retVal="float Distance" descr="Returns the distance between two objects or vectors.">
-				<Param name="object Unit" />
-				<Param name="object Unit" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetDistanceBBox" func="yes">
-			<Overload retVal="float Distance" descr="Returns the distance between two objects, subtracted by the first units distance to its minBBox.">
-				<Param name="object Unit" />
-				<Param name="object Unit" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DumpPacketData" func="yes">
-			<Overload retVal="string PacketData" descr="Returns packet data.">
-				<Param name="CLoLPacket" />
-				<Param name="int posStart" />
-				<Param name="int posEnd" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DumpPacket" func="yes">
-			<Overload retVal="table" descr="Returns detailed packet data.">
-				<Param name="CLoLPacket" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ValidTarget" func="yes">
-			<Overload retVal="bool" descr="Returns whether the object is a valid target and within range.">
-				<Param name="object Unit" />
-				<Param name="float Distance" />
-				<Param name="Team Team" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ValidBBoxTarget" func="yes">
-			<Overload retVal="bool" descr="Returns whether the object is a valid target and within bbox range.">
-				<Param name="object Unit" />
-				<Param name="float Distance" />
-				<Param name="Team Team" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ValidTargetNear" func="yes">
-			<Overload retVal="bool" descr="Returns whether the object is a valid target and within range of target.">
-				<Param name="object Unit" />
-				<Param name="float Distance" />
-				<Param name="object UnitTarget" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetDistanceFromMouse" func="yes">
-			<Overload retVal="float Distance" descr="Returns the distance between object and mouse.">
-				<Param name="object Unit" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetEnemyHeroes" func="yes">
-			<Overload retVal="table" descr="Returns table of enemy heroes.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetAllyHeroes" func="yes">
-			<Overload retVal="table" descr="Returns table of ally heroes.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetExactFPS" func="yes">
-			<Overload retVal="int FPS" descr="Returns exact FPS.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetFPS" func="yes">
-			<Overload retVal="int FPS" descr="Returns average FPS.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetSave" func="yes">
-			<Overload retVal="file Save" descr="Returns save file.">
-				<Param name="string Name" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "SetForeground" func="yes">
-			<Overload retVal="void" descr="Brings LoL to screen foreground.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "CreateDirectory" func="yes">
-			<Overload retVal="bool Success" descr="Creates directory to path.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DirectoryExist" func="yes">
-			<Overload retVal="bool Success" descr="Returns whether directory exists.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ScanDirectory" func="yes">
-			<Overload retVal="dirs, files Folders, Files" descr="Returns files and folders located in path.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ProcessExist" func="yes">
-			<Overload retVal="bool Success" descr="Returns true if process exists.">
-				<Param name="string Name" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ReadFile" func="yes">
-			<Overload retVal="string FileContent" descr="Returns file contents.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "WriteFile" func="yes">
-			<Overload retVal="bool Success" descr="Writes text to target file. 'a+' for appending.">
-				<Param name="string Text" />
-				<Param name="string Path" />
-				<Param name="string Mode" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "FileExist" func="yes">
-			<Overload retVal="bool Success" descr="Returns true if file exists.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DeleteFile" func="yes">
-			<Overload retVal="bool Success" descr="Deletes target file.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetFileSize" func="yes">
-			<Overload retVal="int Size" descr="Returns file size.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "ReadIni" func="yes">
-			<Overload retVal="table" descr="Returns contents of ini file.">
-				<Param name="string Path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetGameSettings" func="yes">
-			<Overload retVal="table" descr="Returns contents of Config\game.cfg file.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetLocalization" func="yes">
-			<Overload retVal="string Lang" descr="Returns game language.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DelayAction" func="yes">
-			<Overload retVal="void" descr="Executes an action after set delay.">
-				<Param name="func Function" />
-				<Param name="float Seconds" />
-				<Param name="args FunctionArgs" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "EnableOverlay" func="yes">
-			<Overload retVal="void" descr="Enables Drawing functions.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DisableOverlay" func="yes">
-			<Overload retVal="void" descr="Disables Drawing functions.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "CursorIsUnder" func="yes">
-			<Overload retVal="bool" descr="Returns whether cursor is under screen pos.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-				<Param name="int sizeX" />
-				<Param name="int sizeY" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetSprite" func="yes">
-			<Overload retVal="sprite" descr="Returns sprite object.">
-				<Param name="string File" />
-				<Param name="string AltFile" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetWebSprite" func="yes">
-			<Overload retVal="sprite" descr="Returns sprite object.">
-				<Param name="string Url" />
-				<Param name="func Function" />
-				<Param name="string path" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetHeroLeveled" func="yes">
-			<Overload retVal="int Leveled" descr="Returns sum of leveled skills.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetParticleObject" func="yes">
-			<Overload retVal="object" descr="string Particle">
-				<Param name="object UnitTarget" />
-				<Param name="float range" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "BuffIsValid" func="yes">
-			<Overload retVal="bool" descr="Returns if buff is valid.">
-				<Param name="buff" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "TargetHaveBuff" func="yes">
-			<Overload retVal="bool" descr="Returns if target has buff and buff is valid.">
-				<Param name="buff" />
-				<Param name="object UnitTarget" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "OnScreen" func="yes">
-			<Overload retVal="bool" descr="Returns if point is on screen.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawRectangleOutline" func="yes">
-			<Overload retVal="void" descr="Draws outline of rectangle.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-				<Param name="int width" />
-				<Param name="int height" />
-				<Param name="ARGB Color" />
-				<Param name="int BorderWidth" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawLineBorder3D" func="yes">
-			<Overload retVal="void" descr="Draws a line border.">
-				<Param name="D3DXVECTOR3.x" />
-				<Param name="D3DXVECTOR3.y" />
-				<Param name="D3DXVECTOR3.z" />
-				<Param name="D3DXVECTOR3.x2" />
-				<Param name="D3DXVECTOR3.y2" />
-				<Param name="D3DXVECTOR3.z2" />
-				<Param name="int size" />
-				<Param name="ARGB Color" />
-				<Param name="int width" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawLineBorder" func="yes">
-			<Overload retVal="void" descr="Draws a line border.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-				<Param name="D3DXVECTOR2.x2" />
-				<Param name="D3DXVECTOR2.y2" />
-				<Param name="int size" />
-				<Param name="ARGB Color" />
-				<Param name="int width" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawCircleMinimap" func="yes">
-			<Overload retVal="void" descr="Draws a circle to minimap.">
-				<Param name="D3DXVECTOR3.x" />
-				<Param name="D3DXVECTOR3.y" />
-				<Param name="D3DXVECTOR3.z" />
-				<Param name="float radius" />
-				<Param name="int width" />
-				<Param name="ARGB Color" />
-				<Param name="int Quality" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawCircle2D" func="yes">
-			<Overload retVal="void" descr="Draws 2D circle to screen.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-				<Param name="float Radius" />
-				<Param name="int Width" />
-				<Param name="ARGB Color" />
-				<Param name="int Quality" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawCircle3D" func="yes">
-			<Overload retVal="void" descr="Draws 3D circle to screen.">
-				<Param name="D3DXVECTOR3.x" />
-				<Param name="D3DXVECTOR3.y" />
-				<Param name="D3DXVECTOR3.z" />
-				<Param name="float radius" />
-				<Param name="int width" />
-				<Param name="ARGB color" />
-				<Param name="int Quality" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawLine3D" func="yes">
-			<Overload retVal="void" descr="Draws a 3D line to screen.">
-				<Param name="D3DXVECTOR3.x" />
-				<Param name="D3DXVECTOR3.y" />
-				<Param name="D3DXVECTOR3.z" />
-				<Param name="D3DXVECTOR3.x2" />
-				<Param name="D3DXVECTOR3.y2" />
-				<Param name="D3DXVECTOR3.z2" />
-				<Param name="int width" />
-				<Param name="ARGB Color" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawLines3D" func="yes">
-			<Overload retVal="void" descr="Draws 3D lines to screen.">
-				<Param name="table Points" />
-				<Param name="int width" />
-				<Param name="ARGB Color" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "DrawText3D" func="yes">
-			<Overload retVal="void" descr="Draws 3D text to screen.">
-				<Param name="string text" />
-				<Param name="D3DXVECTOR3.x" />
-				<Param name="D3DXVECTOR3.y" />
-				<Param name="D3DXVECTOR3.z" />
-				<Param name="int size" />
-				<Param name="ARGB Color" />
-				<Param name="bool Center" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetGame" func="yes">
-			<Overload retVal="table GameInfo" descr="Returns detailed information of current game.">
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "GetMinimap" func="yes">
-			<Overload retVal="Vector2" descr="Returns 2D Vector on minimap.">
-				<Param name="D3DXVECTOR2.x" />
-				<Param name="D3DXVECTOR2.y" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "scriptConfig" func="yes">
-			<Overload retVal="scriptConfig" descr="Initiates an instance of scriptConfig.">
-				<Param name="string Header" />
-				<Param name="string Name" />
-				<Param name="scriptConfig Parent" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "addSubMenu" func="yes">
-			<Overload retVal="void" descr="Adds a Sub Menu to a scriptConfig.">
-				<Param name="&scriptConfig" />
-				<Param name="string Header" />
-				<Param name="string Name" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "addParam" func="yes">
-			<Overload retVal="void" descr="
-Adds a parameter to a scriptConfig.
-     Type:                  DefaultValue:            Info1:            Info2:            Info3:
-SCRIPT_PARAM_ONOFF               bool                 N/A               N/A               N/A  
-SCRIPT_PARAM_ONKEYDOWN	           bool               number              N/A               N/A  
-SCRIPT_PARAM_ONKEYTOGGLE         bool               nubmer              N/A               N/A  
-SCRIPT_PARAM_SLICE	             number               number            number            number
-SCRIPT_PARAM_INFO                N/A                  N/A               N/A               N/A  
-SCRIPT_PARAM_COLOR              table                 N/A               N/A               N/A  
-SCRIPT_PARAM_LIST               number               table              N/A               N/A  
-			">
-				<Param name="&scriptConfig" />
-				<Param name="string Var" />
-				<Param name="string Text" />
-				<Param name="string Type" />
-				<Param name="defaultValue" />
-				<Param name="paramInfo1" />
-				<Param name="paramInfo2" />
-				<Param name="paramInfo3" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "permaShow" func="yes">
-			<Overload retVal="void" descr="Adds a parameter to the permaShow menu.">
-				<Param name="string Var" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name = "minionManager" func="yes">
-			<Overload retVal="minionManager" descr="
-Initiates an instance of minionManager.
-     Mode:                SortMode:
-  MINION_ALL         MINION_SORT_HEALTH_ASC
-  MINION_ENEMY       MINION_SORT_HEALTH_DEC
-  MINION_ALLY        MINION_SORT_MAXHEALTH_DEC
-  MINION_JUNGLE      MINION_SORT_MAXHEALTH_ASC
-  MINION_OTHER       MINION_SORT_AD_ASC
-                     MINION_SORT_AD_DEC
-			">
-				<Param name="string Mode" />
-				<Param name="float Range" />
-				<Param name="object From" />
-				<Param name="string SortMode" />
-			</Overload>
-		</KeyWord>
-		<KeyWord name="Callback.Bind('stringszCallback',function()objectarg2end)" func="no" />
-		<KeyWord name="Callback.Unbind('stringszCallback',function()objectarg2end)" func="no" />
-		<KeyWord name="Callback.GetCallbacks(stringszCallback)" func="no" />
-		<KeyWord name="Callback.Trigger(stringszCallback,objectparam1)" func="no" />
-		<KeyWord name="Core.GetBuildDate()" func="no" />
-		<KeyWord name="Core.GetTickCount()" func="no" />
-		<KeyWord name="Core.GetUser()" func="no" />
-		<KeyWord name="Core.OutputDebugString(stringszOutput)" func="no" />
-		<KeyWord name="Core.Console.GetPos()" func="no" />
-		<KeyWord name="Core.Console.Hide()" func="no" />
-		<KeyWord name="Core.Console.SetPos(unsingedintx,unsingedinty)" func="no" />
-		<KeyWord name="Core.Console.Show()" func="no" />
-		<KeyWord name="Documentation.Generate(objectarg1)" func="no" />
-		<KeyWord name="Geometry.Clipper.AddClip(Polygonsarg2,boolarg3)" func="no" />
-		<KeyWord name="Geometry.Clipper.AddPolygon(PolygonPolyTyp,enumClipperLib::PolyTypearg3,boolarg4)" func="no" />
-		<KeyWord name="Geometry.Clipper.AddPolygons(PolygonsPolyTyp,enumClipperLib::PolyTypearg3,boolarg4)" func="no" />
-		<KeyWord name="Geometry.Clipper.AddSubject(Polygonarg2,boolarg3)" func="no" />
-		<KeyWord name="Geometry.Matrix4.At(unsignedintarg2,unsignedintarg3)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Decompose(Matrix4arg2)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Determinant()" func="no" />
-		<KeyWord name="Geometry.Matrix4.Inverse(Matrix4arg2)" func="no" />
-		<KeyWord name="Geometry.Matrix4.MultiplyTranspose(Matrix4arg2)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Transpose()" func="no" />
-		<KeyWord name="Geometry.Matrix4.AffineTransformation(floatScaling,objectRotationCenter,objectRotation,objectTranslation)" func="no" />
-		<KeyWord name="Geometry.Matrix4.AffineTransformation2D(floatScaling,objectRotationCenter,floatRotation,objectTranslation)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Copy(objecto)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Identity()" func="no" />
-		<KeyWord name="Geometry.Matrix4.LookAtLH(Vector3Eye,Vector3At,Vector3Up)" func="no" />
-		<KeyWord name="Geometry.Matrix4.LookAtRH(Vector3Eye,Vector3At,Vector3Up)" func="no" />
-		<KeyWord name="Geometry.Matrix4.OrthoLH(floatw,floath,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.OrthoRH(floatw,floath,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.OrthoOffCenterLH(floatl,floatr,floatb,floatt,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.OrthoOffCenterRH(floatl,floatr,floatb,floatt,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveFovLH(floatfovy,floatAspect,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveFovRH(floatfovy,floatAspect,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveLH(floatw,floath,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveRH(floatw,floath,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveOffCenterLH(floatl,floatr,floatb,floatt,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.PerspectiveOffCenterRH(floatl,floatr,floatb,floatt,floatzn,floatzf)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Reflect(Vector4Plane)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationAxis(Vector3V,floatAngle)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationQuaternion(QuaternionQ)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationX(floatAngle)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationY(floatAngle)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationZ(floatAngle)" func="no" />
-		<KeyWord name="Geometry.Matrix4.RotationYawPitchRoll(floatYaw,floatPitch,floatRoll)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Scaling(floatsx,floatsy,floatsz)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Shadow(Vector4Light,Vector4Plane})" func="no" />
-		<KeyWord name="Geometry.Matrix4.Transformation(Vector3ScalingCenter,QuaternionScalingRotation,Vector3Scaling,Vector3RotationCenter,QuaternionRotation,Vector3Translation)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Transformation2D(Vector2ScalingCenter,floatScalingRotation,Vector2Scaling,Vector2RotationCenter,floatRotation,Vector2Translation)" func="no" />
-		<KeyWord name="Geometry.Matrix4.Translation(floatx,floaty,floatz)" func="no" />
-		<KeyWord name="Geometry.Point.Point(intx,inty)" func="no" />
-		<KeyWord name="Geometry.Point.IsInside(Polygonpoly)" func="no" />
-		<KeyWord name="Geometry.Point.ToVector(intx)" func="no" />
-		<KeyWord name="Geometry.Polygon.Add(intx,inty,intm)" func="no" />
-		<KeyWord name="Geometry.Polygon.Clean(doublearg2)" func="no" />
-		<KeyWord name="Geometry.Polygon.Clear()" func="no" />
-		<KeyWord name="Geometry.Polygon.DrawOutline(floatwidth,Graphics.Colorcolor)" func="no" />
-		<KeyWord name="Geometry.Polygon.DrawOutline3D(floatwidth,Graphics.Colorcolor)" func="no" />
-		<KeyWord name="Geometry.Polygon.Get(intindex)" func="no" />
-		<KeyWord name="Geometry.Polygon.MinkowskiDiff(Polygonother,boolpathIsClosed)" func="no" />
-		<KeyWord name="Geometry.Polygon.MinkowskiSum(Polygonpattern,boolpathIsClosed)" func="no" />
-		<KeyWord name="Geometry.Polygon.Reserve(intx)" func="no" />
-		<KeyWord name="Geometry.Polygon.Reverse()" func="no" />
-		<KeyWord name="Geometry.Polygon.Set(intindex,Pointvalue)" func="no" />
-		<KeyWord name="Geometry.Polygon.Simplify(enumClipperLib::PolyFillTypearg2)" func="no" />
-		<KeyWord name="Geometry.Polygons.Add(tablet/Polygonpoly)" func="no" />
-		<KeyWord name="Geometry.Polygons.Clean(doublearg2)" func="no" />
-		<KeyWord name="Geometry.Polygons.Clear()" func="no" />
-		<KeyWord name="Geometry.Polygons.DrawOutline(floatwidth,Graphics.Colorcolor)" func="no" />
-		<KeyWord name="Geometry.Polygons.DrawOutline3D(floatwidth,Graphics.Colorcolor)" func="no" />
-		<KeyWord name="Geometry.Polygons.Get(intindex)" func="no" />
-		<KeyWord name="Geometry.Polygons.MinkowskiDiff(Polygonother,boolpathIsClosed)" func="no" />
-		<KeyWord name="Geometry.Polygons.MinkowskiSum(Polygonpattern,boolpathIsClosed)" func="no" />
-		<KeyWord name="Geometry.Polygons.Offset(doubledelta,enumClipperLib::JoinTypearg3,enumClipperLib::EndType_arg4,doublemiter_limit)" func="no" />
-		<KeyWord name="Geometry.Polygons.Reserve(intx)" func="no" />
-		<KeyWord name="Geometry.Polygons.Reverse()" func="no" />
-		<KeyWord name="Geometry.Polygons.Set(intindex,Polygonvalue)" func="no" />
-		<KeyWord name="Geometry.Polygons.Simplify(enumClipperLib::PolyFillTypearg2)" func="no" />
-		<KeyWord name="Geometry.Quaternion.BaryCentric(QuaternionQ2,QuaternionQ3,floatf),floatg)" func="no" />
-		<KeyWord name="Geometry.Quaternion.Conjugate()" func="no" />
-		<KeyWord name="Geometry.Quaternion.DistanceTo(QuaternionQ2)" func="no" />
-		<KeyWord name="Geometry.Quaternion.Exp()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Inverse()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Length()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Ln()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Normalize()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Slerp(QuaternionQ2,floatt)" func="no" />
-		<KeyWord name="Geometry.Quaternion.Squad(QuaternionA,QuaternionB,QuaternionC,floatt)" func="no" />
-		<KeyWord name="Geometry.Quaternion.SquadSetup(QuaternionQ1,QuaternionQ2,QuaternionQ3)" func="no" />
-		<KeyWord name="Geometry.Quaternion.ToAxisAngle()" func="no" />
-		<KeyWord name="Geometry.Quaternion.RotationAxis(Vector3V,floatAngle)" func="no" />
-		<KeyWord name="Geometry.Quaternion.RotationMatrix(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Quaternion.RotationYawPitchRoll(floatYaw,floatPitch,floatRoll)" func="no" />
-		<KeyWord name="Geometry.Quaternion.Identity()" func="no" />
-		<KeyWord name="Geometry.Quaternion.Copy(objecto)" func="no" />
-		<KeyWord name="Geometry.Vector2.Angle(Vector2v={0,0})" func="no" />
-		<KeyWord name="Geometry.Vector2.AngleDeg(Vector2v={0,0})" func="no" />
-		<KeyWord name="Geometry.Vector2.BaryCentric(Vector2v2,Vector2v3,floatf,floatf)" func="no" />
-		<KeyWord name="Geometry.Vector2.CatmullRom(Vector2v1,Vector2v2,Vector3v3,Vector3v3)" func="no" />
-		<KeyWord name="Geometry.Vector2.CCW(Vector2v2,Vector2v3)" func="no" />
-		<KeyWord name="Geometry.Vector2.Cross(Vector2v1)" func="no" />
-		<KeyWord name="Geometry.Vector2.DistanceTo(Vector2other)" func="no" />
-		<KeyWord name="Geometry.Vector2.Dot(Vector2v2)" func="no" />
-		<KeyWord name="Geometry.Vector2.Hermite(Vector2t1,Vector2v2,Vector2t2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.Interception(Vector2v2,Vector2v3,Vector2v4)" func="no" />
-		<KeyWord name="Geometry.Vector2.IsIntersection(Vector2v2,Vector2v3,Vector2v4)" func="no" />
-		<KeyWord name="Geometry.Vector2.IsPartOfLineSegment(Vector2v1,Vector2v2)" func="no" />
-		<KeyWord name="Geometry.Vector2.Length()" func="no" />
-		<KeyWord name="Geometry.Vector2.Lerp(Vector2v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.LerpNormalize(Vector2v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.Maximize(Vector2v1)" func="no" />
-		<KeyWord name="Geometry.Vector2.Minimize(Vector2v1)" func="no" />
-		<KeyWord name="Geometry.Vector2.Normalize()" func="no" />
-		<KeyWord name="Geometry.Vector2.To2D()" func="no" />
-		<KeyWord name="Geometry.Vector2.To3D()" func="no" />
-		<KeyWord name="Geometry.Vector2.To4D()" func="no" />
-		<KeyWord name="Geometry.Vector2.ProjectOnLine(Vector2a,Vector2b)" func="no" />
-		<KeyWord name="Geometry.Vector2.ProjectOnLineSegment(Vector2a,Vector2b)" func="no" />
-		<KeyWord name="Geometry.Vector2.Rotate(floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.RotateDeg(floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.Scale(floats)" func="no" />
-		<KeyWord name="Geometry.Vector2.ToPoint(intx=0)" func="no" />
-		<KeyWord name="Geometry.Vector2.ToTable()" func="no" />
-		<KeyWord name="Geometry.Vector2.Transform(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector2.TransformCoord(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector2.TransformNormal(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector2.unpack()" func="no" />
-		<KeyWord name="Geometry.Vector2.BoundingSphere(objecto)" func="no" />
-		<KeyWord name="Geometry.Vector2.Copy(Vector2v)" func="no" />
-		<KeyWord name="Geometry.Vector3.BaryCentric(Vector3v2,Vector3v3,floatf,floatf)" func="no" />
-		<KeyWord name="Geometry.Vector3.CatmullRom(Vector3v1,Vector3v2,Vector3v3,Vector3v3)" func="no" />
-		<KeyWord name="Geometry.Vector3.CCW(Vector3v2,Vector3v3)" func="no" />
-		<KeyWord name="Geometry.Vector3.Cross(Vector3v1)" func="no" />
-		<KeyWord name="Geometry.Vector3.DistanceTo(Vector3other)" func="no" />
-		<KeyWord name="Geometry.Vector3.Dot(Vector3v2)" func="no" />
-		<KeyWord name="Geometry.Vector3.Hermite(Vector3t1,Vector3v2,Vector3t2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.Interception(Vector3v2,Vector3v3,Vector3v4)" func="no" />
-		<KeyWord name="Geometry.Vector3.IsIntersection(Vector3v2,Vector3v3,Vector3v4)" func="no" />
-		<KeyWord name="Geometry.Vector3.IsPartOfLineSegment(Vector3v1,Vector3v2)" func="no" />
-		<KeyWord name="Geometry.Vector3.Length()" func="no" />
-		<KeyWord name="Geometry.Vector3.Lerp(Vector3v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.LerpNormalize(Vector3v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.Maximize(Vector3v1)" func="no" />
-		<KeyWord name="Geometry.Vector3.Minimize(Vector3v1)" func="no" />
-		<KeyWord name="Geometry.Vector3.Normalize()" func="no" />
-		<KeyWord name="Geometry.Vector3.To2D()" func="no" />
-		<KeyWord name="Geometry.Vector3.To3D()" func="no" />
-		<KeyWord name="Geometry.Vector3.To4D()" func="no" />
-		<KeyWord name="Geometry.Vector3.ProjectOnLine(Vector3a,Vector3b)" func="no" />
-		<KeyWord name="Geometry.Vector3.ProjectOnLineSegment(Vector3a,Vector3b)" func="no" />
-		<KeyWord name="Geometry.Vector3.Rotate(floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.RotateDeg(floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.Scale(floats)" func="no" />
-		<KeyWord name="Geometry.Vector3.ToPoint(intx=0)" func="no" />
-		<KeyWord name="Geometry.Vector3.ToTable()" func="no" />
-		<KeyWord name="Geometry.Vector3.Transform(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector3.TransformCoord(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector3.TransformNormal(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector3.unpack()" func="no" />
-		<KeyWord name="Geometry.Vector3.BoundingSphere(objecto)" func="no" />
-		<KeyWord name="Geometry.Vector3.Copy(Vector3v)" func="no" />
-		<KeyWord name="Geometry.Vector3.Project()" func="no" />
-		<KeyWord name="Geometry.Vector3.Unproject()" func="no" />
-		<KeyWord name="Geometry.Vector4.BaryCentric(Vector4v2,Vector4v3,floatf,floatf)" func="no" />
-		<KeyWord name="Geometry.Vector4.CatmullRom(Vector4v1,Vector4v2,Vector4v3,Vector4v3)" func="no" />
-		<KeyWord name="Geometry.Vector4.Cross(Vector4v1)" func="no" />
-		<KeyWord name="Geometry.Vector4.DistanceTo(Vector4other)" func="no" />
-		<KeyWord name="Geometry.Vector4.Dot(Vector4v2)" func="no" />
-		<KeyWord name="Geometry.Vector4.Hermite(Vector4t1,Vector4v2,Vector4t2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.Interception(Vector4v2,Vector4v3,Vector4v4)" func="no" />
-		<KeyWord name="Geometry.Vector4.IsIntersection(Vector4v2,Vector4v3,Vector4v4)" func="no" />
-		<KeyWord name="Geometry.Vector4.IsPartOfLineSegment(Vector4v1,Vector4v2)" func="no" />
-		<KeyWord name="Geometry.Vector4.Length()" func="no" />
-		<KeyWord name="Geometry.Vector4.Lerp(Vector4v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.LerpNormalize(Vector4v2,floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.Maximize(Vector4v1)" func="no" />
-		<KeyWord name="Geometry.Vector4.Minimize(Vector4v1)" func="no" />
-		<KeyWord name="Geometry.Vector4.Normalize()" func="no" />
-		<KeyWord name="Geometry.Vector4.To2D()" func="no" />
-		<KeyWord name="Geometry.Vector4.To3D()" func="no" />
-		<KeyWord name="Geometry.Vector4.To4D()" func="no" />
-		<KeyWord name="Geometry.Vector4.ProjectOnLine(Vector4a,Vector4b)" func="no" />
-		<KeyWord name="Geometry.Vector4.ProjectOnLineSegment(Vector4a,Vector4b)" func="no" />
-		<KeyWord name="Geometry.Vector4.Rotate(floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.RotateDeg(floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.Scale(floats)" func="no" />
-		<KeyWord name="Geometry.Vector4.ToPoint(intx=0)" func="no" />
-		<KeyWord name="Geometry.Vector4.ToTable()" func="no" />
-		<KeyWord name="Geometry.Vector4.Transform(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector4.TransformCoord(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector4.TransformNormal(Matrix4m)" func="no" />
-		<KeyWord name="Geometry.Vector4.unpack()" func="no" />
-		<KeyWord name="Geometry.Vector4.BoundingSphere(objecto)" func="no" />
-		<KeyWord name="Geometry.Vector4.Copy(Vector4v)" func="no" />
-		<KeyWord name="Graphics.ARGB(inttransparency,intred,intgreen,intblue)" func="no" />
-		<KeyWord name="Graphics.DrawLine(Vector2arg1,Vector2arg2,floatarg3,Colorarg4)" func="no" />
-		<KeyWord name="Graphics.DrawLines(objectarg1,floatarg2,Colorarg3)" func="no" />
-		<KeyWord name="Graphics.DrawText(stringtext,unsingedintfontSize,unsingedintx,unsingedinty,intcolor)" func="no" />
-		<KeyWord name="Graphics.DrawRectangle(longarg1,longarg2,longarg3,longarg4,unsingedlongarg5)" func="no" />
-		<KeyWord name="Graphics.DrawRectangleFilled(Vector2arg1,longarg2,longarg3,unsingedlongarg4)" func="no" />
-		<KeyWord name="Graphics.RGB(unsignedcharred,unsignedchargreen,unsingedcharblue)" func="no" />
-		<KeyWord name="Graphics.RGBA(unsingedcharred,unsingedchargreen,unsingedcharblue,unsingedchartransparency)" func="no" />
-		<KeyWord name="Graphics.Color.AdjustContrast(floatarg2)" func="no" />
-		<KeyWord name="Graphics.Color.AdjustSaturation(floatarg2)" func="no" />
-		<KeyWord name="Graphics.Color.Lerp(Colorarg2,floatarg3)" func="no" />
-		<KeyWord name="Graphics.Color.Modulate(Colorarg2)" func="no" />
-		<KeyWord name="Graphics.Color.Negative()" func="no" />
-		<KeyWord name="Graphics.Color.Scale(floatarg2)" func="no" />
-		<KeyWord name="Graphics.Color.BLACK" func="no" />
-		<KeyWord name="Graphics.Color.BLUE" func="no" />
-		<KeyWord name="Graphics.Color.CYAN" func="no" />
-		<KeyWord name="Graphics.Color.GREEN" func="no" />
-		<KeyWord name="Graphics.Color.GREY" func="no" />
-		<KeyWord name="Graphics.Color.MAGENTA" func="no" />
-		<KeyWord name="Graphics.Color.RED" func="no" />
-		<KeyWord name="Graphics.Color.WHITE" func="no" />
-		<KeyWord name="Graphics.Color.YELLOW" func="no" />
-		<KeyWord name="Graphics.Color.TRANSPARENT" func="no" />
-		<KeyWord name="Keyboard.GetKey(stringarg1)" func="no" />
-		<KeyWord name="Keyboard.IsKeyDown(intarg1)" func="no" />
-		<KeyWord name="Keyboard.IsKeyPressed(intarg1)" func="no" />
-		<KeyWord name="Keyboard.ToAscii(intarg1)" func="no" />
-		<KeyWord name="Memory.GuessFncSize(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.PtrToStr(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadByte(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadCall(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadDword(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadFloat(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadJump(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.ReadWord(unsingedlongadress)" func="no" />
-		<KeyWord name="Memory.WriteByte(unsingedlongadress,unsingedcharvalue)" func="no" />
-		<KeyWord name="Memory.WriteDword(unsingedlongadress,unsingedlongvalue)" func="no" />
-		<KeyWord name="Memory.WriteFloat(unsingedlongadress,floatvalue)" func="no" />
-		<KeyWord name="Memory.WriteWord(unsingedlongadress,unsingnedshortvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.Read()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadByte()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadChar()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadInt()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadShort()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadString()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadUInt()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.ReadWord()" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.Write(unsingedcharvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteByte(unsingedcharvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteChar(charvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteInt(intvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteShort(shortvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteString(stringvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteUInt(unsingedintvalue)" func="no" />
-		<KeyWord name="Memory.MemoryBuffer.WriteWord(unsingedshortvalue)" func="no" />
-		<KeyWord name="Render.Add(CRenderObjectarg1)" func="no" />
-		<KeyWord name="Render.Remove(CRenderObjectarg1)" func="no" />
-		<KeyWord name="Render.Font(stringarg1,unsignedintarg2)" func="no" />
-		<KeyWord name="Render.DrawText(stringarg1,unsignedintarg2,unsignedintarg3,unsignedintarg4,Colorarg5)" func="no" />
-		<KeyWord name="Render.Circle.Circle(floatx,floaty,intradius,intcolor)" func="no" />
-		<KeyWord name="Render.Circle.Add()" func="no" />
-		<KeyWord name="Render.Circle.Draw()" func="no" />
-		<KeyWord name="Render.Circle.Hide()" func="no" />
-		<KeyWord name="Render.Circle.Remove()" func="no" />
-		<KeyWord name="Render.Circle.Reset()" func="no" />
-		<KeyWord name="Render.Circle.SetColor(unsignedlongInnerColor,unsignedlongOuterColor)" func="no" />
-		<KeyWord name="Render.Circle.SetPosition(floatx,floaty,floatz)" func="no" />
-		<KeyWord name="Render.Circle.SetRadius(intminRadius,intmaxRadius)" func="no" />
-		<KeyWord name="Render.Circle.Show()" func="no" />
-		<KeyWord name="Render.Line.Line(Vector2/3start,Vector2/3end,floatwidth,unsignedlongcolor)" func="no" />
-		<KeyWord name="Render.Line.Add()" func="no" />
-		<KeyWord name="Render.Line.Draw(unsignedintarg2,unsignedintarg3)" func="no" />
-		<KeyWord name="Render.Line.Hide()" func="no" />
-		<KeyWord name="Render.Line.Remove()" func="no" />
-		<KeyWord name="Render.Line.Reset()" func="no" />
-		<KeyWord name="Render.Line.Show()" func="no" />
-		<KeyWord name="Render.Object.Add()" func="no" />
-		<KeyWord name="Render.Object.Hide()" func="no" />
-		<KeyWord name="Render.Object.Remove()" func="no" />
-		<KeyWord name="Render.Object.Reset()" func="no" />
-		<KeyWord name="Render.Object.Show()" func="no" />
-		<KeyWord name="Render.Rect.Rect(floatx,floaty,floatwidth,floatheight,intcolor)" func="no" />
-		<KeyWord name="Render.Rect.Add()" func="no" />
-		<KeyWord name="Render.Rect.Hide()" func="no" />
-		<KeyWord name="Render.Rect.Remove()" func="no" />
-		<KeyWord name="Render.Rect.Reset()" func="no" />
-		<KeyWord name="Render.Rect.Show()" func="no" />
-		<KeyWord name="Render.Sprite.Sprite(unsignedlongx,unsignedlongy)" func="no" />
-		<KeyWord name="Render.Sprite.Add()" func="no" />
-		<KeyWord name="Render.Sprite.Hide()" func="no" />
-		<KeyWord name="Render.Sprite.Remove()" func="no" />
-		<KeyWord name="Render.Sprite.Reset()" func="no" />
-		<KeyWord name="Render.Sprite.Show()" func="no" />
-		<KeyWord name="Render.Sprite.Draw(Rectarg2,Vector3arg3,Vector4arg4)" func="no" />
-		<KeyWord name="Render.Sprite.SetScale(floatxScale,floatyScale)" func="no" />
-		<KeyWord name="Render.Text.Text(stringfontName,unsingnedlongdwSize,unsingnedlongx,unsingnedlongy,CRenderFontfont)" func="no" />
-		<KeyWord name="Render.Text.Add()" func="no" />
-		<KeyWord name="Render.Text.GetTextArea()" func="no" />
-		<KeyWord name="Render.Text.Hide()" func="no" />
-		<KeyWord name="Render.Text.Remove()" func="no" />
-		<KeyWord name="Render.Text.Reset()" func="no" />
-		<KeyWord name="Render.Text.Show()" func="no" />
-		<KeyWord name="Utility.FileExists(stringsPath)" func="no" />
-		<KeyWord name="Utility.GetModule(stringarg1)" func="no" />
-		<KeyWord name="Utility.GetRegistryValue(stringarg1,stringarg2)" func="no" />
-		<KeyWord name="Utility.GetSave(stringname)" func="no" />
-		<KeyWord name="Utility.PlayFile(stringname)" func="no" />
-		<KeyWord name="Utility.ReadBinary(stringsPath)" func="no" />
-		<KeyWord name="Utility.SetRegistryValue(stringarg1,stringarg1,stringarg1)" func="no" />
-		<KeyWord name="Utility.WriteBinary(stringszPath,MemoryBufferbuffer)" func="no" />
-		<KeyWord name="Utility.ReadFile(stringsPath)" func="no" />
-		<KeyWord name="Utility.WriteFile(stringszPath,stringtext)" func="no" />
-		<KeyWord name="Utility.Base64.Encode(stringrawString)" func="no" />
-		<KeyWord name="Utility.Base64.Decode(stringencodedString)" func="no" />
-		<KeyWord name="Utility.AOBEntry.Get(unsignedlongarg2)" func="no" />
-		<KeyWord name="Utility.AOBScanner.AddAoB(stringarg2)" func="no" />
-		<KeyWord name="Utility.AOBScanner.AddExport(stringarg2)" func="no" />
-		<KeyWord name="Utility.AOBScanner.AddString(stringarg2)" func="no" />
-		<KeyWord name="Utility.AOBScanner.Get(unsignedintarg2)" func="no" />
-		<KeyWord name="Utility.AOBScanner.Scan()" func="no" />
-		<KeyWord name="Utility.WebView.CreateObject(stringarg2)" func="no" />
-		<KeyWord name="Utility.WebView.GetObject(stringarg2,stringarg3)" func="no" />
-		<KeyWord name="Utility.WebView.JQuery(stringarg2)" func="no" />
-		<KeyWord name="Utility.WebView.LoadHome()" func="no" />
-		<KeyWord name="Utility.WebView.LoadUrl(stringarg2)" func="no" />
-		<KeyWord name="Utility.WebView.RunJS(stringarg2)" func="no" />
-		<KeyWord name="Utility.WebView.GetMain()" func="no" />
-		<KeyWord name="Utility.JSObject.BeginInvoke(stringarg2,objecto)" func="no" />
-		<KeyWord name="Utility.JSObject.GetProperty(stringarg2)" func="no" />
-		<KeyWord name="Utility.JSObject.Invoke(stringarg2,objecto)" func="no" />
-		<KeyWord name="Utility.JSObject.SetCustomMethod(stringarg2,objecto)" func="no" />
-		<KeyWord name="Utility.JSObject.SetProperty(stringarg2,objecto)" func="no" />
-		<KeyWord name="Window.GetCursorPos()" func="no" />
-		<KeyWord name="Window.GetWindowPos()" func="no" />
-		<KeyWord name="Window.Clipboard.GetText()" func="no" />
-		<KeyWord name="Window.Clipboard.SetText(stringarg2)" func="no" />
-		<KeyWord name="MenuConfig(stringID,stringID)" func="no" />
-		<KeyWord name="menuConfig:Boolean(stringID,stringName,booldefaultValue,functioncallback,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:Button(stringID,stringName,functioncallback)" func="no" />
-		<KeyWord name="menuConfig:ColorPick(stringID,stringName,stringdefaultValue,functioncallback,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:DropDown(stringID,stringName,intdefaultValue,tableDropTable,functioncallback,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:Info(stringID,stringName)" func="no" />
-		<KeyWord name="menuConfig:KeyBinding(stringID,stringName,stringKey,functioncallback,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:Menu(stringID,stringName)" func="no" />
-		<KeyWord name="menuConfig:Number(stringID,stringName,intDefaultValue,intMinValue,intMaxValue,functioncallback,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:Section(stringID,stringName)" func="no" />
-		<KeyWord name="menuConfig:Separator()" func="no" />
-		<KeyWord name="menuConfig:Slider(stringID,stringName,intDefaultValue,intMinValue,intMaxValue,intStep,intStep,boolForceDefault)" func="no" />
-		<KeyWord name="menuConfig:TargetSelector(stringID,stringName,intMode,intRange,stringDmgType,boolFocusSelected,boolFocusSelected)" func="no" />		
+        <KeyWord name="xpcall(f,err)" func="no" />
+	<KeyWord name="Callback.Bind('string',function()funcend)" func="no" />
+	<KeyWord name="Callback.Unbind('string',function()funcend)" func="no" />
+	<KeyWord name="Callback.GetCallbacks(string)" func="no" />
+	<KeyWord name="Callback.Trigger(string,arg)" func="no" />
+	<KeyWord name="Core.GetBuildDate()" func="no" />
+	<KeyWord name="Core.GetTickCount()" func="no" />
+	<KeyWord name="Core.GetUser()" func="no" />
+	<KeyWord name="Core.OutputDebugString(string)" func="no" />
+	<KeyWord name="Core.Console.GetPos()" func="no" />
+	<KeyWord name="Core.Console.Hide()" func="no" />
+	<KeyWord name="Core.Console.SetPos(x,y)" func="no" />
+	<KeyWord name="Core.Console.Show()" func="no" />
+	<KeyWord name="Documentation.Generate(arg)" func="no" />
+	<KeyWord name="Geometry.Clipper.AddClip(Polygons,bool)" func="no" />
+	<KeyWord name="Geometry.Clipper.AddPolygon(Polygon,ClipperLib::PolyType,bool)" func="no" />
+	<KeyWord name="Geometry.Clipper.AddPolygons(Polygons,ClipperLib::PolyType,bool)" func="no" />
+	<KeyWord name="Geometry.Clipper.AddSubject(Polygon,bool)" func="no" />
+	<KeyWord name="Geometry.Matrix4.At(int,int)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Decompose(int)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Determinant()" func="no" />
+	<KeyWord name="Geometry.Matrix4.Inverse(Matrix4)" func="no" />
+	<KeyWord name="Geometry.Matrix4.MultiplyTranspose(Matrix4)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Transpose()" func="no" />
+	<KeyWord name="Geometry.Matrix4.AffineTransformation(Scaling,RotationCenter,Rotation,Translation)" func="no" />
+	<KeyWord name="Geometry.Matrix4.AffineTransformation2D(Scaling,RotationCenter,Rotation,Translation)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Copy(Matrix4)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Identity()" func="no" />
+	<KeyWord name="Geometry.Matrix4.LookAtLH(Vector3,Vector3,Vector3)" func="no" />
+	<KeyWord name="Geometry.Matrix4.LookAtRH(Vector3,Vector3,Vector3)" func="no" />
+	<KeyWord name="Geometry.Matrix4.OrthoLH(w,h,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.OrthoRH(w,h,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.OrthoOffCenterLH(l,r,b,t,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.OrthoOffCenterRH(l,r,b,t,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveFovLH(fovy,Aspect,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveFovRH(fovy,Aspect,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveLH(w,h,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveRH(w,h,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveOffCenterLH(l,r,b,t,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.PerspectiveOffCenterRH(l,r,b,t,zn,zf)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Reflect(Vector4)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationAxis(Vector3,Angle)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationQuaternion(Quaternion)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationX(Angle)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationY(Angle)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationZ(Angle)" func="no" />
+	<KeyWord name="Geometry.Matrix4.RotationYawPitchRoll(Yaw,Pitch,Roll)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Scaling(sx,sy,sz)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Shadow(Light,Plane})" func="no" />
+	<KeyWord name="Geometry.Matrix4.Transformation(ScalingCenter,QuaternionScalingRotation,Vector3Scaling,Vector3RotationCenter,QuaternionRotation,Vector3Translation)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Transformation2D(Vector2ScalingCenter,floatScalingRotation,Vector2Scaling,Vector2RotationCenter,floatRotation,Vector2Translation)" func="no" />
+	<KeyWord name="Geometry.Matrix4.Translation(floatx,floaty,floatz)" func="no" />
+	<KeyWord name="Geometry.Point.Point(intx,inty)" func="no" />
+	<KeyWord name="Geometry.Point.IsInside(Polygonpoly)" func="no" />
+	<KeyWord name="Geometry.Point.ToVector(intx)" func="no" />
+	<KeyWord name="Geometry.Polygon.Add(intx,inty,intm)" func="no" />
+	<KeyWord name="Geometry.Polygon.Clean(doublearg2)" func="no" />
+	<KeyWord name="Geometry.Polygon.Clear()" func="no" />
+	<KeyWord name="Geometry.Polygon.DrawOutline(floatwidth,Graphics.Colorcolor)" func="no" />
+	<KeyWord name="Geometry.Polygon.DrawOutline3D(floatwidth,Graphics.Colorcolor)" func="no" />
+	<KeyWord name="Geometry.Polygon.Get(intindex)" func="no" />
+	<KeyWord name="Geometry.Polygon.MinkowskiDiff(Polygonother,boolpathIsClosed)" func="no" />
+	<KeyWord name="Geometry.Polygon.MinkowskiSum(Polygonpattern,boolpathIsClosed)" func="no" />
+	<KeyWord name="Geometry.Polygon.Reserve(intx)" func="no" />
+	<KeyWord name="Geometry.Polygon.Reverse()" func="no" />
+	<KeyWord name="Geometry.Polygon.Set(intindex,Pointvalue)" func="no" />
+	<KeyWord name="Geometry.Polygon.Simplify(enumClipperLib::PolyFillTypearg2)" func="no" />
+	<KeyWord name="Geometry.Polygons.Add(tablet/Polygonpoly)" func="no" />
+	<KeyWord name="Geometry.Polygons.Clean(doublearg2)" func="no" />
+	<KeyWord name="Geometry.Polygons.Clear()" func="no" />
+	<KeyWord name="Geometry.Polygons.DrawOutline(floatwidth,Graphics.Colorcolor)" func="no" />
+	<KeyWord name="Geometry.Polygons.DrawOutline3D(floatwidth,Graphics.Colorcolor)" func="no" />
+	<KeyWord name="Geometry.Polygons.Get(intindex)" func="no" />
+	<KeyWord name="Geometry.Polygons.MinkowskiDiff(Polygonother,boolpathIsClosed)" func="no" />
+	<KeyWord name="Geometry.Polygons.MinkowskiSum(Polygonpattern,boolpathIsClosed)" func="no" />
+	<KeyWord name="Geometry.Polygons.Offset(doubledelta,enumClipperLib::JoinTypearg3,enumClipperLib::EndType_arg4,doublemiter_limit)" func="no" />
+	<KeyWord name="Geometry.Polygons.Reserve(intx)" func="no" />
+	<KeyWord name="Geometry.Polygons.Reverse()" func="no" />
+	<KeyWord name="Geometry.Polygons.Set(intindex,Polygonvalue)" func="no" />
+	<KeyWord name="Geometry.Polygons.Simplify(enumClipperLib::PolyFillTypearg2)" func="no" />
+	<KeyWord name="Geometry.Quaternion.BaryCentric(QuaternionQ2,QuaternionQ3,floatf),floatg)" func="no" />
+	<KeyWord name="Geometry.Quaternion.Conjugate()" func="no" />
+	<KeyWord name="Geometry.Quaternion.DistanceTo(QuaternionQ2)" func="no" />
+	<KeyWord name="Geometry.Quaternion.Exp()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Inverse()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Length()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Ln()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Normalize()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Slerp(QuaternionQ2,floatt)" func="no" />
+	<KeyWord name="Geometry.Quaternion.Squad(QuaternionA,QuaternionB,QuaternionC,floatt)" func="no" />
+	<KeyWord name="Geometry.Quaternion.SquadSetup(QuaternionQ1,QuaternionQ2,QuaternionQ3)" func="no" />
+	<KeyWord name="Geometry.Quaternion.ToAxisAngle()" func="no" />
+	<KeyWord name="Geometry.Quaternion.RotationAxis(Vector3V,floatAngle)" func="no" />
+	<KeyWord name="Geometry.Quaternion.RotationMatrix(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Quaternion.RotationYawPitchRoll(floatYaw,floatPitch,floatRoll)" func="no" />
+	<KeyWord name="Geometry.Quaternion.Identity()" func="no" />
+	<KeyWord name="Geometry.Quaternion.Copy(objecto)" func="no" />
+	<KeyWord name="Geometry.Vector2.Angle(Vector2v={0,0})" func="no" />
+	<KeyWord name="Geometry.Vector2.AngleDeg(Vector2v={0,0})" func="no" />
+	<KeyWord name="Geometry.Vector2.BaryCentric(Vector2v2,Vector2v3,floatf,floatf)" func="no" />
+	<KeyWord name="Geometry.Vector2.CatmullRom(Vector2v1,Vector2v2,Vector3v3,Vector3v3)" func="no" />
+	<KeyWord name="Geometry.Vector2.CCW(Vector2v2,Vector2v3)" func="no" />
+	<KeyWord name="Geometry.Vector2.Cross(Vector2v1)" func="no" />
+	<KeyWord name="Geometry.Vector2.DistanceTo(Vector2other)" func="no" />
+	<KeyWord name="Geometry.Vector2.Dot(Vector2v2)" func="no" />
+	<KeyWord name="Geometry.Vector2.Hermite(Vector2t1,Vector2v2,Vector2t2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.Interception(Vector2v2,Vector2v3,Vector2v4)" func="no" />
+	<KeyWord name="Geometry.Vector2.IsIntersection(Vector2v2,Vector2v3,Vector2v4)" func="no" />
+	<KeyWord name="Geometry.Vector2.IsPartOfLineSegment(Vector2v1,Vector2v2)" func="no" />
+	<KeyWord name="Geometry.Vector2.Length()" func="no" />
+	<KeyWord name="Geometry.Vector2.Lerp(Vector2v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.LerpNormalize(Vector2v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.Maximize(Vector2v1)" func="no" />
+	<KeyWord name="Geometry.Vector2.Minimize(Vector2v1)" func="no" />
+	<KeyWord name="Geometry.Vector2.Normalize()" func="no" />
+	<KeyWord name="Geometry.Vector2.To2D()" func="no" />
+	<KeyWord name="Geometry.Vector2.To3D()" func="no" />
+	<KeyWord name="Geometry.Vector2.To4D()" func="no" />
+	<KeyWord name="Geometry.Vector2.ProjectOnLine(Vector2a,Vector2b)" func="no" />
+	<KeyWord name="Geometry.Vector2.ProjectOnLineSegment(Vector2a,Vector2b)" func="no" />
+	<KeyWord name="Geometry.Vector2.Rotate(floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.RotateDeg(floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.Scale(floats)" func="no" />
+	<KeyWord name="Geometry.Vector2.ToPoint(intx=0)" func="no" />
+	<KeyWord name="Geometry.Vector2.ToTable()" func="no" />
+	<KeyWord name="Geometry.Vector2.Transform(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector2.TransformCoord(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector2.TransformNormal(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector2.unpack()" func="no" />
+	<KeyWord name="Geometry.Vector2.BoundingSphere(objecto)" func="no" />
+	<KeyWord name="Geometry.Vector2.Copy(Vector2v)" func="no" />
+	<KeyWord name="Geometry.Vector3.BaryCentric(Vector3v2,Vector3v3,floatf,floatf)" func="no" />
+	<KeyWord name="Geometry.Vector3.CatmullRom(Vector3v1,Vector3v2,Vector3v3,Vector3v3)" func="no" />
+	<KeyWord name="Geometry.Vector3.CCW(Vector3v2,Vector3v3)" func="no" />
+	<KeyWord name="Geometry.Vector3.Cross(Vector3v1)" func="no" />
+	<KeyWord name="Geometry.Vector3.DistanceTo(Vector3other)" func="no" />
+	<KeyWord name="Geometry.Vector3.Dot(Vector3v2)" func="no" />
+	<KeyWord name="Geometry.Vector3.Hermite(Vector3t1,Vector3v2,Vector3t2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.Interception(Vector3v2,Vector3v3,Vector3v4)" func="no" />
+	<KeyWord name="Geometry.Vector3.IsIntersection(Vector3v2,Vector3v3,Vector3v4)" func="no" />
+	<KeyWord name="Geometry.Vector3.IsPartOfLineSegment(Vector3v1,Vector3v2)" func="no" />
+	<KeyWord name="Geometry.Vector3.Length()" func="no" />
+	<KeyWord name="Geometry.Vector3.Lerp(Vector3v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.LerpNormalize(Vector3v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.Maximize(Vector3v1)" func="no" />
+	<KeyWord name="Geometry.Vector3.Minimize(Vector3v1)" func="no" />
+	<KeyWord name="Geometry.Vector3.Normalize()" func="no" />
+	<KeyWord name="Geometry.Vector3.To2D()" func="no" />
+	<KeyWord name="Geometry.Vector3.To3D()" func="no" />
+	<KeyWord name="Geometry.Vector3.To4D()" func="no" />
+	<KeyWord name="Geometry.Vector3.ProjectOnLine(Vector3a,Vector3b)" func="no" />
+	<KeyWord name="Geometry.Vector3.ProjectOnLineSegment(Vector3a,Vector3b)" func="no" />
+	<KeyWord name="Geometry.Vector3.Rotate(floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.RotateDeg(floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.Scale(floats)" func="no" />
+	<KeyWord name="Geometry.Vector3.ToPoint(intx=0)" func="no" />
+	<KeyWord name="Geometry.Vector3.ToTable()" func="no" />
+	<KeyWord name="Geometry.Vector3.Transform(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector3.TransformCoord(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector3.TransformNormal(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector3.unpack()" func="no" />
+	<KeyWord name="Geometry.Vector3.BoundingSphere(objecto)" func="no" />
+	<KeyWord name="Geometry.Vector3.Copy(Vector3v)" func="no" />
+	<KeyWord name="Geometry.Vector3.Project()" func="no" />
+	<KeyWord name="Geometry.Vector3.Unproject()" func="no" />
+	<KeyWord name="Geometry.Vector4.BaryCentric(Vector4v2,Vector4v3,floatf,floatf)" func="no" />
+	<KeyWord name="Geometry.Vector4.CatmullRom(Vector4v1,Vector4v2,Vector4v3,Vector4v3)" func="no" />
+	<KeyWord name="Geometry.Vector4.Cross(Vector4v1)" func="no" />
+	<KeyWord name="Geometry.Vector4.DistanceTo(Vector4other)" func="no" />
+	<KeyWord name="Geometry.Vector4.Dot(Vector4v2)" func="no" />
+	<KeyWord name="Geometry.Vector4.Hermite(Vector4t1,Vector4v2,Vector4t2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.Interception(Vector4v2,Vector4v3,Vector4v4)" func="no" />
+	<KeyWord name="Geometry.Vector4.IsIntersection(Vector4v2,Vector4v3,Vector4v4)" func="no" />
+	<KeyWord name="Geometry.Vector4.IsPartOfLineSegment(Vector4v1,Vector4v2)" func="no" />
+	<KeyWord name="Geometry.Vector4.Length()" func="no" />
+	<KeyWord name="Geometry.Vector4.Lerp(Vector4v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.LerpNormalize(Vector4v2,floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.Maximize(Vector4v1)" func="no" />
+	<KeyWord name="Geometry.Vector4.Minimize(Vector4v1)" func="no" />
+	<KeyWord name="Geometry.Vector4.Normalize()" func="no" />
+	<KeyWord name="Geometry.Vector4.To2D()" func="no" />
+	<KeyWord name="Geometry.Vector4.To3D()" func="no" />
+	<KeyWord name="Geometry.Vector4.To4D()" func="no" />
+	<KeyWord name="Geometry.Vector4.ProjectOnLine(Vector4a,Vector4b)" func="no" />
+	<KeyWord name="Geometry.Vector4.ProjectOnLineSegment(Vector4a,Vector4b)" func="no" />
+	<KeyWord name="Geometry.Vector4.Rotate(floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.RotateDeg(floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.Scale(floats)" func="no" />
+	<KeyWord name="Geometry.Vector4.ToPoint(intx=0)" func="no" />
+	<KeyWord name="Geometry.Vector4.ToTable()" func="no" />
+	<KeyWord name="Geometry.Vector4.Transform(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector4.TransformCoord(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector4.TransformNormal(Matrix4m)" func="no" />
+	<KeyWord name="Geometry.Vector4.unpack()" func="no" />
+	<KeyWord name="Geometry.Vector4.BoundingSphere(objecto)" func="no" />
+	<KeyWord name="Geometry.Vector4.Copy(Vector4v)" func="no" />
+	<KeyWord name="Graphics.ARGB(inttransparency,intred,intgreen,intblue)" func="no" />
+	<KeyWord name="Graphics.DrawLine(Vector2arg1,Vector2arg2,floatarg3,Colorarg4)" func="no" />
+	<KeyWord name="Graphics.DrawLines(objectarg1,floatarg2,Colorarg3)" func="no" />
+	<KeyWord name="Graphics.DrawText(stringtext,unsingedintfontSize,unsingedintx,unsingedinty,intcolor)" func="no" />
+	<KeyWord name="Graphics.DrawRectangle(longarg1,longarg2,longarg3,longarg4,unsingedlongarg5)" func="no" />
+	<KeyWord name="Graphics.DrawRectangleFilled(Vector2arg1,longarg2,longarg3,unsingedlongarg4)" func="no" />
+	<KeyWord name="Graphics.RGB(unsignedcharred,unsignedchargreen,unsingedcharblue)" func="no" />
+	<KeyWord name="Graphics.RGBA(unsingedcharred,unsingedchargreen,unsingedcharblue,unsingedchartransparency)" func="no" />
+	<KeyWord name="Graphics.Color.AdjustContrast(floatarg2)" func="no" />
+	<KeyWord name="Graphics.Color.AdjustSaturation(floatarg2)" func="no" />
+	<KeyWord name="Graphics.Color.Lerp(Colorarg2,floatarg3)" func="no" />
+	<KeyWord name="Graphics.Color.Modulate(Colorarg2)" func="no" />
+	<KeyWord name="Graphics.Color.Negative()" func="no" />
+	<KeyWord name="Graphics.Color.Scale(floatarg2)" func="no" />
+	<KeyWord name="Graphics.Color.BLACK" func="no" />
+	<KeyWord name="Graphics.Color.BLUE" func="no" />
+	<KeyWord name="Graphics.Color.CYAN" func="no" />
+	<KeyWord name="Graphics.Color.GREEN" func="no" />
+	<KeyWord name="Graphics.Color.GREY" func="no" />
+	<KeyWord name="Graphics.Color.MAGENTA" func="no" />
+	<KeyWord name="Graphics.Color.RED" func="no" />
+	<KeyWord name="Graphics.Color.WHITE" func="no" />
+	<KeyWord name="Graphics.Color.YELLOW" func="no" />
+	<KeyWord name="Graphics.Color.TRANSPARENT" func="no" />
+	<KeyWord name="Keyboard.GetKey(stringarg1)" func="no" />
+	<KeyWord name="Keyboard.IsKeyDown(intarg1)" func="no" />
+	<KeyWord name="Keyboard.IsKeyPressed(intarg1)" func="no" />
+	<KeyWord name="Keyboard.ToAscii(intarg1)" func="no" />
+	<KeyWord name="Memory.GuessFncSize(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.PtrToStr(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadByte(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadCall(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadDword(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadFloat(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadJump(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.ReadWord(unsingedlongadress)" func="no" />
+	<KeyWord name="Memory.WriteByte(unsingedlongadress,unsingedcharvalue)" func="no" />
+	<KeyWord name="Memory.WriteDword(unsingedlongadress,unsingedlongvalue)" func="no" />
+	<KeyWord name="Memory.WriteFloat(unsingedlongadress,floatvalue)" func="no" />
+	<KeyWord name="Memory.WriteWord(unsingedlongadress,unsingnedshortvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.Read()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadByte()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadChar()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadInt()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadShort()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadString()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadUInt()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.ReadWord()" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.Write(unsingedcharvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteByte(unsingedcharvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteChar(charvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteInt(intvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteShort(shortvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteString(stringvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteUInt(unsingedintvalue)" func="no" />
+	<KeyWord name="Memory.MemoryBuffer.WriteWord(unsingedshortvalue)" func="no" />
+	<KeyWord name="Render.Add(CRenderObjectarg1)" func="no" />
+	<KeyWord name="Render.Remove(CRenderObjectarg1)" func="no" />
+	<KeyWord name="Render.Font(stringarg1,unsignedintarg2)" func="no" />
+	<KeyWord name="Render.DrawText(stringarg1,unsignedintarg2,unsignedintarg3,unsignedintarg4,Colorarg5)" func="no" />
+	<KeyWord name="Render.Circle.Circle(floatx,floaty,intradius,intcolor)" func="no" />
+	<KeyWord name="Render.Circle.Add()" func="no" />
+	<KeyWord name="Render.Circle.Draw()" func="no" />
+	<KeyWord name="Render.Circle.Hide()" func="no" />
+	<KeyWord name="Render.Circle.Remove()" func="no" />
+	<KeyWord name="Render.Circle.Reset()" func="no" />
+	<KeyWord name="Render.Circle.SetColor(unsignedlongInnerColor,unsignedlongOuterColor)" func="no" />
+	<KeyWord name="Render.Circle.SetPosition(floatx,floaty,floatz)" func="no" />
+	<KeyWord name="Render.Circle.SetRadius(intminRadius,intmaxRadius)" func="no" />
+	<KeyWord name="Render.Circle.Show()" func="no" />
+	<KeyWord name="Render.Line.Line(Vector2[3]start,Vector2/[3]end,floatwidth,unsignedlongcolor)" func="no" />
+	<KeyWord name="Render.Line.Add()" func="no" />
+	<KeyWord name="Render.Line.Draw(unsignedintarg2,unsignedintarg3)" func="no" />
+	<KeyWord name="Render.Line.Hide()" func="no" />
+	<KeyWord name="Render.Line.Remove()" func="no" />
+	<KeyWord name="Render.Line.Reset()" func="no" />
+	<KeyWord name="Render.Line.Show()" func="no" />
+	<KeyWord name="Render.Object.Add()" func="no" />
+	<KeyWord name="Render.Object.Hide()" func="no" />
+	<KeyWord name="Render.Object.Remove()" func="no" />
+	<KeyWord name="Render.Object.Reset()" func="no" />
+	<KeyWord name="Render.Object.Show()" func="no" />
+	<KeyWord name="Render.Rect.Rect(floatx,floaty,floatwidth,floatheight,intcolor)" func="no" />
+	<KeyWord name="Render.Rect.Add()" func="no" />
+	<KeyWord name="Render.Rect.Hide()" func="no" />
+	<KeyWord name="Render.Rect.Remove()" func="no" />
+	<KeyWord name="Render.Rect.Reset()" func="no" />
+	<KeyWord name="Render.Rect.Show()" func="no" />
+	<KeyWord name="Render.Sprite.Sprite(unsignedlongx,unsignedlongy)" func="no" />
+	<KeyWord name="Render.Sprite.Add()" func="no" />
+	<KeyWord name="Render.Sprite.Hide()" func="no" />
+	<KeyWord name="Render.Sprite.Remove()" func="no" />
+	<KeyWord name="Render.Sprite.Reset()" func="no" />
+	<KeyWord name="Render.Sprite.Show()" func="no" />
+	<KeyWord name="Render.Sprite.Draw(Rectarg2,Vector3arg3,Vector4arg4)" func="no" />
+	<KeyWord name="Render.Sprite.SetScale(floatxScale,floatyScale)" func="no" />
+	<KeyWord name="Render.Text.Text(stringfontName,unsingnedlongdwSize,unsingnedlongx,unsingnedlongy,CRenderFontfont)" func="no" />
+	<KeyWord name="Render.Text.Add()" func="no" />
+	<KeyWord name="Render.Text.GetTextArea()" func="no" />
+	<KeyWord name="Render.Text.Hide()" func="no" />
+	<KeyWord name="Render.Text.Remove()" func="no" />
+	<KeyWord name="Render.Text.Reset()" func="no" />
+	<KeyWord name="Render.Text.Show()" func="no" />
+	<KeyWord name="Utility.FileExists(stringsPath)" func="no" />
+	<KeyWord name="Utility.GetModule(stringarg1)" func="no" />
+	<KeyWord name="Utility.GetRegistryValue(stringarg1,stringarg2)" func="no" />
+	<KeyWord name="Utility.GetSave(stringname)" func="no" />
+	<KeyWord name="Utility.PlayFile(stringname)" func="no" />
+	<KeyWord name="Utility.ReadBinary(stringsPath)" func="no" />
+	<KeyWord name="Utility.SetRegistryValue(stringarg1,stringarg1,stringarg1)" func="no" />
+	<KeyWord name="Utility.WriteBinary(stringszPath,MemoryBufferbuffer)" func="no" />
+	<KeyWord name="Utility.ReadFile(stringsPath)" func="no" />
+	<KeyWord name="Utility.WriteFile(stringszPath,stringtext)" func="no" />
+	<KeyWord name="Utility.Base64.Encode(stringrawString)" func="no" />
+	<KeyWord name="Utility.Base64.Decode(stringencodedString)" func="no" />
+	<KeyWord name="Utility.AOBEntry.Get(unsignedlongarg2)" func="no" />
+	<KeyWord name="Utility.AOBScanner.AddAoB(stringarg2)" func="no" />
+	<KeyWord name="Utility.AOBScanner.AddExport(stringarg2)" func="no" />
+	<KeyWord name="Utility.AOBScanner.AddString(stringarg2)" func="no" />
+	<KeyWord name="Utility.AOBScanner.Get(unsignedintarg2)" func="no" />
+	<KeyWord name="Utility.AOBScanner.Scan()" func="no" />
+	<KeyWord name="Utility.WebView.CreateObject(stringarg2)" func="no" />
+	<KeyWord name="Utility.WebView.GetObject(stringarg2,stringarg3)" func="no" />
+	<KeyWord name="Utility.WebView.JQuery(stringarg2)" func="no" />
+	<KeyWord name="Utility.WebView.LoadHome()" func="no" />
+	<KeyWord name="Utility.WebView.LoadUrl(stringarg2)" func="no" />
+	<KeyWord name="Utility.WebView.RunJS(stringarg2)" func="no" />
+	<KeyWord name="Utility.WebView.GetMain()" func="no" />
+	<KeyWord name="Utility.JSObject.BeginInvoke(stringarg2,objecto)" func="no" />
+	<KeyWord name="Utility.JSObject.GetProperty(stringarg2)" func="no" />
+	<KeyWord name="Utility.JSObject.Invoke(stringarg2,objecto)" func="no" />
+	<KeyWord name="Utility.JSObject.SetCustomMethod(stringarg2,objecto)" func="no" />
+	<KeyWord name="Utility.JSObject.SetProperty(stringarg2,objecto)" func="no" />
+	<KeyWord name="Window.GetCursorPos()" func="no" />
+	<KeyWord name="Window.GetWindowPos()" func="no" />
+	<KeyWord name="Window.Clipboard.GetText()" func="no" />
+	<KeyWord name="Window.Clipboard.SetText(stringarg2)" func="no" />
+	<KeyWord name="MenuConfig(stringID,stringID)" func="no" />
+	<KeyWord name="MenuConfig:Boolean(stringID,stringName,booldefaultValue,functioncallback,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:Button(stringID,stringName,functioncallback)" func="no" />
+	<KeyWord name="MenuConfig:ColorPick(stringID,stringName,stringdefaultValue,functioncallback,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:DropDown(stringID,stringName,intdefaultValue,tableDropTable,functioncallback,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:Info(stringID,stringName)" func="no" />
+	<KeyWord name="MenuConfig:KeyBinding(stringID,stringName,stringKey,functioncallback,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:Menu(stringID,stringName)" func="no" />
+	<KeyWord name="MenuConfig:Number(stringID,stringName,intDefaultValue,intMinValue,intMaxValue,functioncallback,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:Section(stringID,stringName)" func="no" />
+	<KeyWord name="MenuConfig:Separator()" func="no" />
+	<KeyWord name="MenuConfig:Slider(stringID,stringName,intDefaultValue,intMinValue,intMaxValue,intStep,intStep,boolForceDefault)" func="no" />
+	<KeyWord name="MenuConfig:TargetSelector(stringID,stringName,intMode,intRange,stringDmgType,boolFocusSelected,boolFocusSelected)" func="no" />
+	<KeyWord name="Graphics.DrawArrow(Vector3arg1,Vector3arg2,floatarg3,floatarg4,floatlongarg5,unsingedlongarg5)" func="no" />
+	<KeyWord name="Graphics.DrawCircle(floatarg1,floatarg2,floatarg3,floatarg4,colorarg5)" func="no" />
+	<KeyWord name="Graphics.DrawRectangleOutline(Vector2arg1,longarg2,longarg3,unsingedlongarg4,unsingnedlongarg5)" func="no" />
+	<KeyWord name="Graphics.PrintFloatText(Unitarg1,unsingnedintarg2,stringarg3)" func="no" />
+	<KeyWord name="Graphics.WorldToScreen(Unit/Vector3arg1)" func="no" />
+	<KeyWord name="Network.EnetPacket.Block()" func="no" />
+	<KeyWord name="Network.EnetPacket.Decode1()" func="no" />
+	<KeyWord name="Network.EnetPacket.Decode2()" func="no" />
+	<KeyWord name="Network.EnetPacket.Decode4()" func="no" />
+	<KeyWord name="Network.EnetPacket.DecodeF()" func="no" />
+	<KeyWord name="Network.EnetPacket.DecodeStr()" func="no" />
+	<KeyWord name="Network.EnetPacket.Encode1(unsignedchararg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Encode2(unsignedshortarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Encode4(unsignedlongarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.EncodeF(floatarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.EncodeStr(stringarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.GetRemaining()" func="no" />
+	<KeyWord name="Network.EnetPacket.Hide()" func="no" />
+	<KeyWord name="Network.EnetPacket.Recv()" func="no" />
+	<KeyWord name="Network.EnetPacket.Replace1(unsignedchararg2,intarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Replace2(unsignedshortarg2,intarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Replace4(unsignedlongarg2,intarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.ReplaceF(floatarg2,intarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Send()" func="no" />
+	<KeyWord name="Network.EnetPacket.SetPos(intarg2)" func="no" />
+	<KeyWord name="Network.EnetPacket.Skip(intarg2)" func="no" />
+	<KeyWord name="Game.ExePath()" func="no" />
+	<KeyWord name="Game.GetEnemyBarData()" func="no" />
+	<KeyWord name="Game.GetFriendlyBarData()" func="no" />
+	<KeyWord name="Game.GetRegion()" func="no" />
+	<KeyWord name="Game.GetSelfBarData()" func="no" />
+	<KeyWord name="Game.HeroCount()" func="no" />
+	<KeyWord name="Game.Heroes()" func="no" />
+	<KeyWord name="Game.HookRads()" func="no" />
+	<KeyWord name="Game.Hover()" func="no" />
+	<KeyWord name="Game.Latency()" func="no" />
+	<KeyWord name="Game.MyHero()" func="no" />
+	<KeyWord name="Game.ObjectCount()" func="no" />
+	<KeyWord name="Game.Objects()" func="no" />
+	<KeyWord name="Game.Path()" func="no" />
+	<KeyWord name="Game.ServerTimer()" func="no" />
+	<KeyWord name="Game.Timer()" func="no" />
+	<KeyWord name="Game.AllowCameraInput(boolarg2)" func="no" />
+	<KeyWord name="Game.AllowKeyInput(boolarg2)" func="no" />
+	<KeyWord name="Game.EnableAntiAFK(boolarg2)" func="no" />
+	<KeyWord name="Game.SetChatStatus(boolarg2)" func="no" />
+	<KeyWord name="Game.Hero(intarg2)" func="no" />
+	<KeyWord name="Game.Object(intarg2)" func="no" />
+	<KeyWord name="Game.ObjectByNetworkId(intarg2)" func="no" />
+	<KeyWord name="Game.SellItem(intarg2)" func="no" />
+	<KeyWord name="Game.IsGrass(Vector3arg2)" func="no" />
+	<KeyWord name="Game.ShowGreenClick(Vector3arg2)" func="no" />
+	<KeyWord name="Game.ShowRedClick(Vector3arg2)" func="no" />
+	<KeyWord name="Game.BuyItem(unsingedintarg2)" func="no" />
+	<KeyWord name="Game.GetLoadPlayer(unsingedintarg2)" func="no" />
+	<KeyWord name="Game.LevelSpell(unsingedintarg2)" func="no" />
+	<KeyWord name="Game.GetSkillHash(stringarg2)" func="no" />
+	<KeyWord name="Game.GetUnitHPBarOffset(Unitarg2)" func="no" />
+	<KeyWord name="Game.GetUnitHPBarPos(Unitarg2)" func="no" />
+	<KeyWord name="Game.Target(Unitarg2)" func="no" />
+	<KeyWord name="Game.SetMaxZoom(floatarg2)" func="no" />
+	<KeyWord name="Game.CalculatePath(Unitarg1,Vector3arg2)" func="no" />
+	<KeyWord name="Game.CalculatePath(unsingnedintarg1,floatarg2,floatarg3,floatarg4,intarg5)" func="no" />
+	<KeyWord name="Game.AIMeshNGrid.CalculateHeuristic(NavigationCellarg1,NavigationCellarg2)" func="no" />
+	<KeyWord name="Game.AIMeshNGrid.GetCell(unsignedintarg1,unsignedintarg2)" func="no" />
+	<KeyWord name="Game.AIMeshNGrid.GetHeightMapAt(unsignedintarg1,unsignedintarg2)" func="no" />
+	<KeyWord name="Game.AIMeshNGrid.GetHeuristicMapAt(unsignedintarg1)" func="no" />
+	<KeyWord name="Game.ArchiveEntry.Extract(stringarg1)" func="no" />
+	<KeyWord name="unit:Attack(floatarg2,floatarg3)" func="no" />
+	<KeyWord name="unit:AttackMove(floatarg2,floatarg3)" func="no" />
+	<KeyWord name="unit:CalcDamage(Unitarg2,floatarg3)" func="no" />
+	<KeyWord name="unit:CalcMagicDamage(Unitarg2,floatarg3)" func="no" />
+	<KeyWord name="unit:CanUseSpell(unsingedintarg2,floatarg3,floatarg4)" func="no" />
+	<KeyWord name="unit:DistanceTo(Unitarg2)" func="no" />
+	<KeyWord name="unit:GetBuff(unsingnedintarg2)" func="no" />
+	<KeyWord name="unit:GetInventorySlot(unsingnedintarg2)" func="no" />
+	<KeyWord name="unit:GetItem(unsingnedintarg2)" func="no" />
+	<KeyWord name="unit:GetSpellData(unsingnedintarg2)" func="no" />
+	<KeyWord name="unit:HasBuff(unsingnedintarg2)" func="no" />
+	<KeyWord name="unit:Hold()" func="no" />
+	<KeyWord name="unit:IsUnit(unitarg2)" func="no" />
+	<KeyWord name="unit:Move(unsingedintarg2,floatarg3)" func="no" />
+	<KeyWord name="unit:Stop()" func="no" />
+	<KeyWord name="Game.Chat.Block()" func="no" />
+	<KeyWord name="Game.Chat.Print(stringarg1)" func="no" />
+	<KeyWord name="Game.Chat.Send(stringarg1)" func="no" />
+	<KeyWord name="Game.IniBin.Get(objectarg1,objectarg2)" func="no" />
+	<KeyWord name="Game.IniBin.MergeWith(IniBinarg1)" func="no" />
+	<KeyWord name="Game.NavigationHeuristicMap.GetHeuristicAt(unsingedintarg1)" func="no" />
+	<KeyWord name="Game.NavigationPath.GetHeuristicAt(unsingedintPath)" func="no" />
+	<KeyWord name="Game.Slots.ITEM_1" func="no" />
+	<KeyWord name="Game.Slots.ITEM_2" func="no" />
+	<KeyWord name="Game.Slots.ITEM_3" func="no" />
+	<KeyWord name="Game.Slots.ITEM_4" func="no" />
+	<KeyWord name="Game.Slots.ITEM_5" func="no" />
+	<KeyWord name="Game.Slots.ITEM_6" func="no" />
+	<KeyWord name="Game.Slots.ITEM_7" func="no" />
+	<KeyWord name="Game.Slots.RECALL" func="no" />
+	<KeyWord name="Game.Slots.SPELL_1" func="no" />
+	<KeyWord name="Game.Slots.SPELL_2" func="no" />
+	<KeyWord name="Game.Slots.SPELL_3" func="no" />
+	<KeyWord name="Game.Slots.SPELL_4" func="no" />
+	<KeyWord name="Game.Slots.SUMMONER_1" func="no" />
+	<KeyWord name="Game.Slots.SUMMONER_2" func="no" />
+	<KeyWord name="Game.ParTYPE.BLOOD" func="no" />
+	<KeyWord name="Game.ParTYPE.ENERGY" func="no" />
+	<KeyWord name="Game.ParTYPE.MANA" func="no" />
+	<KeyWord name="Game.ParTYPE.UNLIMITED" func="no" />
+	<KeyWord name="Game.SpellState.COOLDOWN" func="no" />
+	<KeyWord name="Game.SpellState.NOT_LEARNED" func="no" />
+	<KeyWord name="Game.SpellState.NO_MANA" func="no" />
+	<KeyWord name="Game.SpellState.READY" func="no" />
+	<KeyWord name="Game.SpellState.SUPRESSED" func="no" />
+	<KeyWord name="Game.SpellState.UNKNOWN_STATE" func="no" />
+	<KeyWord name="Game.Team.BLUE" func="no" />
+	<KeyWord name="Game.Team.NEUTRAL" func="no" />
+	<KeyWord name="Game.Team.NONE" func="no" />
+	<KeyWord name="Game.Team.RED" func="no" />
+	<KeyWord name="path.curPath" func="no" />
+	<KeyWord name="path.endPath" func="no" />
+	<KeyWord name="path.startPath" func="no" />
+	<KeyWord name="id" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="stacks" func="no" />
+	<KeyWord name="id" func="no" />
+	<KeyWord name="points" func="no" />
+	<KeyWord name="bAlwaysSnapFacing" func="no" />
+	<KeyWord name="bAmmoCountHiddenInUI" func="no" />
+	<KeyWord name="bAmmoNotAffectedByCDR" func="no" />
+	<KeyWord name="bApplyAttackDamage" func="no" />
+	<KeyWord name="bApplyAttackEffect" func="no" />
+	<KeyWord name="bApplyMaterialOnHitSound" func="no" />
+	<KeyWord name="bBelongsToAvatar" func="no" />
+	<KeyWord name="bCanCastWhileDisabled" func="no" />
+	<KeyWord name="bCanMoveWhileChanneling" func="no" />
+	<KeyWord name="bCanOnlyCastWhileDead" func="no" />
+	<KeyWord name="bCanOnlyCastWhileDisabled" func="no" />
+	<KeyWord name="bCannotBeSuppressed" func="no" />
+	<KeyWord name="bCantCancelWhileChanneling" func="no" />
+	<KeyWord name="bCantCancelWhileWindingUp" func="no" />
+	<KeyWord name="bCantCastWhileRooted" func="no" />
+	<KeyWord name="bCastRangeUseBoundingBoxes" func="no" />
+	<KeyWord name="bCursorChangesInGrass" func="no" />
+	<KeyWord name="bDisableCastBar" func="no" />
+	<KeyWord name="bDoNotNeedToFaceTarget" func="no" />
+	<KeyWord name="bDoesntBreakChannels" func="no" />
+	<KeyWord name="bDrawSecondaryLineIndicator" func="no" />
+	<KeyWord name="bHaveAfterEffect" func="no" />
+	<KeyWord name="bHaveHitBone" func="no" />
+	<KeyWord name="bHaveHitEffect" func="no" />
+	<KeyWord name="bHavePointEffect" func="no" />
+	<KeyWord name="bIgnoreAnimContinueUntilCastFrame" func="no" />
+	<KeyWord name="bIgnoreRangeCheck" func="no" />
+	<KeyWord name="bIsDisabledWhileDead" func="no" />
+	<KeyWord name="bIsToggleSpell" func="no" />
+	<KeyWord name="bLineMissileBounces" func="no" />
+	<KeyWord name="bLineMissileEndsAtTargetPoint" func="no" />
+	<KeyWord name="bLineMissileFollowsTerrainHeight" func="no" />
+	<KeyWord name="bLineMissileTrackUnits" func="no" />
+	<KeyWord name="bLineMissileUsesAccelerationForBounce" func="no" />
+	<KeyWord name="bLockConeToPlayer" func="no" />
+	<KeyWord name="bMinimapIconRotation" func="no" />
+	<KeyWord name="bNoWinddownIfCancelled" func="no" />
+	<KeyWord name="bOrientRadiusTextureFromPlayer" func="no" />
+	<KeyWord name="bOrientRangeIndicatorToCursor" func="no" />
+	<KeyWord name="bOrientRangeIndicatorToFacing" func="no" />
+	<KeyWord name="bPreventChargingSecondCast" func="no" />
+	<KeyWord name="bSpellRevealsChampion" func="no" />
+	<KeyWord name="bSubjectToGlobalCooldown" func="no" />
+	<KeyWord name="bTriggersGlobalCooldown" func="no" />
+	<KeyWord name="bUseAnimatorFramerate" func="no" />
+	<KeyWord name="bUseAutoattackCastTime" func="no" />
+	<KeyWord name="bUseChargeChanneling" func="no" />
+	<KeyWord name="bUseChargeTargeting" func="no" />
+	<KeyWord name="bUseGlobalLineIndicator" func="no" />
+	<KeyWord name="bUseMinimapTargeting" func="no" />
+	<KeyWord name="castFrame" func="no" />
+	<KeyWord name="castRadius" func="no" />
+	<KeyWord name="castRadiusSecondary" func="no" />
+	<KeyWord name="castRangeDisplayOverride" func="no" />
+	<KeyWord name="castTargetAdditionalUnitsRadius" func="no" />
+	<KeyWord name="castType" func="no" />
+	<KeyWord name="cd" func="no" />
+	<KeyWord name="channelDuration" func="no" />
+	<KeyWord name="circleMissileAngularVelocity" func="no" />
+	<KeyWord name="circleMissileRadialVelocity" func="no" />
+	<KeyWord name="currentCd" func="no" />
+	<KeyWord name="delayCastOffsetPercent" func="no" />
+	<KeyWord name="delayTotalTimePercent" func="no" />
+	<KeyWord name="flags" func="no" />
+	<KeyWord name="flags0" func="no" />
+	<KeyWord name="flags1" func="no" />
+	<KeyWord name="flags2" func="no" />
+	<KeyWord name="flags3" func="no" />
+	<KeyWord name="flags4" func="no" />
+	<KeyWord name="flags5" func="no" />
+	<KeyWord name="flags6" func="no" />
+	<KeyWord name="isMissileUnblockable" func="no" />
+	<KeyWord name="isToggleSpell" func="no" />
+	<KeyWord name="level" func="no" />
+	<KeyWord name="lineDragLength" func="no" />
+	<KeyWord name="lineWidth" func="no" />
+	<KeyWord name="mana" func="no" />
+	<KeyWord name="maxAmmo" func="no" />
+	<KeyWord name="missileAccel" func="no" />
+	<KeyWord name="missileFixedTravelTime" func="no" />
+	<KeyWord name="missileGravity" func="no" />
+	<KeyWord name="missileLifeTime" func="no" />
+	<KeyWord name="missileMaxSpeed" func="no" />
+	<KeyWord name="missileMinSpeed" func="no" />
+	<KeyWord name="missileMinTravelTime" func="no" />
+	<KeyWord name="missilePerceptionBubbleRadius" func="no" />
+	<KeyWord name="missilePerceptionBubbleRevealsStealth" func="no" />
+	<KeyWord name="missileSpeed" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="overrideCastTime" func="no" />
+	<KeyWord name="range" func="no" />
+	<KeyWord name="sealed" func="no" />
+	<KeyWord name="toggleState" func="no" />
+	<KeyWord name="totalCooldown" func="no" />
+	<KeyWord name="endT" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="startT" func="no" />
+	<KeyWord name="valid" func="no" />
+	<KeyWord name="animationTime" func="no" />
+	<KeyWord name="endPos" func="no" />
+	<KeyWord name="level" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="projectileID" func="no" />
+	<KeyWord name="startPos" func="no" />
+	<KeyWord name="target" func="no" />
+	<KeyWord name="windUpTime" func="no" />
+	<KeyWord name="chatBubbleOffset" func="no" />
+	<KeyWord name="fadeSpeed" func="no" />
+	<KeyWord name="healthOffset" func="no" />
+	<KeyWord name="levelTextOffset" func="no" />
+	<KeyWord name="locOffset" func="no" />
+	<KeyWord name="parOffset" func="no" />
+	<KeyWord name="percentageOffset" func="no" />
+	<KeyWord name="screenSpaceOffset" func="no" />
+	<KeyWord name="titleTextOffset" func="no" />
+	<KeyWord name="addDamage" func="no" />
+	<KeyWord name="animation" func="no" />
+	<KeyWord name="ap" func="no" />
+	<KeyWord name="armor" func="no" />
+	<KeyWord name="armorMaterial" func="no" />
+	<KeyWord name="armorPen" func="no" />
+	<KeyWord name="armorPenPercent" func="no" />
+	<KeyWord name="attackSpeed" func="no" />
+	<KeyWord name="boundingRadius" func="no" />
+	<KeyWord name="buffCount" func="no" />
+	<KeyWord name="canAttack" func="no" />
+	<KeyWord name="canCast" func="no" />
+	<KeyWord name="canMove" func="no" />
+	<KeyWord name="cdr" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="collisionHeight" func="no" />
+	<KeyWord name="collisionRadius" func="no" />
+	<KeyWord name="critChance" func="no" />
+	<KeyWord name="critDmg" func="no" />
+	<KeyWord name="damage" func="no" />
+	<KeyWord name="dead" func="no" />
+	<KeyWord name="deathTimer" func="no" />
+	<KeyWord name="drawPos" func="no" />
+	<KeyWord name="expBonus" func="no" />
+	<KeyWord name="glyphs" func="no" />
+	<KeyWord name="gold" func="no" />
+	<KeyWord name="hasMovePath" func="no" />
+	<KeyWord name="health" func="no" />
+	<KeyWord name="hpPool" func="no" />
+	<KeyWord name="hpRegen" func="no" />
+	<KeyWord name="iParType" func="no" />
+	<KeyWord name="isAI" func="no" />
+	<KeyWord name="isAsleep" func="no" />
+	<KeyWord name="isAttackReady" func="no" />
+	<KeyWord name="isCasting" func="no" />
+	<KeyWord name="isFeared" func="no" />
+	<KeyWord name="isFleeing" func="no" />
+	<KeyWord name="isForceRenderParticles" func="no" />
+	<KeyWord name="isGhosted" func="no" />
+	<KeyWord name="isInvulnerable" func="no" />
+	<KeyWord name="isLifeStealImune" func="no" />
+	<KeyWord name="isMagicImune" func="no" />
+	<KeyWord name="isMe" func="no" />
+	<KeyWord name="isMelee" func="no" />
+	<KeyWord name="isMoving" func="no" />
+	<KeyWord name="isNearSight" func="no" />
+	<KeyWord name="isNoRender" func="no" />
+	<KeyWord name="isPhysImune" func="no" />
+	<KeyWord name="isRanged" func="no" />
+	<KeyWord name="isRevealSpecific" func="no" />
+	<KeyWord name="isStealthed" func="no" />
+	<KeyWord name="isTargetable" func="no" />
+	<KeyWord name="isTargetableToTeam" func="no" />
+	<KeyWord name="isTaunted" func="no" />
+	<KeyWord name="level" func="no" />
+	<KeyWord name="lifeSteal" func="no" />
+	<KeyWord name="magicArmor" func="no" />
+	<KeyWord name="magicPen" func="no" />
+	<KeyWord name="magicPenPercent" func="no" />
+	<KeyWord name="magicReduction" func="no" />
+	<KeyWord name="mana" func="no" />
+	<KeyWord name="marks" func="no" />
+	<KeyWord name="masteries" func="no" />
+	<KeyWord name="maxBBox" func="no" />
+	<KeyWord name="maxHealth" func="no" />
+	<KeyWord name="maxMana" func="no" />
+	<KeyWord name="minBBox" func="no" />
+	<KeyWord name="minionScore" func="no" />
+	<KeyWord name="mpRegen" func="no" />
+	<KeyWord name="ms" func="no" />
+	<KeyWord name="name" func="no" />
+	<KeyWord name="networkID" func="no" />
+	<KeyWord name="parType" func="no" />
+	<KeyWord name="path" func="no" />
+	<KeyWord name="pathCollisionRadius" func="no" />
+	<KeyWord name="physReduction" func="no" />
+	<KeyWord name="pos" func="no" />
+	<KeyWord name="quints" func="no" />
+	<KeyWord name="range" func="no" />
+	<KeyWord name="rotation" func="no" />
+	<KeyWord name="seals" func="no" />
+	<KeyWord name="spellEnd" func="no" />
+	<KeyWord name="spellName" func="no" />
+	<KeyWord name="spellOwner" func="no" />
+	<KeyWord name="spellStart" func="no" />
+	<KeyWord name="spellVamp" func="no" />
+	<KeyWord name="team" func="no" />
+	<KeyWord name="totalDamage" func="no" />
+	<KeyWord name="valid" func="no" />
+	<KeyWord name="visible" func="no" />
+	<KeyWord name="visionPos" func="no" />
+	<KeyWord name="visionRadius" func="no" />
+	<KeyWord name="weaponMaterial" func="no" />
+	<KeyWord name="x" func="no" />
+	<KeyWord name="y" func="no" />
+	<KeyWord name="z" func="no" />			
     </AutoComplete>
 </NotepadPlus>
 
