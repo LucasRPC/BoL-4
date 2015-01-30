@@ -37,13 +37,35 @@
 		-Added option to display ward timers on minimap instead of marker
 		-Added trinket buy/sell utility
 		-Fixed bug not displaying dragon timer from FoW if it was the 5th dragon buff
-		
-		***** Update 2
-		
-		--Fixed all packets
-		--Removed Trinket Helper for this version as Buy/SellItem are nonfunctional
-		--Added side HUD for ally ult/summoner cooldowns.
 --]]
+
+--[[
+unit.visible always returns true
+
+--]]
+
+local IDBytes = {
+	[0x00] = 0x7A, [0x01] = 0x5C, [0x02] = 0x90, [0x03] = 0x2A, [0x04] = 0xB0, [0x05] = 0x17, [0x06] = 0x00, [0x07] = 0xE6, [0x08] = 0x65, [0x09] = 0x87, [0x0A] = 0xA6, [0x0B] = 0xAD, [0x0C] = 0xED, 
+	[0x0D] = 0x32, [0x0E] = 0x92, [0x0F] = 0x0D, [0x10] = 0xF8, [0x11] = 0x72, [0x12] = 0xDE, [0x13] = 0xAC, [0x14] = 0xA7, [0x15] = 0x78, [0x16] = 0x0E, [0x17] = 0x59, [0x18] = 0x0F, [0x19] = 0xBE, 
+	[0x1A] = 0x3D, [0x1B] = 0x45, [0x1C] = 0xFC, [0x1D] = 0xBF, [0x1E] = 0xB7, [0x1F] = 0xCD, [0x20] = 0xDC, [0x21] = 0x52, [0x22] = 0xC3, [0x23] = 0xE3, [0x24] = 0x26, [0x25] = 0xE2, [0x26] = 0x3C,
+	[0x27] = 0x3E, [0x28] = 0xAA, [0x29] = 0x6D, [0x2A] = 0x2F, [0x2B] = 0xAE, [0x2C] = 0x46, [0x2D] = 0x0C, [0x2E] = 0x5F, [0x2F] = 0xD1, [0x30] = 0x7F, [0x31] = 0x08, [0x32] = 0xD7, [0x33] = 0x4A,
+	[0x34] = 0x50, [0x35] = 0x1C, [0x36] = 0xD3, [0x37] = 0x14, [0x38] = 0x05, [0x39] = 0xF6, [0x3A] = 0x0A, [0x3B] = 0x9E, [0x3C] = 0x8B, [0x3D] = 0xB5, [0x3E] = 0x07, [0x3F] = 0x6C, [0x40] = 0xD8, 
+	[0x41] = 0x2B, [0x42] = 0xE4, [0x43] = 0x21, [0x44] = 0xBB, [0x45] = 0x5E, [0x46] = 0xB6, [0x47] = 0xEE, [0x48] = 0x23, [0x49] = 0xF9, [0x4A] = 0x9F, [0x4B] = 0xCB, [0x4C] = 0x22, [0x4D] = 0x8C, 
+	[0x4E] = 0x70, [0x4F] = 0xEF, [0x50] = 0x1E, [0x51] = 0x84, [0x52] = 0x30, [0x53] = 0xC0, [0x54] = 0x33, [0x55] = 0xF4, [0x56] = 0x63, [0x57] = 0xDA, [0x58] = 0xDF, [0x59] = 0xD4, [0x5A] = 0xB4, 
+	[0x5B] = 0x28, [0x5C] = 0x96, [0x5D] = 0x67, [0x5E] = 0x11, [0x5F] = 0x41, [0x60] = 0x12, [0x61] = 0x85, [0x62] = 0x51, [0x63] = 0x69, [0x64] = 0x1D, [0x65] = 0xDB, [0x66] = 0xE8, [0x67] = 0x74, 
+	[0x68] = 0x94, [0x69] = 0x98, [0x6A] = 0x1B, [0x6B] = 0xA9, [0x6C] = 0xF3, [0x6D] = 0x79, [0x6E] = 0x77, [0x6F] = 0xC2, [0x70] = 0x03, [0x71] = 0x13, [0x72] = 0xA4, [0x73] = 0x75, [0x74] = 0x88, 
+	[0x75] = 0x2D, [0x76] = 0x7B, [0x77] = 0x62, [0x78] = 0x53, [0x79] = 0x1A, [0x7A] = 0x6F, [0x7B] = 0x4B, [0x7C] = 0xA0, [0x7D] = 0xD6, [0x7E] = 0x02, [0x7F] = 0x24, [0x80] = 0xFB, [0x81] = 0x10, 
+	[0x82] = 0xD2, [0x83] = 0x9D, [0x84] = 0xFD, [0x85] = 0x7C, [0x86] = 0xDD, [0x87] = 0x3F, [0x88] = 0xB3, [0x89] = 0xE1, [0x8A] = 0xBC, [0x8B] = 0x49, [0x8C] = 0xEC, [0x8D] = 0x86, [0x8E] = 0x06, 
+	[0x8F] = 0xC1, [0x90] = 0x5B, [0x91] = 0x4D, [0x92] = 0x55, [0x93] = 0x81, [0x94] = 0x60, [0x95] = 0xAB, [0x96] = 0x71, [0x97] = 0x44, [0x98] = 0x8D, [0x99] = 0xA5, [0x9A] = 0x40, [0x9B] = 0xC7, 
+	[0x9C] = 0x93, [0x9D] = 0x61, [0x9E] = 0xFA, [0x9F] = 0xC9, [0xA0] = 0x54, [0xA1] = 0x31, [0xA2] = 0x15, [0xA3] = 0x66, [0xA4] = 0xA3, [0xA5] = 0x18, [0xA6] = 0xF2, [0xA7] = 0x37, [0xA8] = 0x7E, 
+	[0xA9] = 0x64, [0xAA] = 0x2C, [0xAB] = 0xD9, [0xAC] = 0x04, [0xAD] = 0xE5, [0xAE] = 0xA1, [0xAF] = 0x8F, [0xB0] = 0x57, [0xB1] = 0xF0, [0xB2] = 0x5D, [0xB3] = 0x3A, [0xB4] = 0x8E, [0xB5] = 0x6E, 
+	[0xB6] = 0xB2, [0xB7] = 0x9B, [0xB8] = 0x4E, [0xB9] = 0x6A, [0xBA] = 0xA8, [0xBB] = 0xC8, [0xBC] = 0xCF, [0xBD] = 0x97, [0xBE] = 0xFF, [0xBF] = 0x73, [0xC0] = 0x19, [0xC1] = 0x3B, [0xC2] = 0x89, 
+	[0xC3] = 0xEB, [0xC4] = 0x91, [0xC5] = 0xC4, [0xC6] = 0x4F, [0xC7] = 0xA2, [0xC8] = 0x38, [0xC9] = 0x34, [0xCA] = 0x25, [0xCB] = 0x43, [0xCC] = 0x2E, [0xCD] = 0x1F, [0xCE] = 0x4C, [0xCF] = 0x42, 
+	[0xD0] = 0xB9, [0xD1] = 0xC6, [0xD2] = 0xE9, [0xD3] = 0x27, [0xD4] = 0x76, [0xD5] = 0x29, [0xD6] = 0xE7, [0xD7] = 0xAF, [0xD8] = 0x0B, [0xD9] = 0x56, [0xDA] = 0x09, [0xDB] = 0x99, [0xDC] = 0xD0, 
+	[0xDD] = 0xF1, [0xDE] = 0xEA, [0xDF] = 0x6B, [0xE0] = 0x47, [0xE1] = 0x48, [0xE2] = 0x01, [0xE3] = 0x95, [0xE4] = 0x68, [0xE5] = 0xFE, [0xE6] = 0x80, [0xE7] = 0x58, [0xE8] = 0xB8, [0xE9] = 0xCC,
+	[0xEA] = 0x39, [0xEB] = 0xB1, [0xEC] = 0x35, [0xED] = 0x16, [0xEE] = 0xF7, [0xEF] = 0xE0, [0xF0] = 0xD5, [0xF1] = 0x83, [0xF2] = 0x9A, [0xF3] = 0xBA, [0xF4] = 0xC5, [0xF5] = 0xBD, [0xF6] = 0xCA, 
+	[0xF7] = 0x8A, [0xF8] = 0x20, [0xF9] = 0x7D, [0xFA] = 0x82, [0xFB] = 0x9C, [0xFC] = 0xF5, [0xFD] = 0x5A, [0xFE] = 0x36, [0xFF] = 0xCE,
+}
 
 local loadMsg, MainMenu = '', nil
 function OnLoad()
@@ -53,7 +75,6 @@ function OnLoad()
 	MISS()
 	SKILLS()
 	TIMERS()
-		
 	print('<font color=\'#0099FF\'>[Loaded]</font> <font color=\'#FF6600\'>'..loadMsg:sub(1,#loadMsg-2)..'.</font>')
 end
 
@@ -102,7 +123,7 @@ function WARD:CreateObj(o)
 		local timeReduction = 0
 		local charName
 		for id, ward in pairs(self.known) do
-			if (ward.pos.x == o.x and ward.pos.z == o.z)then
+			if ward and ward.pos.x == o.x and ward.pos.z == o.z then
 				timeReduction = (ward and self.types[o.charName]) and self.types[o.charName].duration - (ward.endTime-os.clock()) or 0
 				charName = ward.charName
 				self.known[id] = nil
@@ -240,18 +261,6 @@ function MISS:__init()
 			self.recallEndPos = GetMinimap(Vector(o.pos))
 		end
 	end
-	self.recallLongs = {
-		[530554793] = 1,
-		[530554794] = 2,
-		[530554792] = 3,
-		[530554787] = 4,
-		[530554785] = 5,
-		[530554786] = 6,
-		[530554784] = 7,
-		[530554767] = 8,
-		[530554765] = 9,
-		[530554766] = 10,
-	}
 	self.recallTimes = {
 		['recall'] = 7.9,
 		['odinrecall'] = 4.4,
@@ -281,7 +290,7 @@ function MISS:Menu()
 end
 
 function MISS:RecvPacket(p)
-	if p.header == 0x8B then --losevision
+	if p.header == 0x104 then --losevision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
 		if o and o.type == myHero.type and o.team ~= myHero.team then
@@ -301,7 +310,7 @@ function MISS:RecvPacket(p)
 			end
 		end	
 	end
-	if p.header == 0xBD then --gainvision
+	if p.header == 0xCE then --gainvision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
 		if o and o.type == myHero.type and o.team ~= myHero.team then
@@ -309,21 +318,28 @@ function MISS:RecvPacket(p)
 			return
 		end
 	end
-	if p.header == 0x22 then --recall
-		p.pos = 60
-		local str = ''
-		for i=1, p.size do
-			local char = p:Decode1()
-			if char == 0 then break end
-			str=str..string.char(char)
+	if p.header == 0x117 then --recall
+		p.pos = 54
+		local bytes = {}
+		for i=4, 1, -1 do
+			bytes[i] = IDBytes[p:Decode1()]
 		end
-		p.pos = 55
-		local id = p:Decode4()
-		p.pos = 76
-		if self.recallLongs[id] then
+		local b1 = bit32.lshift(bit32.band(bytes[1],0xFF),24)
+		local b2 = bit32.lshift(bit32.band(bytes[2],0xFF),16)
+		local b3 = bit32.lshift(bit32.band(bytes[3],0xFF),8)
+		local b4 = bit32.band(bytes[4],0xFF)
+		local netID = bit32.bxor(b1,b2,b3,b4)
+		local o = objManager:GetObjectByNetworkId(DwordToFloat(netID))
+		if o and o.type == myHero.type and o.team ~= myHero.team then
+			p.pos = 60
+			local str = ''
+			for i=1, p.size do
+				local char = p:Decode1()
+				if char == 0 then break end
+				str=str..string.char(char)
+			end
+			p.pos = 76
 			if p:Decode1() ~= 0 then
-				local o = heroManager:getHero(self.recallLongs[id])
-				if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
 				self.activeRecalls[o.networkID] = {
 					name = o.charName,
 					startT = os.clock(),
@@ -331,8 +347,6 @@ function MISS:RecvPacket(p)
 				}
 				return
 			else
-				local o = heroManager:getHero(self.recallLongs[id])
-				if o == nil or o.team == myHero.team or o.type ~= myHero.type then return end
 				if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID].endT > os.clock() then
 					self.activeRecalls[o.networkID] = nil
 					return
@@ -388,7 +402,7 @@ function MISS:Draw()
 	end
 end
 
-class 'SKILLS'
+class 'SKILLS'		--done
 
 function SKILLS:__init()
 	self.enemies = {}
@@ -554,46 +568,46 @@ function SKILLS:HudData()
 	end
 end
 
-class 'TIMERS'
+class 'TIMERS'		--done
 
 function TIMERS:__init()
 	self.map = GetGame().map.shortName
-	if self.map == 'summonerRift' then
+	if self.map == 'summonerRift' then		--Done
 		self.pos = {
-			[233] = Vector(3850, 60, 7880),		--bottom blue
-			[7]   = Vector(3800, 60, 6500), 	--bottom wolves
-			[208] = Vector(7000, 60, 5400),		--bottom raptors
-			[152] = Vector(7800, 60, 4000), 	--bottom red
-			[110] = Vector(8400, 60, 2700), 	--bottom krugs
-			[102] = Vector(9866, 60, 4414),		--dragon
-			[174] = Vector(10950, 60, 7030),	--top blue
-			[93]  = Vector(11000, 60, 8400),	--top wolves
-			[192] = Vector(7850, 60, 9500),		--top raptors
-			[136] = Vector(7100, 60, 10900),	--top red
-			[84]  = Vector(6400, 60, 12250),	--top krugs
-			[194] = Vector(4950, 60, 10400),	--baron
-			[82]  = Vector(2200, 60, 8500),		--bottom frog
-			[79]  = Vector(12600, 60, 6400),	--top frog
-			[190] = Vector(10500, 60, 5170),	--bottom crab
-			[38]  = Vector(4400, 60, 9600),		--top crab
+			[0x19] = Vector(3850, 60, 7880),	--bottom blue
+			[0x27] = Vector(3800, 60, 6500), 	--bottom wolves
+			[0x02] = Vector(7000, 60, 5400),	--bottom raptors
+			[0x97] = Vector(7800, 60, 4000), 	--bottom red
+			[0xA0] = Vector(8400, 60, 2700), 	--bottom krugs
+			[0x69] = Vector(9866, 60, 4414),	--dragon
+			[0x6D] = Vector(10950, 60, 7030),	--top blue
+			[0x74] = Vector(11000, 60, 8400),	--top wolves
+			[0xA6] = Vector(7850, 60, 9500),	--top raptors
+			[0x14] = Vector(7100, 60, 10900),	--top red
+			[0xCB] = Vector(6400, 60, 12250),	--top krugs
+			[0x0A] = Vector(4950, 60, 10400),	--baron
+			[0xEA] = Vector(2200, 60, 8500),	--bottom frog
+			[0xA9] = Vector(12600, 60, 6400),	--top frog
+			[0x94] = Vector(10500, 60, 5170),	--bottom crab
+			[0x70] = Vector(4400, 60, 9600),		--top crab
 		}
 		self.times = {
-			[233] = 300,
-			[7]   = 100,
-			[208] = 100,
-			[152] = 300,
-			[110] = 100,
-			[102] = 360,
-			[174] = 300,
-			[93]  = 100,
-			[192] = 100,
-			[136] = 300,
-			[84]  = 100,
-			[194] = 420,
-			[82]  = 100,
-			[79]  = 100,
-			[190] = 180,
-			[38]  = 180
+			[0x19] = 300,
+			[0x27] = 100,
+			[0x02] = 100,
+			[0x97] = 300,
+			[0xA0] = 100,
+			[0x69] = 360,
+			[0x6D] = 300,
+			[0x74] = 100,
+			[0xA6] = 100,
+			[0x14] = 300,
+			[0xCB] = 100,
+			[0x0A] = 420,
+			[0xEA] = 100,
+			[0xA9] = 100,
+			[0x94] = 180,
+			[0x70] = 180
 		}
 		self.inhibs = {
 			[4291968000] = 100,
@@ -614,27 +628,27 @@ function TIMERS:__init()
 		self.inhibTime = 300
 	elseif self.map == 'twistedTreeline' then
 		self.pos = {
-			[233] = Vector(4414, 60, 5774), 
-			[7]   = Vector(5088, 60, 8065), 
-			[208] = Vector(6148, 60, 5993), 
-			[152] = Vector(11008, 60, 5775),
-			[110] = Vector(10341, 60, 8084), 
-			[102] = Vector(9239, 60, 6022), 
-			[174] = Vector(7711, 60, 6722), 
-			[93]  = Vector(7711, 60, 10080),
+			[0x19] = Vector(4414, 60, 5774), 
+			[0x27] = Vector(5088, 60, 8065), 
+			[0x02] = Vector(6148, 60, 5993), 
+			[0x97] = Vector(11008, 60, 5775),
+			[0xA0] = Vector(10341, 60, 8084), 
+			[0x69] = Vector(9239, 60, 6022), 
+			[0x6D] = Vector(7711, 60, 6722), 
+			[0x74] = Vector(7711, 60, 10080),
 		}	
 		self.times = {
-			[233] = 75,
-			[7]   = 75,
-			[208] = 75,
-			[152] = 75,
-			[110] = 75,
-			[102] = 75,
-			[174] = 90,
-			[93]  = 300,
+			[0x19] = 75,
+			[0x27] = 75,
+			[0x02] = 75,
+			[0x97] = 75,
+			[0xA0] = 75,
+			[0x69] = 75,
+			[0x6D] = 90,
+			[0x74] = 300,
 		}
 		self.inhibs = { 
-			[4287824896] = 100, 
+			[4287824896] = 100,
 			[4291968000] = 101, 
 			[4280724480] = 200, 
 			[4284978176] = 201,
@@ -646,18 +660,18 @@ function TIMERS:__init()
 			[201] = Vector(13275, 17, 8416),
 		}
 		self.inhibTime = 240
-	elseif self.map == 'howlingAbyss' then
+	elseif self.map == 'howlingAbyss' then	--done
 		self.pos = {
-			[233] = Vector(7582, -100, 6785), 
-			[7]   = Vector(5929, -100, 5190), 
-			[208] = Vector(8893, -100, 7889), 
-			[152] = Vector(4790, -100, 3934),
+			[0x19] = Vector(7582, -100, 6785), 
+			[0x27] = Vector(5929, -100, 5190), 
+			[0x02] = Vector(8893, -100, 7889), 
+			[0x97] = Vector(4790, -100, 3934),
 		}
 		self.times = {
-			[233] = 40,
-			[7]   = 40,
-			[208] = 40,
-			[152] = 40,
+			[0x19] = 40,
+			[0x27] = 40,
+			[0x02] = 40,
+			[0x97] = 40,
 		}
 		self.inhibs = { 
 			[4283048192] = 100, 
@@ -668,7 +682,7 @@ function TIMERS:__init()
 			[200] = Vector(9689, -190, 9524),
 		}
 		self.inhibTime = 300
-	elseif self.map == 'crystalScar' then
+	elseif self.map == 'crystalScar' then		--done
 		self.pos = { 
 			 [122] = Vector(4948, -100, 9329),  
 			 [70]  = Vector(8972, -100, 9329), 
@@ -682,16 +696,16 @@ function TIMERS:__init()
 			 [244] = Vector(9573, -100, 5530), 
 		}
 		self.times = {
-			 [122] = 30, 
-			 [70]  = 30, 
-			 [203] = 30,
-			 [81]  = 30, 
-			 [160] = 30, 
-			 [96]  = 30, 
-			 [202] = 30, 
-			 [145] = 30, 
-			 [197] = 30, 
-			 [244] = 30,
+			 [0x9D] = 30, 
+			 [0x37] = 30, 
+			 [0x2C] = 30,
+			 [0x9E] = 30, 
+			 [0x5E] = 30, 
+			 [0x95] = 30, 
+			 [0x9A] = 30, 
+			 [0x0F] = 30, 
+			 [0xC3] = 30, 
+			 [0x9C] = 30,
 		}
 	end
 	self.activeTimers = {}
@@ -780,10 +794,19 @@ function TIMERS:Tick()
 end
 
 function TIMERS:RecvPacket(p)
-	if p.header == 0xAB then
-		p.pos = 10
-		local hasVision = p:Decode4()
-		p.pos = 19
+	if p.header == 0x89 then
+		p.pos = 14
+		local bytes = {}
+		for i=4, 1, -1 do
+			bytes[i] = IDBytes[p:Decode1()]
+		end
+		local b1 = bit32.lshift(bit32.band(bytes[1],0xFF),24)
+		local b2 = bit32.lshift(bit32.band(bytes[2],0xFF),16)
+		local b3 = bit32.lshift(bit32.band(bytes[3],0xFF),8)
+		local b4 = bit32.band(bytes[4],0xFF)
+		local netID = bit32.bxor(b1,b2,b3,b4)
+		local o = objManager:GetObjectByNetworkId(DwordToFloat(netID))
+		if not o then return end
 		local camp = p:Decode1()
 		if self.pos[camp] then
 			if hasVision ~= 2678038528 then
@@ -798,7 +821,7 @@ function TIMERS:RecvPacket(p)
 			end
 		end
 	end
-	if p.header == 0xC6 then
+	if p.header == 0xE4 then
 		p.pos=2
 		local inhib = p:Decode4()
 		if self.inhibs[inhib] then
@@ -819,4 +842,163 @@ function TIMERS:WndMsg(m,k)
 		end
 	end
 end
+
+
+
+
+
+--[[
+	--OTHER()	
+	--TRINKET()
+
+class 'TRINKET'
+
+function TRINKET:__init()
+	self.trinketID = { [3340] = true, [3341] = true, [3342] = true, [3361] = true, [3362] = true, [3363] = true, [3364] = true, }
+	self.currentTrinket = 0
+	self.trM = self:Menu()
+	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and os.clock()/60 < 1.1 then 
+		DelayAction(function() BuyItem(3339+self.trM.type) end, 1)
+	end
+	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
+	loadMsg = loadMsg..'TrinketHelper, '
+end
+
+function TRINKET:Menu()
+	MainMenu:addSubMenu('Trinket Helper', 'Trinket')
+	local trM = MainMenu.Trinket
+	trM:addParam('ward', 'Buy Trinket on Game Start', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('type', 'Trinket on Game Start', SCRIPT_PARAM_LIST, 1, { 'Ward Totem', 'Sweeper', 'ScryingOrb' })
+	trM:addParam('sweeper', 'Enable Sweeper Purchase', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('timer', 'Buy Sweeper after x Minutes', SCRIPT_PARAM_SLICE, 10, 1, 60)
+	trM:addParam('scryorb', 'Enable ScryingOrb Purchase', SCRIPT_PARAM_ONOFF, true)
+	trM:addParam('timer2', 'Buy ScryingOrb after x Minutes', SCRIPT_PARAM_SLICE, 40, 10, 60)
+	trM:addParam('sightstone', 'Buy Sweeper on Sightstone', SCRIPT_PARAM_ONOFF, true)
+	return trM
+end
+
+function TRINKET:RecvPacket(p)
+	if p.header == 0x129 then
+		p.pos=2
+		if p:DecodeF() == myHero.networkID then
+			p.pos=11
+			local itemID = p:Decode4()
+			if self.trinketID[itemID] then
+				self.currentTrinket = itemID
+			end
+			local gameTime = os.clock()/60
+			if self.trM and self.currentTrinket == 3340 and gameTime >= self.trM.timer then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3341) end, 0.2)
+				return
+			end
+			if (self.currentTrinket == 3340 or self.currentTrinket == 3341) and self.trM.scryorb and gameTime >= self.trM.timer2 then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3342) end, 0.2)
+				return
+			end
+			if self.trM.sweeper and self.trM.sightstone and self.currentTrinket == 3340 and itemID == 2049 then
+				SellItem(ITEM_7)
+				DelayAction(function() BuyItem(3341) end, 0.2)
+				return
+			end
+		end
+	end
+end
+
+
+class 'OTHER'
+
+function OTHER:__init()
+	self.Turrets = {}
+	for i=1, objManager.maxObjects do
+		local obj = objManager:getObject(i)
+		if obj and obj.type == 'obj_AI_Turret' and obj.team ~= myHero.team and obj.name:find('Shrine') ==  nil then
+			self.Turrets[#self.Turrets+1] = obj
+		end
+	end
+	self.enemies = {}
+	for i=1, heroManager.iCount do
+		local h = heroManager:getHero(i)
+		if h.team ~= myHero.team then
+			self.enemies[#self.enemies+1] = h	
+		end
+	end
+	self.oM = self:Menu()
+	AddDrawCallback(function() self:Draw() end)
+end
+
+function OTHER:Menu()
+	MainMenu:addSubMenu('Other Stuff', 'Other')
+	local oM = MainMenu.Other
+	oM:addParam('path', 'Draw Enemy Paths', SCRIPT_PARAM_ONOFF, true)
+	oM:addParam('type', 'Path Draw Type', SCRIPT_PARAM_LIST, 1, { 'Lines', 'End Position', })
+	oM:addParam('turret', 'Draw Turret Ranges', SCRIPT_PARAM_ONOFF, true)
+	return oM
+end
+
+function OTHER:Draw()
+	if self.oM.turret then
+		for i=1, #self.Turrets do
+			if self.Turrets[i] and not self.Turrets[i].dead then
+				local c = WorldToScreen(D3DXVECTOR3(self.Turrets[i].pos.x, self.Turrets[i].pos.y, self.Turrets[i].pos.z))
+				if c.x > -300 and c.x < WINDOW_W + 200 and c.y > -300 and c.y < WINDOW_H + 300 then
+					local quality =  2 * math.pi / 36
+					local points = {}
+					for theta = 0, 2 * math.pi + quality, quality do
+						local c = WorldToScreen(D3DXVECTOR3(self.Turrets[i].pos.x + 850 * math.cos(theta), self.Turrets[i].pos.y, self.Turrets[i].pos.z - 850 * math.sin(theta)))
+						points[#points + 1] = D3DXVECTOR2(c.x, c.y)
+					end
+					DrawLines2(points, 2, ARGB(255,255,0,0))
+				end			
+			else
+				table.remove(self.Turrets, i)
+			end
+		end
+	end
+	if self.oM.path then
+		for i=1, #self.enemies do
+			local e = self.enemies[i]
+			if e and not e.dead and e.visible and e.pathCount > 1 then
+				local points = {}
+				local eC = WorldToScreen(D3DXVECTOR3(e.pos.x, e.pos.y, e.pos.z))
+				points[1] = D3DXVECTOR2(eC.x, eC.y)
+				local pathLength = 0
+				for j=e.pathIndex, e.pathCount do
+					local p1 = e:GetPath(j)
+					local p2 = e:GetPath(j-1)
+					local c = WorldToScreen(D3DXVECTOR3(p1.x, p1.y, p1.z))
+					points[#points + 1] = D3DXVECTOR2(c.x, c.y)
+					if p1 and p2 then
+						if (j==e.pathIndex) then
+							pathLength = pathLength + GetDistance(Vector(p1.x, p1.y, p1.z), Vector(e.x, e.y, e.z))
+						else
+							pathLength = pathLength + GetDistance(Vector(p1.x, p1.y, p1.z), Vector(p2.x, p2.y, p2.z))
+						end
+					end
+				end			
+				if self.oM.type == 1 then
+					local draw = false
+					for j=1, #points do
+						if points[j].x > 0 and points[j].x < WINDOW_W and points[j].y > 0 and points[j].y < WINDOW_H then
+							draw = true
+							break
+						end
+					end
+					if draw then
+						DrawLines2(points, 2, ARGB(255,255,0,0))
+						DrawText3D(tostring(math.ceil(pathLength/e.ms))..'\n'..e.charName, e.endPath.x, e.endPath.y, e.endPath.z, 12, ARGB(255,255,255,255))
+					end
+				else
+					if points[#points].x > 0 and points[#points].x < WINDOW_W and points[#points].y > 0 and points[#points].y < WINDOW_H then
+						DrawText3D(tostring(math.ceil(pathLength/(e.ms^2)))..'\n'..e.charName, e.endPath.x, e.endPath.y, e.endPath.z, 12, ARGB(255,255,255,255)) --ARGB(self.tM.RGB[1], self.tM.RGB[2], self.tM.RGB[3], self.tM.RGB[4])			
+					end
+				end
+			end
+		end
+	end
+end
+--]]
+
+
 
