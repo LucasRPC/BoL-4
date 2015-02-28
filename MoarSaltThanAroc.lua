@@ -114,7 +114,7 @@ function WARD:Draw()
 	if not self.wM.draw then return end
 	for i, o in pairs(self.known) do
 		local timer = ceil(o.endTime-clock())
-		local tText = (self.wM.type == 1) and tostring(ceil(timer)) or floor(timer/60)..':'..('%.2d'):format(timer%60)
+		local tText = (self.wM.type == 1 or o.endTime == huge) and tostring(ceil(timer)) or floor(timer/60)..':'..('%.2d'):format(timer%60)
 		local text = (o.endTime ~= huge and o.charName) and tText..'\n'..o.charName or o.charName
 		DrawText3D(text, o.pos.x, o.pos.y+85, o.pos.z+10, self.wM.size, o.color, true)
 		DrawText((self.wM.mapTpe == 1 or o.endTime == huge) and 'o' or tText, self.wM.mapsize, o.minimap.x-(self.wM.mapsize/6), o.minimap.y-(self.wM.mapsize/6), o.color)
