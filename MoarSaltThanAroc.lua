@@ -508,7 +508,7 @@ end
 
 function SKILLS:Draw()	
 	if not self.sM.draw then return end
-	for _, info in ipairs({{hero=myHero, sum1 = 'ign', sum2='exh'}}) do
+	for _, info in ipairs(self.enemies) do
 		local enemy = info.hero
 		if enemy.valid and enemy.visible and not enemy.dead then
 			local barData = self:BarData(enemy)
