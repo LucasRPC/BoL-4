@@ -54,7 +54,6 @@ function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePa
     self.CallbackNoUpdate = CallbackNoUpdate
     self.CallbackNewVersion = CallbackNewVersion
     self.CallbackError = CallbackError
-    AddDrawCallback(function() self:OnDraw() end)
     self:CreateSocket(self.VersionPath)
     self.DownloadStatus = 'Connect to Server for VersionInfo'
     AddTickCallback(function() self:GetOnlineVersion() end)
@@ -64,7 +63,7 @@ function ScriptUpdate:OnDraw()
 	local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
 	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
 	DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
-	DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0) + 5, bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
+	DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0) + 6, bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
 	DrawLines2({D3DXVECTOR2(bP.x1, bP.y1),D3DXVECTOR2(bP.x2, bP.y1),D3DXVECTOR2(bP.x2, bP.y2),D3DXVECTOR2(bP.x1, bP.y2),D3DXVECTOR2(bP.x1, bP.y1),}, 3, ARGB(0xB9, 0x0A, 0x0A, 0x0A))
 	DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
 end
@@ -127,6 +126,7 @@ function ScriptUpdate:GetOnlineVersion()
         else
             self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
             if self.OnlineVersion > self.LocalVersion then
+				AddDrawCallback(function() self:OnDraw() end)
                 if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
                     self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
                 end
