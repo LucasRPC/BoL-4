@@ -110,16 +110,16 @@ function ScriptUpdate:GetOnlineVersion()
     end
 
     self.File = self.File .. (self.Receive or self.Snipped)
-    if self.File:find('</size>') then
+    if self.File:find('</si'..'ze>') then
         if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1)) + self.File:len()
         end
         self.DownloadStatus = 'Downloading VersionInfo ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
     end
     if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
         self.DownloadStatus = 'Downloading VersionInfo (100%)'
-        local HeaderEnd, ContentStart = self.File:find('<script>')
-        local ContentEnd, _ = self.File:find('</script>')
+        local HeaderEnd, ContentStart = self.File:find('<scr'..'ipt>')
+        local ContentEnd, _ = self.File:find('</scr'..'ipt>')
         if not ContentStart or not ContentEnd then
             if self.CallbackError and type(self.CallbackError) == 'function' then
                 self.CallbackError()
@@ -153,16 +153,16 @@ function ScriptUpdate:DownloadUpdate()
     end
 
     self.File = self.File .. (self.Receive or self.Snipped)
-    if self.File:find('</size>') then
+    if self.File:find('</si'..'ze>') then
         if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1)) + self.File:len()
         end
         self.DownloadStatus = 'Downloading Script ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
     end
     if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
         self.DownloadStatus = 'Download Complete.'
-        local HeaderEnd, ContentStart = self.File:find('<script>')
-        local ContentEnd, _ = self.File:find('</script>')
+        local HeaderEnd, ContentStart = self.File:find('<scr'..'ipt>')
+        local ContentEnd, _ = self.File:find('</scr'..'ipt>')
         if not ContentStart or not ContentEnd then
             if self.CallbackError and type(self.CallbackError) == 'function' then
 				self.DownloadStatus = 'Download Error!'
