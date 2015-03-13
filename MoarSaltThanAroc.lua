@@ -42,6 +42,149 @@ function OnLoad()
 	ScriptUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print('New Version Found, please wait...') end, function() Print('An Error Occured in Update.') end)
 end
 
+class "ScriptUpdate"
+
+function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
+    self.LocalVersion = LocalVersion
+    self.Host = Host
+    self.VersionPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
+    self.ScriptPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..ScriptPath)..'&rand='..math.random(99999999)
+    self.SavePath = SavePath
+    self.CallbackUpdate = CallbackUpdate
+    self.CallbackNoUpdate = CallbackNoUpdate
+    self.CallbackNewVersion = CallbackNewVersion
+    self.CallbackError = CallbackError
+    AddDrawCallback(function() self:OnDraw() end)
+    self:CreateSocket(self.VersionPath)
+    self.DownloadStatus = 'Connect to Server for VersionInfo'
+    AddTickCallback(function() self:GetOnlineVersion() end)
+end
+
+function ScriptUpdate:OnDraw()
+	local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
+	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
+	DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
+	DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0), bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
+	DrawLines2({D3DXVECTOR2(bP.x1, bP.y1),D3DXVECTOR2(bP.x2, bP.y1),D3DXVECTOR2(bP.x2, bP.y2),D3DXVECTOR2(bP.x1, bP.y2),D3DXVECTOR2(bP.x1, bP.y1),}, 3, ARGB(0xB9, 0x0A, 0x0A, 0x0A))
+	DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
+end
+
+function ScriptUpdate:CreateSocket(url)
+    if not self.LuaSocket then
+        self.LuaSocket = require("socket")
+    else
+        self.Socket:close()
+        self.Socket = nil
+        self.Size = nil
+        self.RecvStarted = false
+    end
+    self.Socket = self.LuaSocket.connect('sx-bol.eu', 80)
+    self.Socket:send("GET "..url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
+    self.Socket:settimeout(0, 'b')
+    self.Socket:settimeout(99999999, 't')
+    self.LastPrint = ""
+    self.File = ""
+end
+
+function ScriptUpdate:Base64Encode(data)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    return ((data:gsub('.', function(x)
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
+function ScriptUpdate:GetOnlineVersion()
+    if self.GotScriptVersion then return end
+    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
+        self.RecvStarted = true
+        local recv,sent,time = self.Socket:getstats()
+        self.DownloadStatus = 'Downloading VersionInfo (0%)'
+    end
+
+    self.File = self.File .. (self.Receive or self.Snipped)
+    if self.File:find('</size>') then
+        if not self.Size then
+            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+        end
+        self.DownloadStatus = 'Downloading VersionInfo ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+    end
+    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
+        self.DownloadStatus = 'Downloading VersionInfo (100%)'
+        local HeaderEnd, ContentStart = self.File:find('<script>')
+        local ContentEnd, _ = self.File:find('</script>')
+        if not ContentStart or not ContentEnd then
+            if self.CallbackError and type(self.CallbackError) == 'function' then
+                self.CallbackError()
+            end
+        else
+            self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
+            if self.OnlineVersion > self.LocalVersion then
+                if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
+                    self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
+                end
+                self:CreateSocket(self.ScriptPath)
+                self.DownloadStatus = 'Connect to Server for ScriptDownload'
+                AddTickCallback(function() self:DownloadUpdate() end)
+            else
+                if self.CallbackNoUpdate and type(self.CallbackNoUpdate) == 'function' then
+                    self.CallbackNoUpdate(self.LocalVersion)
+                end
+            end
+        end
+        self.GotScriptVersion = true
+    end
+end
+
+function ScriptUpdate:DownloadUpdate()
+    if self.GotScriptUpdate then return end
+    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
+        self.RecvStarted = true
+        local recv,sent,time = self.Socket:getstats()
+        self.DownloadStatus = 'Downloading Script (0%)'
+    end
+
+    self.File = self.File .. (self.Receive or self.Snipped)
+    if self.File:find('</size>') then
+        if not self.Size then
+            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+        end
+        self.DownloadStatus = 'Downloading Script ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+    end
+    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
+        self.DownloadStatus = 'Download Complete.'
+        local HeaderEnd, ContentStart = self.File:find('<script>')
+        local ContentEnd, _ = self.File:find('</script>')
+        if not ContentStart or not ContentEnd then
+            if self.CallbackError and type(self.CallbackError) == 'function' then
+				self.DownloadStatus = 'Download Error!'
+                self.CallbackError()
+            end
+        else
+            local f = io.open(self.SavePath,"w+")
+            f:write(self.File:sub(ContentStart + 1,ContentEnd-1))
+            f:close()
+            if self.CallbackUpdate and type(self.CallbackUpdate) == 'function' then
+                self.CallbackUpdate(self.OnlineVersion,self.LocalVersion)
+            end
+        end
+        self.GotScriptUpdate = true
+    end
+end
+
+function Print(text)
+	print('<font color=\'#0099FF\'>[Pewtility] </font> <font color=\'#FF6600\'>'..text..'.</font>')
+end
+
+
 class 'WARD'
 
 function WARD:__init()
@@ -338,7 +481,7 @@ function SKILLS:__init()
 	self.HeroOffsets = {
 		['aatrox']   = -4,		['anivia']		= -2,	['diana']	   =  4,	['fiora']	 = -2,		['gnar']		= -2,	['gragas']	   = -3,
 		['janna']	 = -2,		['jayce']		= -2,	['karma']	   = -2,	['kassadin'] = -4,		['kennen']		= -2,	['khazix']	   = -1,
-		['leblanc']  =  1,		['leesin']		= -2,	['lulu']  	   = -4,	['nami']     =  5,		['nautilus']	= -4,	['olaf']   	   = -4,
+		['leblanc']  =  1,		['leesin']		= -2,	['lulu']  	   = -4,	['nami']     = -4,		['nautilus']	= -4,	['olaf']   	   = -4,
 		['orianna']  = -3,		['pantheon']	= -2,	['poppy']      = -4,	['quinn']    = -1,		['quinnvalor']	= -9,	['rammus']     = -1,
 		['riven']    = -4,		['rumble']		= -4,	['sion']       = -2,	['sona']     = -5,		['syndra']		= -2,	['teemo']      = -2,
 		['twitch']   = -1,		['tryndamere']  = -1,	['urgot']      = -2,	['velkoz']   = -12,		['volibear'] 	= -2,	['vi']         = -1,
@@ -359,13 +502,13 @@ end
 function SKILLS:Menu()
 	MainMenu:addSubMenu('Cooldown Tracker', 'CooldownTracker')
 	local sM = MainMenu.CooldownTracker
-	sM:addParam('draw', 'Enable Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)
+	sM:addParam('draw', 'Enable Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)	
 	return sM
 end
 
-function SKILLS:Draw()
+function SKILLS:Draw()	
 	if not self.sM.draw then return end
-	for _, info in ipairs(self.enemies) do
+	for _, info in ipairs({{hero=myHero, sum1 = 'ign', sum2='exh'}}) do
 		local enemy = info.hero
 		if enemy.valid and enemy.visible and not enemy.dead then
 			local barData = self:BarData(enemy)
@@ -373,26 +516,23 @@ function SKILLS:Draw()
 				for i=_Q, SUMMONER_2 do
 					local data = enemy:GetSpellData(i)
 					local color = (data.level>0 and data.currentCd == 0) and ARGB(255,0,255,0) or ARGB(255,255,0,0)
-					local text,x,y,Lines
+					local text,x,y
 					if i<=_R then
-						text = self.toText[i+1]
 						x = barData.x-22+(i*27)
 						local offset = self.HeroOffsets[enemy.charName:lower()] or 0
 						y = barData.y+6+offset
-						Lines = {D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}
-						text = data.currentCd == 0 and text or tostring(ceil(data.cd-(data.cd-data.currentCd)))
+						text = data.currentCd == 0 and self.toText[i+1] or tostring(ceil(data.cd-(data.cd-data.currentCd)))
 						DrawText(text, 12, x + 7 - (GetTextArea(text, 12).x / 2), y, color)
-						DrawLines2(Lines, 2, color)			
+						DrawLines2({D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}, 2, color)			
 					else
 						text = info['sum'..(i-3)]
 						x = barData.x-76+((i-2)*27)
 						local offset = self.HeroOffsets[enemy.charName:lower()] or 0
 						y = barData.y+38+offset
 						if data.currentCd == 0 then
-							Lines = {D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}
-							DrawLines2(Lines, 2, color)
+							DrawLines2({D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}, 2, color)
 						else
-							Lines = {}
+							local Lines = {}
 							local cd = ceil(data.currentCd*100/data.cd/2)
 							for j=1, 13 do Lines[#Lines+1] = D3DXVECTOR2(x-4, y+j) end
 							for j=1, 24 do Lines[#Lines+1] = D3DXVECTOR2(x-4+j, y+13) end
@@ -415,7 +555,7 @@ function SKILLS:Draw()
 				local data = info.hero:GetSpellData(j)
 				local y = ((j - 3) * self.AllyHud.skill) + (self.AllyHud.yUp + (self.AllyHud.size * (i - 1)))
 				local Lines = {
-					D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset),
+					D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset), 
 					D3DXVECTOR2(self.AllyHud.xRight, y + self.AllyHud.lineOffset),
 					D3DXVECTOR2(self.AllyHud.xRight, y - self.AllyHud.lineOffset),
 					D3DXVECTOR2(self.AllyHud.xLeft,  y - self.AllyHud.lineOffset),
@@ -900,146 +1040,3 @@ function TRINKET:RecvPacket(p)
 		end
 	end
 end
-
-class "ScriptUpdate"
-
-function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
-    self.LocalVersion = LocalVersion
-    self.Host = Host
-    self.VersionPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
-    self.ScriptPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..ScriptPath)..'&rand='..math.random(99999999)
-    self.SavePath = SavePath
-    self.CallbackUpdate = CallbackUpdate
-    self.CallbackNoUpdate = CallbackNoUpdate
-    self.CallbackNewVersion = CallbackNewVersion
-    self.CallbackError = CallbackError
-    AddDrawCallback(function() self:OnDraw() end)
-    self:CreateSocket(self.VersionPath)
-    self.DownloadStatus = 'Connect to Server for VersionInfo'
-    AddTickCallback(function() self:GetOnlineVersion() end)
-end
-
-function ScriptUpdate:OnDraw()
-	--local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
-	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
-	--DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
-	--DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0), bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
-	--DrawLines2({D3DXVECTOR2(bP.x1, bP.y1),D3DXVECTOR2(bP.x2, bP.y1),D3DXVECTOR2(bP.x2, bP.y2),D3DXVECTOR2(bP.x1, bP.y2),D3DXVECTOR2(bP.x1, bP.y1),}, 3, ARGB(0xB9, 0x0A, 0x0A, 0x0A))
-	--DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
-end
-
-function ScriptUpdate:CreateSocket(url)
-    if not self.LuaSocket then
-        self.LuaSocket = require("socket")
-    else
-        self.Socket:close()
-        self.Socket = nil
-        self.Size = nil
-        self.RecvStarted = false
-    end
-    self.Socket = self.LuaSocket.connect('sx-bol.eu', 80)
-    self.Socket:send("GET "..url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
-    self.Socket:settimeout(0, 'b')
-    self.Socket:settimeout(99999999, 't')
-    self.LastPrint = ""
-    self.File = ""
-end
-
-function ScriptUpdate:Base64Encode(data)
-    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    return ((data:gsub('.', function(x)
-        local r,b='',x:byte()
-        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
-        return r;
-    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-        if (#x < 6) then return '' end
-        local c=0
-        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
-        return b:sub(c+1,c+1)
-    end)..({ '', '==', '=' })[#data%3+1])
-end
-
-function ScriptUpdate:GetOnlineVersion()
-    if self.GotScriptVersion then return end
-    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
-    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
-        self.RecvStarted = true
-        local recv,sent,time = self.Socket:getstats()
-        self.DownloadStatus = 'Downloading VersionInfo (0%)'
-    end
-
-    self.File = self.File .. (self.Receive or self.Snipped)
-    if self.File:find('</size>') then
-        if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
-        end
-        self.DownloadStatus = 'Downloading VersionInfo ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
-    end
-    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
-        self.DownloadStatus = 'Downloading VersionInfo (100%)'
-        local HeaderEnd, ContentStart = self.File:find('<script>')
-        local ContentEnd, _ = self.File:find('</script>')
-        if not ContentStart or not ContentEnd then
-            if self.CallbackError and type(self.CallbackError) == 'function' then
-                self.CallbackError()
-            end
-        else
-            self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
-            if self.OnlineVersion > self.LocalVersion then
-                if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
-                    self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
-                end
-                self:CreateSocket(self.ScriptPath)
-                self.DownloadStatus = 'Connect to Server for ScriptDownload'
-                AddTickCallback(function() self:DownloadUpdate() end)
-            else
-                if self.CallbackNoUpdate and type(self.CallbackNoUpdate) == 'function' then
-                    self.CallbackNoUpdate(self.LocalVersion)
-                end
-            end
-        end
-        self.GotScriptVersion = true
-    end
-end
-
-function ScriptUpdate:DownloadUpdate()
-    if self.GotScriptUpdate then return end
-    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
-    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
-        self.RecvStarted = true
-        local recv,sent,time = self.Socket:getstats()
-        self.DownloadStatus = 'Downloading Script (0%)'
-    end
-
-    self.File = self.File .. (self.Receive or self.Snipped)
-    if self.File:find('</size>') then
-        if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
-        end
-        self.DownloadStatus = 'Downloading Script ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
-    end
-    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
-        self.DownloadStatus = 'Download Complete.'
-        local HeaderEnd, ContentStart = self.File:find('<script>')
-        local ContentEnd, _ = self.File:find('</script>')
-        if not ContentStart or not ContentEnd then
-            if self.CallbackError and type(self.CallbackError) == 'function' then
-				self.DownloadStatus = 'Download Error!'
-                self.CallbackError()
-            end
-        else
-            local f = io.open(self.SavePath,"w+")
-            f:write(self.File:sub(ContentStart + 1,ContentEnd-1))
-            f:close()
-            if self.CallbackUpdate and type(self.CallbackUpdate) == 'function' then
-                self.CallbackUpdate(self.OnlineVersion,self.LocalVersion)
-            end
-        end
-        self.GotScriptUpdate = true
-    end
-end
-
-function Print(text)
-	print('<font color=\'#0099FF\'>[Pewtility] </font> <font color=\'#FF6600\'>'..text..'.</font>')
-end
-
