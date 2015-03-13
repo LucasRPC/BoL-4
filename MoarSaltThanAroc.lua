@@ -2,28 +2,29 @@ local lshift, rshift, band, bxor = bit32.lshift, bit32.rshift, bit32.band, bit32
 local floor, ceil, huge, cos, sin, pi, pi2, abs, sqrt = math.floor, math.ceil, math.huge, math.cos, math.sin, math.pi, math.pi*2, math.abs, math.sqrt
 local clock, pairs, ipairs, tostring = os.clock, pairs, ipairs, tostring
 local TEAM_ENEMY, TEAM_ALLY
-
 local IDBytes = {
-[0x00] = 0x51, [0x01] = 0xB6, [0x02] = 0x30, [0x03] = 0x99, [0x04] = 0x2D, [0x05] = 0x3A, [0x06] = 0x5D, [0x07] = 0x48, [0x08] = 0x01, [0x09] = 0xF4, [0x0A] = 0x12, [0x0B] = 0x82, [0x0C] = 0xC9, 
-[0x0D] = 0xFA, [0x0E] = 0x69, [0x0F] = 0x3F, [0x10] = 0xEE, [0x11] = 0xBB, [0x12] = 0xAE, [0x13] = 0x59, [0x14] = 0x89, [0x15] = 0x1B, [0x16] = 0x31, [0x17] = 0xD0, [0x18] = 0x4D, [0x19] = 0x20, 
-[0x1A] = 0xF0, [0x1B] = 0x5F, [0x1C] = 0xA8, [0x1D] = 0xAB, [0x1E] = 0xC2, [0x1F] = 0x16, [0x20] = 0x6C, [0x21] = 0xB2, [0x22] = 0xF7, [0x23] = 0xE7, [0x24] = 0x75, [0x25] = 0xB4, [0x26] = 0x26, 
-[0x27] = 0x81, [0x28] = 0xA3, [0x29] = 0xBC, [0x2A] = 0x41, [0x2B] = 0x80, [0x2C] = 0x5C, [0x2D] = 0x7E, [0x2E] = 0x85, [0x2F] = 0xED, [0x30] = 0xAC, [0x31] = 0x86, [0x32] = 0x97, [0x33] = 0xE8, 
-[0x34] = 0xA0, [0x35] = 0x37, [0x36] = 0x2A, [0x37] = 0xD6, [0x38] = 0x1A, [0x39] = 0x49, [0x3A] = 0x8C, [0x3B] = 0x4B, [0x3C] = 0x18, [0x3D] = 0x73, [0x3E] = 0x36, [0x3F] = 0xB8, [0x40] = 0xE0, 
-[0x41] = 0x43, [0x42] = 0xBD, [0x43] = 0xAA, [0x44] = 0x47, [0x45] = 0xC3, [0x46] = 0xAF, [0x47] = 0x25, [0x48] = 0x45, [0x49] = 0xFB, [0x4A] = 0xA4, [0x4B] = 0x6A, [0x4C] = 0x22, [0x4D] = 0x55, 
-[0x4E] = 0x4C, [0x4F] = 0xC4, [0x50] = 0xA7, [0x51] = 0x92, [0x52] = 0x46, [0x53] = 0x13, [0x54] = 0x60, [0x55] = 0xA1, [0x56] = 0x17, [0x57] = 0x66, [0x58] = 0x27, [0x59] = 0x8B, [0x5A] = 0xA5, 
-[0x5B] = 0xC7, [0x5C] = 0x57, [0x5D] = 0x0B, [0x5E] = 0x1D, [0x5F] = 0x0F, [0x60] = 0x93, [0x61] = 0xE6, [0x62] = 0xCF, [0x63] = 0x65, [0x64] = 0x29, [0x65] = 0xCD, [0x66] = 0x91, [0x67] = 0x2F, 
-[0x68] = 0x05, [0x69] = 0x8A, [0x6A] = 0x08, [0x6B] = 0x44, [0x6C] = 0xF6, [0x6D] = 0xA6, [0x6E] = 0x9E, [0x6F] = 0xB9, [0x70] = 0xBF, [0x71] = 0xC6, [0x72] = 0x9C, [0x73] = 0xD5, [0x74] = 0x3D, 
-[0x75] = 0x7B, [0x76] = 0x68, [0x77] = 0xAD, [0x78] = 0xD3, [0x79] = 0x7C, [0x7A] = 0x42, [0x7B] = 0x19, [0x7C] = 0xDC, [0x7D] = 0xF2, [0x7E] = 0x04, [0x7F] = 0x4E, [0x80] = 0xFC, [0x81] = 0x71, 
-[0x82] = 0x7A, [0x83] = 0x00, [0x84] = 0xDE, [0x85] = 0x38, [0x86] = 0xCE, [0x87] = 0x6D, [0x88] = 0x79, [0x89] = 0x94, [0x8A] = 0xA2, [0x8B] = 0x3C, [0x8C] = 0x0D, [0x8D] = 0x52, [0x8E] = 0x78, 
-[0x8F] = 0x58, [0x90] = 0x4A, [0x91] = 0x84, [0x92] = 0x0E, [0x93] = 0xFE, [0x94] = 0x24, [0x95] = 0xF3, [0x96] = 0x7F, [0x97] = 0x98, [0x98] = 0x9A, [0x99] = 0x09, [0x9A] = 0xE1, [0x9B] = 0x32, 
-[0x9C] = 0xE2, [0x9D] = 0x0A, [0x9E] = 0x77, [0x9F] = 0xEF, [0xA0] = 0xD4, [0xA1] = 0x14, [0xA2] = 0x07, [0xA3] = 0xC8, [0xA4] = 0xE9, [0xA5] = 0xC5, [0xA6] = 0x7D, [0xA7] = 0x35, [0xA8] = 0xB1, 
-[0xA9] = 0x53, [0xAA] = 0x4F, [0xAB] = 0x74, [0xAC] = 0xB3, [0xAD] = 0x70, [0xAE] = 0x96, [0xAF] = 0x88, [0xB0] = 0xB5, [0xB1] = 0x64, [0xB2] = 0x23, [0xB3] = 0xF9, [0xB4] = 0x83, [0xB5] = 0x02, 
-[0xB6] = 0xFF, [0xB7] = 0x72, [0xB8] = 0x9D, [0xB9] = 0xA9, [0xBA] = 0x76, [0xBB] = 0xE5, [0xBC] = 0x3B, [0xBD] = 0x8E, [0xBE] = 0x1E, [0xBF] = 0x90, [0xC0] = 0xDF, [0xC1] = 0xBE, [0xC2] = 0x6F, 
-[0xC3] = 0x56, [0xC4] = 0xB0, [0xC5] = 0xD2, [0xC6] = 0x40, [0xC7] = 0xEC, [0xC8] = 0xB7, [0xC9] = 0x5E, [0xCA] = 0x1F, [0xCB] = 0x6B, [0xCC] = 0x50, [0xCD] = 0x5A, [0xCE] = 0xD1, [0xCF] = 0xFD, 
-[0xD0] = 0x0C, [0xD1] = 0xD9, [0xD2] = 0x62, [0xD3] = 0x87, [0xD4] = 0x95, [0xD5] = 0xDA, [0xD6] = 0x54, [0xD7] = 0x11, [0xD8] = 0xCA, [0xD9] = 0xCB, [0xDA] = 0x63, [0xDB] = 0xE4, [0xDC] = 0xF8, 
-[0xDD] = 0x21, [0xDE] = 0xF1, [0xDF] = 0xDD, [0xE0] = 0xDB, [0xE1] = 0x1C, [0xE2] = 0x15, [0xE3] = 0x9F, [0xE4] = 0x8D, [0xE5] = 0x61, [0xE6] = 0x2E, [0xE7] = 0xEB, [0xE8] = 0x2C, [0xE9] = 0x28, 
-[0xEA] = 0x39, [0xEB] = 0xF5, [0xEC] = 0x03, [0xED] = 0x34, [0xEE] = 0xC1, [0xEF] = 0x06, [0xF0] = 0xE3, [0xF1] = 0x9B, [0xF2] = 0x2B, [0xF3] = 0xEA, [0xF4] = 0x8F, [0xF5] = 0x3E, [0xF6] = 0x67, 
-[0xF7] = 0xD8, [0xF8] = 0xBA, [0xF9] = 0x10, [0xFA] = 0xC0, [0xFB] = 0x33, [0xFC] = 0x6E, [0xFD] = 0xCC, [0xFE] = 0x5B, [0xFF] = 0xD7,
+	[0x00] = 0x2E, [0x01] = 0xEF, [0x02] = 0x38, [0x03] = 0x39, [0x04] = 0x8E, [0x05] = 0x65, [0x06] = 0xC5, [0x07] = 0x3C, [0x08] = 0x2A, [0x09] = 0x68, [0x0A] = 0xFB, [0x0B] = 0x9B, 
+	[0x0C] = 0x1F, [0x0D] = 0xC3, [0x0E] = 0x40, [0x0F] = 0x4E, [0x10] = 0x26, [0x11] = 0x95, [0x12] = 0x70, [0x13] = 0xF5, [0x14] = 0x15, [0x15] = 0x45, [0x16] = 0x49, [0x17] = 0xD0, 
+	[0x18] = 0xBB, [0x19] = 0xE6, [0x1A] = 0x7D, [0x1B] = 0x7F, [0x1C] = 0xD3, [0x1D] = 0xE4, [0x1E] = 0x12, [0x1F] = 0xA9, [0x20] = 0xC7, [0x21] = 0x7E, [0x22] = 0x0F, [0x23] = 0xD5, 
+	[0x24] = 0xED, [0x25] = 0x29, [0x26] = 0x3B, [0x27] = 0x87, [0x28] = 0x06, [0x29] = 0xFA, [0x2A] = 0xE3, [0x2B] = 0xDA, [0x2C] = 0x5C, [0x2D] = 0xA3, [0x2E] = 0xEE, [0x2F] = 0x2D, 
+	[0x30] = 0x54, [0x31] = 0x51, [0x32] = 0xC9, [0x33] = 0x75, [0x34] = 0x94, [0x35] = 0x4C, [0x36] = 0x82, [0x37] = 0x0D, [0x38] = 0xF6, [0x39] = 0xB7, [0x3A] = 0xC1, [0x3B] = 0xC8, 
+	[0x3C] = 0x91, [0x3D] = 0xB1, [0x3E] = 0x66, [0x3F] = 0x20, [0x40] = 0x03, [0x41] = 0x98, [0x42] = 0x2F, [0x43] = 0xEB, [0x44] = 0x7C, [0x45] = 0x58, [0x46] = 0x43, [0x47] = 0x9C, 
+	[0x48] = 0x93, [0x49] = 0xD7, [0x4A] = 0x10, [0x4B] = 0x5F, [0x4C] = 0x71, [0x4D] = 0x84, [0x4E] = 0x89, [0x4F] = 0x67, [0x50] = 0x7B, [0x51] = 0x3D, [0x52] = 0x02, [0x53] = 0x19, 
+	[0x54] = 0xBA, [0x55] = 0xB4, [0x56] = 0x80, [0x57] = 0x22, [0x58] = 0x0E, [0x59] = 0xDB, [0x5A] = 0x64, [0x5B] = 0xB3, [0x5C] = 0x1B, [0x5D] = 0x52, [0x5E] = 0x79, [0x5F] = 0x32, 
+	[0x60] = 0xA7, [0x61] = 0xDD, [0x62] = 0xA6, [0x63] = 0x6A, [0x64] = 0x57, [0x65] = 0x97, [0x66] = 0xC4, [0x67] = 0xA1, [0x68] = 0x16, [0x69] = 0x3A, [0x6A] = 0xF2, [0x6B] = 0xE1, 
+	[0x6C] = 0x3E, [0x6D] = 0x5B, [0x6E] = 0xB2, [0x6F] = 0xCE, [0x70] = 0x46, [0x71] = 0x8A, [0x72] = 0x30, [0x73] = 0xF1, [0x74] = 0x6E, [0x75] = 0x00, [0x76] = 0x6F, [0x77] = 0x88, 
+	[0x78] = 0x1A, [0x79] = 0x0B, [0x7A] = 0xB5, [0x7B] = 0xA2, [0x7C] = 0xB6, [0x7D] = 0x4A, [0x7E] = 0x99, [0x7F] = 0xA5, [0x80] = 0xCB, [0x81] = 0x31, [0x82] = 0x07, [0x83] = 0x08, 
+	[0x84] = 0xF4, [0x85] = 0xA4, [0x86] = 0x25, [0x87] = 0x2C, [0x88] = 0xAB, [0x89] = 0xAC, [0x8A] = 0x13, [0x8B] = 0x14, [0x8C] = 0x34, [0x8D] = 0xAF, [0x8E] = 0x90, [0x8F] = 0xCA, 
+	[0x90] = 0x6D, [0x91] = 0xDE, [0x92] = 0x69, [0x93] = 0xFD, [0x94] = 0xDC, [0x95] = 0xA0, [0x96] = 0x36, [0x97] = 0x6C, [0x98] = 0xE8, [0x99] = 0x7A, [0x9A] = 0x9D, [0x9B] = 0x27, 
+	[0x9C] = 0xF3, [0x9D] = 0x5D, [0x9E] = 0x47, [0x9F] = 0x18, [0xA0] = 0x23, [0xA1] = 0x9A, [0xA2] = 0xBF, [0xA3] = 0xD1, [0xA4] = 0xE5, [0xA5] = 0xC6, [0xA6] = 0xD4, [0xA7] = 0x8C, 
+	[0xA8] = 0x04, [0xA9] = 0xB9, [0xAA] = 0x1D, [0xAB] = 0xF0, [0xAC] = 0x63, [0xAD] = 0xD9, [0xAE] = 0x76, [0xAF] = 0x0A, [0xB0] = 0x53, [0xB1] = 0x6B, [0xB2] = 0xE0, [0xB3] = 0x2B, 
+	[0xB4] = 0x9E, [0xB5] = 0x83, [0xB6] = 0xD8, [0xB7] = 0xFE, [0xB8] = 0xBC, [0xB9] = 0x8F, [0xBA] = 0xEA, [0xBB] = 0x4D, [0xBC] = 0x41, [0xBD] = 0xC2, [0xBE] = 0x92, [0xBF] = 0xBD, 
+	[0xC0] = 0x09, [0xC1] = 0x1C, [0xC2] = 0xAA, [0xC3] = 0xF9, [0xC4] = 0x17, [0xC5] = 0x61, [0xC6] = 0xC0, [0xC7] = 0x44, [0xC8] = 0x85, [0xC9] = 0x74, [0xCA] = 0x5A, [0xCB] = 0x9F, 
+	[0xCC] = 0x0C, [0xCD] = 0xAD, [0xCE] = 0x77, [0xCF] = 0xEC, [0xD0] = 0x21, [0xD1] = 0x60, [0xD2] = 0xCF, [0xD3] = 0xE7, [0xD4] = 0x86, [0xD5] = 0x37, [0xD6] = 0xD6, [0xD7] = 0x11, 
+	[0xD8] = 0xD2, [0xD9] = 0xCD, [0xDA] = 0xFF, [0xDB] = 0xF7, [0xDC] = 0x33, [0xDD] = 0x8B, [0xDE] = 0xF8, [0xDF] = 0x78, [0xE0] = 0x4B, [0xE1] = 0x28, [0xE2] = 0xFC, [0xE3] = 0xE2, 
+	[0xE4] = 0x56, [0xE5] = 0xA8, [0xE6] = 0x35, [0xE7] = 0x62, [0xE8] = 0x5E, [0xE9] = 0x96, [0xEA] = 0xDF, [0xEB] = 0xCC, [0xEC] = 0xAE, [0xED] = 0x81, [0xEE] = 0x3F, [0xEF] = 0x05, 
+	[0xF0] = 0x4F, [0xF1] = 0x55, [0xF2] = 0xE9, [0xF3] = 0xBE, [0xF4] = 0xB0, [0xF5] = 0x50, [0xF6] = 0x24, [0xF7] = 0x59, [0xF8] = 0xB8, [0xF9] = 0x1E, [0xFA] = 0x72, [0xFB] = 0x48, 
+	[0xFC] = 0x8D, [0xFD] = 0x42, [0xFE] = 0x01, [0xFF] = 0x73, 
 }
 
 local loadMsg, MainMenu = '', nil
@@ -31,14 +32,14 @@ function OnLoad()
 	HookPackets()
 	TEAM_ALLY, TEAM_ENEMY = myHero.team, myHero.team == 100 and 200 or 100
 	MainMenu = scriptConfig('Pewtility', 'Pewtility')
-	
 	WARD()
 	MISS()
 	SKILLS()
 	TIMERS()
 	TRINKET()
 	OTHER()
-	print('<font color=\'#0099FF\'>[Loaded]</font> <font color=\'#FF6600\'>'..loadMsg:sub(1,#loadMsg-2)..'.</font>')
+	local Version = 1.01
+	ScriptUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print('New Version Found, please wait...') end, function() Print('An Error Occured in Update.') end)
 end
 
 class 'WARD'
@@ -85,7 +86,7 @@ function WARD:CreateObj(o)
 		local timeReduction = 0
 		local charName
 		for id, ward in pairs(self.known) do
-			if ward and ward.pos.x == o.x and ward.pos.z == o.z then
+			if ward and GetDistanceSqr(ward.pos, o.pos) < 40000 then
 				timeReduction = (ward and self.types[o.charName]) and self.types[o.charName].duration - (ward.endTime-clock()) or 0
 				charName = ward.charName
 				self.known[id] = nil
@@ -189,7 +190,7 @@ function MISS:Menu()
 end
 
 function MISS:RecvPacket(p)
-	if p.header == 0x00D2 then --losevision
+	if p.header == 0x006B then --losevision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
 		if o and o.valid and o.type == 'AIHeroClient' and o.team == TEAM_ENEMY then
@@ -209,7 +210,7 @@ function MISS:RecvPacket(p)
 			end
 		end	
 	end
-	if p.header == 0x00A0 then --gainvision
+	if p.header == 0x001A then --gainvision
 		p.pos=2
 		local o = objManager:GetObjectByNetworkId(p:DecodeF())
 		if o and o.valid and o.type == 'AIHeroClient' and o.team == TEAM_ENEMY then
@@ -217,19 +218,16 @@ function MISS:RecvPacket(p)
 			return
 		end
 	end
-	if p.header == 0x00F0 then --recall
-		p.pos = 54
+	if p.header == 0x0101 then --recall
+		p.pos = 7
 		local bytes = {}
 		for i=4, 1, -1 do
 			bytes[i] = IDBytes[p:Decode1()]
 		end
-		local b1 = lshift(band(bytes[1],0xFF),24)
-		local b2 = lshift(band(bytes[2],0xFF),16)
-		local b3 = lshift(band(bytes[3],0xFF),8)
-		local b4 = band(bytes[4],0xFF)
-		local netID = bxor(b1,b2,b3,b4)
+		local netID = bxor(lshift(band(bytes[1],0xFF),24),lshift(band(bytes[2],0xFF),16),lshift(band(bytes[3],0xFF),8),band(bytes[4],0xFF))
 		local o = objManager:GetObjectByNetworkId(DwordToFloat(netID))
 		if o and o.valid and o.type == 'AIHeroClient' and o.team == TEAM_ENEMY then
+			p.pos=60
 			local str = ''
 			for i=1, p.size do
 				local char = p:Decode1()
@@ -263,7 +261,7 @@ function MISS:Draw()
 	local mCount = 1
 	for _, info in pairs(self.missing) do
 		if info then
-			DrawText(info.name, self.mM.size, self.recallBar.x - 75 - (self.mM.size / 6), WINDOW_H - 80 - (12 * mCount) - (self.mM.size / 6), self.Colors[mCount])	
+			DrawText(info.name, self.mM.size, self.recallBar.x - 60 - (GetTextArea(info.name, self.mM.size).x / 2), WINDOW_H - 80 - (12 * mCount) - (self.mM.size / 6), self.Colors[mCount])	
 			DrawText(tostring(ceil(clock()-info.mTime)), self.mM.size, info.pos.x - (self.mM.size / 6), info.pos.y - (self.mM.size / 6), self.Colors[mCount])
 			mCount = mCount + 1
 		end
@@ -284,7 +282,8 @@ function MISS:Draw()
 					D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y - 8 + yOffset),
 				}
 				DrawLines2(Lines, 2, ARGB(255, 255, 255, 255))
-				DrawText(info.name..' '..ceil(percent * 100)..'%', 12, (self.recallBar.x + WINDOW_W - 60) / 2, self.recallBar.y - 6 + yOffset, ARGB(255,255,255,255))
+				local text = info.name..' '..ceil(percent * 100)..'%'
+				DrawText(text, 12, ((self.recallBar.x + (WINDOW_W - 10)) / 2) - (GetTextArea(text, 12).x / 2), self.recallBar.y - 6 + yOffset, ARGB(255,255,255,255))
 			end
 			count = count + 1
 		end
@@ -337,17 +336,18 @@ function SKILLS:__init()
 		['lineWidth']   = floor(7.5 * self.HudScale),
 	}
 	self.HeroOffsets = {
-		['alistar']  = -4,  	['annie']       = -4,  	['blitzcrank'] = -4,
-		['brand']    = -3,   	['cassiopeia']  = -2, 	['darius']     = -2,
-		['drmundo']  =  1,  	['galio']       =  1,  	['garen']      =  1,
-		['jarvaniv'] =  2,  	['jax']         = -4,   ['lux']        = -4, --  TO CHECK
-		['lucian']   = -4,  	['kayle']       = -5,  	['tristana']   = -3, --aatrox, ahri, akali, anivia, diana, draven, elise, evelyn, fiora, fizz, gangplank, 
-		['malzahar'] = -2,  	['missfortune'] = -4,   ['morgana']    = -2, --gnar, gragas, hecarim, heimerdinger, janna, jayce, jinx, kalista, karma, kassadin, katarina, kennen
-		['nunu']     = -2,      ['renekton']    = -2,	['soraka']     = -5, --khazix, leblanc, leesin, lissandra, lulu, maokai, mordekaiser, nami, nautilus, nocturne, olaf, orianna,
-		['ryze']     = -3,      ['shen']		= -4,	['shyvana']    = -1, --pantheon, poppy, quinn, rammus, reksai, rengar, riven, rumble, sejuani, shaco, singed, sion, skarner, sona
-		['swain']    = -3,		['trundle']     =  4,   ['xinzhao']    =  7, --syndra, talon, teemo, thresh, tryndamere, twistedfate, twitch, urgot, varus, vayne, velkoz, vi, 
-		['ziggs']    = -3,		['zilean']      = -2,	['braum']      = -3, --volibear, xerath, yasuo, yorick, zac, zed
-		['corki']    = -4,		['viktor']      = -3,	['azir']       = -2,
+		['aatrox']   = -4,		['anivia']		= -2,	['diana']	   =  4,	['fiora']	 = -2,		['gnar']		= -2,	['gragas']	   = -3,
+		['janna']	 = -2,		['jayce']		= -2,	['karma']	   = -2,	['kassadin'] = -4,		['kennen']		= -2,	['khazix']	   = -1,
+		['leblanc']  =  1,		['leesin']		= -2,	['lulu']  	   = -4,	['nami']     =  5,		['nautilus']	= -4,	['olaf']   	   = -4,
+		['orianna']  = -3,		['pantheon']	= -2,	['poppy']      = -4,	['quinn']    = -1,		['quinnvalor']	= -9,	['rammus']     = -1,
+		['riven']    = -4,		['rumble']		= -4,	['sion']       = -2,	['sona']     = -5,		['syndra']		= -2,	['teemo']      = -2,
+		['twitch']   = -1,		['tryndamere']  = -1,	['urgot']      = -2,	['velkoz']   = -12,		['volibear'] 	= -2,	['vi']         = -1,
+		['xerath']   = -2,		['yasuo'] 		= -4,	['zac']        = -1,	['alistar']  = -4,  	['annie']       = -4,  	['blitzcrank'] = -4,
+		['brand']    = -3,   	['cassiopeia']  = -2, 	['darius']     = -2,	['drmundo']  =  1,  	['galio']       =  1,  	['garen']      =  1,
+		['jarvaniv'] =  2,  	['jax']         = -4,   ['lux']        = -4,	['lucian']   = -4,  	['kayle']       = -5,  	['tristana']   = -3,
+		['malzahar'] = -2,  	['missfortune'] = -4,   ['morgana']    = -2,	['nunu']     = -2,      ['renekton']    = -2,	['soraka']     = -5,
+		['ryze']     = -3,      ['shen']		= -4,	['shyvana']    = -1,	['swain']    = -3,		['trundle']     =  4,   ['xinzhao']    =  7,
+		['ziggs']    = -3,		['zilean']      = -2,	['braum']      = -3,	['corki']    = -4,		['viktor']      = -3,	['azir']       = -2,
 		['kalista']  = -4,
 	}
 	self.sM = self:Menu()
@@ -381,11 +381,10 @@ function SKILLS:Draw()
 						y = barData.y+6+offset
 						Lines = {D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}
 						text = data.currentCd == 0 and text or tostring(ceil(data.cd-(data.cd-data.currentCd)))
-						text = #text>1 and text or ' '..text
-						DrawText(text, 12, x, y, color)
-						DrawLines2(Lines, 2, color)					
+						DrawText(text, 12, x + 7 - (GetTextArea(text, 12).x / 2), y, color)
+						DrawLines2(Lines, 2, color)			
 					else
-						text = info['sum'..tostring(i-3)]
+						text = info['sum'..(i-3)]
 						x = barData.x-76+((i-2)*27)
 						local offset = self.HeroOffsets[enemy.charName:lower()] or 0
 						y = barData.y+38+offset
@@ -404,7 +403,7 @@ function SKILLS:Draw()
 							DrawLines2(LinesYellow, 2, ARGB(255,255,255,0))
 							DrawLines2(LinesRed, 2, ARGB(255,255,0,0))
 						end
-						DrawText(text, 12, x-2, y, color)
+						DrawText(text, 12, x + 8 - (GetTextArea(text, 12).x / 2), y, color)
 					end
 				end
 			end
@@ -464,40 +463,40 @@ function TIMERS:__init()
 	self.map = GetGame().map.shortName
 	if self.map == 'summonerRift' then		--Done
 		self.pos = {
-			[0x5B] = Vector(3850, 60, 7880),	--bottom blue
-			[0x26] = Vector(3800, 60, 6500), 	--bottom wolves
-			[0xBC] = Vector(7000, 60, 5400),	--bottom raptors
-			[0x5F] = Vector(7800, 60, 4000), 	--bottom red
-			[0xC4] = Vector(8400, 60, 2700), 	--bottom krugs
-			[0x1F] = Vector(9866, 60, 4414),	--dragon
-			[0x96] = Vector(10950, 60, 7030),	--top blue
-			[0x9B] = Vector(11000, 60, 8400),	--top wolves
-			[0x58] = Vector(7850, 60, 9500),	--top raptors
-			[0xE0] = Vector(7100, 60, 10900),	--top red
-			[0xCE] = Vector(6400, 60, 12250),	--top krugs
-			[0x05] = Vector(4950, 60, 10400),	--baron
-			[0x94] = Vector(2200, 60, 8500),	--bottom frog
-			[0x9A] = Vector(12600, 60, 6400),	--top frog
-			[0x5A] = Vector(10500, 60, 5170),	--bottom crab
-			[0xC2] = Vector(4400, 60, 9600),	--top crab
+			[0x19] = Vector(3850, 60, 7880),	--bottom blue
+			[0x12] = Vector(3800, 60, 6500), 	--bottom wolves
+			[0x87] = Vector(7000, 60, 5400),	--bottom raptors
+			[0x73] = Vector(7800, 60, 4000), 	--bottom red
+			[0x77] = Vector(8400, 60, 2700), 	--bottom krugs
+			[0x57] = Vector(9866, 60, 4414),	--dragon
+			[0x4C] = Vector(10950, 60, 7030),	--top blue
+			[0xF6] = Vector(11000, 60, 8400),	--top wolves
+			[0x8A] = Vector(7850, 60, 9500),	--top raptors
+			[0x95] = Vector(7100, 60, 10900),	--top red
+			[0xED] = Vector(6400, 60, 12250),	--top krugs
+			[0x43] = Vector(4950, 60, 10400),	--baron
+			[0xE5] = Vector(2200, 60, 8500),	--bottom frog
+			[0x42] = Vector(12600, 60, 6400),	--top frog
+			[0x04] = Vector(10500, 60, 5170),	--bottom crab
+			[0xBC] = Vector(4400, 60, 9600),	--top crab
 		}
 		self.times = {
-			[0x5B] = 300,
-			[0x26] = 100,
-			[0xBC] = 100,
-			[0x5F] = 300,
-			[0xC4] = 100,
-			[0x1F] = 360,
-			[0x96] = 300,
-			[0x9B] = 100,
-			[0x58] = 100,
-			[0xE0] = 300,
-			[0xCE] = 100,
-			[0x05] = 420,
-			[0x94] = 100,
-			[0x9A] = 100,
-			[0x5A] = 180,
-			[0xC2] = 180
+			[0x19] = 300,
+			[0x12] = 100,
+			[0x87] = 100,
+			[0x73] = 300,
+			[0x77] = 100,
+			[0x57] = 360,
+			[0x4C] = 300,
+			[0xF6] = 100,
+			[0x8A] = 100,
+			[0x95] = 300,
+			[0xED] = 100,
+			[0x43] = 420,
+			[0xE5] = 100,
+			[0x42] = 100,
+			[0x04] = 180,
+			[0xBC] = 180,
 		}
 		self.inhibs = {
 			[4291968062] = 100,
@@ -518,30 +517,30 @@ function TIMERS:__init()
 		self.inhibTime = 300
 	elseif self.map == 'twistedTreeline' then
 		self.pos = {
-			[0x5B] = Vector(4414, 60, 5774), 
-			[0x26] = Vector(5088, 60, 8065), 
-			[0xBC] = Vector(6148, 60, 5993), 
-			[0x5F] = Vector(11008, 60, 5775),
-			[0xC4] = Vector(10341, 60, 8084), 
-			[0x1F] = Vector(9239, 60, 6022), 
-			[0x96] = Vector(7711, 60, 6722), 
-			[0x9B] = Vector(7711, 60, 10080),
+			[0x19] = Vector(4414, 60, 5774), 
+			[0x12] = Vector(5088, 60, 8065), 
+			[0x87] = Vector(6148, 60, 5993), 
+			[0x73] = Vector(11008, 60, 5775),
+			[0x77] = Vector(10341, 60, 8084), 
+			[0x57] = Vector(9239, 60, 6022), 
+			[0x4C] = Vector(7711, 60, 6722), 
+			[0xF6] = Vector(7711, 60, 10080),
 		}	
 		self.times = {
-			[0x5B] = 75,
-			[0x26] = 75,
-			[0xBC] = 75,
-			[0x5F] = 75,
-			[0xC4] = 75,
-			[0x1F] = 75,
-			[0x96] = 90,
-			[0x9B] = 300,
+			[0x19] = 75,
+			[0x12] = 75,
+			[0x87] = 75,
+			[0x73] = 75,
+			[0x77] = 75,
+			[0x57] = 75,
+			[0x4C] = 90,
+			[0xF6] = 300,
 		}
 		self.inhibs = { 
 			[4287824865] = 100,
 			[4291968062] = 101, 
-			[4284978128] = 200, 
-			[4280724495] = 201,
+			[4284978128] = 201, 
+			[4280724495] = 200,
 		}
 		self.inhibPos = { 
 			[100] = Vector(2126, 11, 6146), 
@@ -552,16 +551,16 @@ function TIMERS:__init()
 		self.inhibTime = 240
 	elseif self.map == 'howlingAbyss' then	--done
 		self.pos = {
-			[0x5B] = Vector(7582, -100, 6785), 
-			[0x26] = Vector(5929, -100, 5190), 
-			[0xBC] = Vector(8893, -100, 7889), 
-			[0x5F] = Vector(4790, -100, 3934),
+			[0x19] = Vector(7582, -100, 6785), 
+			[0x12] = Vector(5929, -100, 5190), 
+			[0x87] = Vector(8893, -100, 7889), 
+			[0x73] = Vector(4790, -100, 3934),
 		}
 		self.times = {
-			[0x5B] = 40,
-			[0x26] = 40,
-			[0xBC] = 40,
-			[0x5F] = 40,
+			[0x19] = 40,
+			[0x12] = 40,
+			[0x87] = 40,
+			[0x73] = 40,
 		}
 		self.inhibs = { 
 			[4283048177] = 100, 
@@ -574,28 +573,28 @@ function TIMERS:__init()
 		self.inhibTime = 300
 	elseif self.map == 'crystalScar' then		--done
 		self.pos = { 
-			 [0x16] = Vector(4948, -100, 9329),  
-			 [0x2E] = Vector(8972, -100, 9329), 
-			 [0xB2] = Vector(6949, -100, 2855), 
-			 [0x28] = Vector(6947, -100, 12116),
-			 [0x0A] = Vector(12881, -100, 8294), 
-			 [0x69] = Vector(10242, -100, 1519), 
-			 [0x48] = Vector(3639, -100, 1490), 
-			 [0x12] = Vector(1027, -100, 8288), 
-			 [0x5E] = Vector(4324, -100, 5500),
-			 [0x24] = Vector(9573, -100, 5530), 
+			 [0x25] = Vector(4948, -100, 9329),  
+			 [0xC3] = Vector(8972, -100, 9329), 
+			 [0x07] = Vector(6949, -100, 2855), 
+			 [0x41] = Vector(6947, -100, 12116),
+			 [0xE0] = Vector(12881, -100, 8294), 
+			 [0xBD] = Vector(10242, -100, 1519), 
+			 [0x88] = Vector(3639, -100, 1490), 
+			 [0x40] = Vector(1027, -100, 8288), 
+			 [0x85] = Vector(4324, -100, 5500),
+			 [0xE7] = Vector(9573, -100, 5530), 
 		}
 		self.times = {
-			 [0x16] = 30, 
-			 [0x2E] = 30, 
-			 [0xB2] = 30,
-			 [0x28] = 30, 
-			 [0x0A] = 30, 
-			 [0x69] = 30, 
-			 [0x48] = 30, 
-			 [0x12] = 30, 
-			 [0x5E] = 30, 
-			 [0x24] = 30, 
+			 [0x25] = 30, 
+			 [0xC3] = 30, 
+			 [0x07] = 30,
+			 [0x41] = 30, 
+			 [0xE0] = 30, 
+			 [0xBD] = 30, 
+			 [0x88] = 30, 
+			 [0x40] = 30, 
+			 [0x85] = 30, 
+			 [0xE7] = 30, 
 		}
 	end
 	self.activeTimers = {}
@@ -681,7 +680,7 @@ function TIMERS:Tick()
 end
 
 function TIMERS:RecvPacket(p)
-	if p.header == 0x0048 then
+	if p.header == 0x0044 then
 		p.pos = 10
 		local camp = p:Decode1()
 		if self.pos[camp] then
@@ -690,11 +689,7 @@ function TIMERS:RecvPacket(p)
 			for i=4, 1, -1 do
 				bytes[i] = IDBytes[p:Decode1()]
 			end
-			local b1 = lshift(band(bytes[1],0xFF),24)
-			local b2 = lshift(band(bytes[2],0xFF),16)
-			local b3 = lshift(band(bytes[3],0xFF),8)
-			local b4 = band(bytes[4],0xFF)
-			local netID = bxor(b1,b2,b3,b4)
+			local netID = bxor(lshift(band(bytes[1],0xFF),24),lshift(band(bytes[2],0xFF),16),lshift(band(bytes[3],0xFF),8),band(bytes[4],0xFF))
 			local o = objManager:GetObjectByNetworkId(DwordToFloat(netID))
 			if not o then 
 				if camp == 0x1F and self.map == 'summonerRift' then
@@ -702,13 +697,13 @@ function TIMERS:RecvPacket(p)
 				elseif camp == 0x05 and self.map == 'summonerRift' then
 					self.checkLastBaron = true
 				end
-				return 
+				return
 			end
 			self.activeTimers[camp] = {spawnTime = clock()+self.times[camp], pos = self.pos[camp], minimap = GetMinimap(self.pos[camp]),}
 		end
 		return
 	end
-	if p.header == 0x00A1 then
+	if p.header == 0x0080 then
 		p.pos=2
 		local inhib = p:Decode4()
 		if self.inhibs[inhib] then
@@ -838,7 +833,12 @@ function TRINKET:__init()
 	}
 	self.trM = self:Menu()
 	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and clock()/60 < 1.1 then 
-		DelayAction(function() self:BuyItem(3339+self.trM.type) end, 1)
+		DelayAction(
+		function() 
+			if not myHero:getItem(ITEM_7) then
+				self:BuyItem(3339+self.trM.type) 
+			end
+		end, 5)
 	end
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	loadMsg = loadMsg..'TrinketHelper, '
@@ -858,25 +858,25 @@ function TRINKET:Menu()
 end
 
 function TRINKET:BuyItem(id)
-	local reverseBytes = {}
-	for i=0, 255 do reverseBytes[IDBytes[i]] = i end
-	local p = CLoLPacket(0x00D7)
-	p.vTable = 0xEC73A0
+	local rB = {}
+	for i=0, 255 do rB[IDBytes[i]] = i end
+	local p = CLoLPacket(0x00AD)
+	p.vTable = 0xDC9DD8
 	p:EncodeF(myHero.networkID)
-	local b1 = lshift(band(reverseBytes[band(rshift(band(id,0xFFFF),24),0xFF)],0xFF),24)
-	local b2 = lshift(band(reverseBytes[band(rshift(band(id,0xFFFFFF),16),0xFF)],0xFF),16)
-	local b3 = lshift(band(reverseBytes[band(rshift(band(id,0xFFFFFFFF),8),0xFF)],0xFF),8)
-	local b4 = band(reverseBytes[band(id ,0xFF)],0xFF)
+	local b1 = lshift(band(rB[band(rshift(band(id,0xFFFF),24),0xFF)],0xFF),24)
+	local b2 = lshift(band(rB[band(rshift(band(id,0xFFFFFF),16),0xFF)],0xFF),16)
+	local b3 = lshift(band(rB[band(rshift(band(id,0xFFFFFFFF),8),0xFF)],0xFF),8)
+	local b4 = band(rB[band(id ,0xFF)],0xFF)
 	p:Encode4(bxor(b1,b2,b3,b4))
-	p:Encode4(4294452966) --unk, slot + something, doesnt matter
+	p:Encode4(0xE1240DFD) --hash?
 	SendPacket(p)
 end
 
 function TRINKET:RecvPacket(p)
-	if p.header == 0x00DB then
+	if p.header == 0x0055 then
 		p.pos=2
 		if p:DecodeF() == myHero.networkID then
-			p.pos=11			
+			p.pos=11
 			local bytes = {}
 			for i=4, 1, -1 do
 				bytes[i] = IDBytes[p:Decode1()]
@@ -899,5 +899,147 @@ function TRINKET:RecvPacket(p)
 			end
 		end
 	end
+end
+
+class "ScriptUpdate"
+
+function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
+    self.LocalVersion = LocalVersion
+    self.Host = Host
+    self.VersionPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
+    self.ScriptPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..ScriptPath)..'&rand='..math.random(99999999)
+    self.SavePath = SavePath
+    self.CallbackUpdate = CallbackUpdate
+    self.CallbackNoUpdate = CallbackNoUpdate
+    self.CallbackNewVersion = CallbackNewVersion
+    self.CallbackError = CallbackError
+    AddDrawCallback(function() self:OnDraw() end)
+    self:CreateSocket(self.VersionPath)
+    self.DownloadStatus = 'Connect to Server for VersionInfo'
+    AddTickCallback(function() self:GetOnlineVersion() end)
+end
+
+function ScriptUpdate:OnDraw()
+	local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
+	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
+	DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
+	DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0), bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
+	DrawLines2({D3DXVECTOR2(bP.x1, bP.y1),D3DXVECTOR2(bP.x2, bP.y1),D3DXVECTOR2(bP.x2, bP.y2),D3DXVECTOR2(bP.x1, bP.y2),D3DXVECTOR2(bP.x1, bP.y1),}, 3, ARGB(0xB9, 0x0A, 0x0A, 0x0A))
+	DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
+end
+
+function ScriptUpdate:CreateSocket(url)
+    if not self.LuaSocket then
+        self.LuaSocket = require("socket")
+    else
+        self.Socket:close()
+        self.Socket = nil
+        self.Size = nil
+        self.RecvStarted = false
+    end
+    self.Socket = self.LuaSocket.connect('sx-bol.eu', 80)
+    self.Socket:send("GET "..url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
+    self.Socket:settimeout(0, 'b')
+    self.Socket:settimeout(99999999, 't')
+    self.LastPrint = ""
+    self.File = ""
+end
+
+function ScriptUpdate:Base64Encode(data)
+    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    return ((data:gsub('.', function(x)
+        local r,b='',x:byte()
+        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
+        if (#x < 6) then return '' end
+        local c=0
+        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
+        return b:sub(c+1,c+1)
+    end)..({ '', '==', '=' })[#data%3+1])
+end
+
+function ScriptUpdate:GetOnlineVersion()
+    if self.GotScriptVersion then return end
+    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
+        self.RecvStarted = true
+        local recv,sent,time = self.Socket:getstats()
+        self.DownloadStatus = 'Downloading VersionInfo (0%)'
+    end
+
+    self.File = self.File .. (self.Receive or self.Snipped)
+    if self.File:find('</size>') then
+        if not self.Size then
+            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+        end
+        self.DownloadStatus = 'Downloading VersionInfo ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+    end
+    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
+        self.DownloadStatus = 'Downloading VersionInfo (100%)'
+        local HeaderEnd, ContentStart = self.File:find('<script>')
+        local ContentEnd, _ = self.File:find('</script>')
+        if not ContentStart or not ContentEnd then
+            if self.CallbackError and type(self.CallbackError) == 'function' then
+                self.CallbackError()
+            end
+        else
+            self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
+            if self.OnlineVersion > self.LocalVersion then
+                if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
+                    self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
+                end
+                self:CreateSocket(self.ScriptPath)
+                self.DownloadStatus = 'Connect to Server for ScriptDownload'
+                AddTickCallback(function() self:DownloadUpdate() end)
+            else
+                if self.CallbackNoUpdate and type(self.CallbackNoUpdate) == 'function' then
+                    self.CallbackNoUpdate(self.LocalVersion)
+                end
+            end
+        end
+        self.GotScriptVersion = true
+    end
+end
+
+function ScriptUpdate:DownloadUpdate()
+    if self.GotScriptUpdate then return end
+    self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
+        self.RecvStarted = true
+        local recv,sent,time = self.Socket:getstats()
+        self.DownloadStatus = 'Downloading Script (0%)'
+    end
+
+    self.File = self.File .. (self.Receive or self.Snipped)
+    if self.File:find('</size>') then
+        if not self.Size then
+            self.Size = tonumber(self.File:sub(self.File:find('<size>')+6,self.File:find('</size>')-1)) + self.File:len()
+        end
+        self.DownloadStatus = 'Downloading Script ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+    end
+    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
+        self.DownloadStatus = 'Download Complete.'
+        local HeaderEnd, ContentStart = self.File:find('<script>')
+        local ContentEnd, _ = self.File:find('</script>')
+        if not ContentStart or not ContentEnd then
+            if self.CallbackError and type(self.CallbackError) == 'function' then
+				self.DownloadStatus = 'Download Error!'
+                self.CallbackError()
+            end
+        else
+            local f = io.open(self.SavePath,"w+")
+            f:write(self.File:sub(ContentStart + 1,ContentEnd-1))
+            f:close()
+            if self.CallbackUpdate and type(self.CallbackUpdate) == 'function' then
+                self.CallbackUpdate(self.OnlineVersion,self.LocalVersion)
+            end
+        end
+        self.GotScriptUpdate = true
+    end
+end
+
+function Print(text)
+	print('<font color=\'#0099FF\'>[Pewtility] </font> <font color=\'#FF6600\'>'..text..'.</font>')
 end
 
