@@ -1,15 +1,2 @@
--IMPORTANT@
--Make sure to go through the menu!!@
-Fixes:@
--Heimerdinger Turret@
--Heimerdinger W@
--Graves R@
--Syndra E@
--Varus Q Error Spam@
--Varus E from FoW@
--Jayce Q@
-Added:@
--A lot of dashes, not all@
--Some Packet stuff for smoother 
-evading, VIP only.@
-
+This was breaking autoupdate@
+will be fixed next patch.@
