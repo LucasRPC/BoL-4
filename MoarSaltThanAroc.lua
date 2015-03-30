@@ -34,19 +34,20 @@ function OnLoad()
 	HookPackets()
 	TEAM_ALLY, TEAM_ENEMY = myHero.team, myHero.team == 100 and 200 or 100
 	MainMenu = scriptConfig('Pewtility', 'Pewtility')
+	MainMenu:addParam('update', 'Enable AutoUpdate', SCRIPT_PARAM_ONOFF, true)
 	WARD()
 	MISS()
 	SKILLS()
 	TIMERS()
 	TRINKET()
 	OTHER()
-	local Version = 1.02
-	ScriptUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print('New Version Found, please wait...') end, function() Print('An Error Occured in Update.') end)
+	local Version = 1.03
+	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate.') end, function() Print('An Error Occured in Update.') end)
 end
 
-class "ScriptUpdate"
+class "AwareUpdate"
 
-function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
+function AwareUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
     self.LocalVersion = LocalVersion
     self.Host = Host
     self.VersionPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
@@ -61,7 +62,7 @@ function ScriptUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePa
     AddTickCallback(function() self:GetOnlineVersion() end)
 end
 
-function ScriptUpdate:OnDraw()
+function AwareUpdate:OnDraw()
 	local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
 	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
 	DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
@@ -70,7 +71,7 @@ function ScriptUpdate:OnDraw()
 	DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
 end
 
-function ScriptUpdate:CreateSocket(url)
+function AwareUpdate:CreateSocket(url)
     if not self.LuaSocket then
         self.LuaSocket = require("socket")
     else
@@ -87,7 +88,7 @@ function ScriptUpdate:CreateSocket(url)
     self.File = ""
 end
 
-function ScriptUpdate:Base64Encode(data)
+function AwareUpdate:Base64Encode(data)
     local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
     return ((data:gsub('.', function(x)
         local r,b='',x:byte()
@@ -101,7 +102,7 @@ function ScriptUpdate:Base64Encode(data)
     end)..({ '', '==', '=' })[#data%3+1])
 end
 
-function ScriptUpdate:GetOnlineVersion()
+function AwareUpdate:GetOnlineVersion()
     if self.GotScriptVersion then return end
     self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
     if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
@@ -128,10 +129,11 @@ function ScriptUpdate:GetOnlineVersion()
         else
             self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
             if self.OnlineVersion > self.LocalVersion then
-				AddDrawCallback(function() self:OnDraw() end)
                 if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
                     self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
                 end
+				if not MainMenu.update then return end
+				AddDrawCallback(function() self:OnDraw() end)
                 self:CreateSocket(self.ScriptPath)
                 self.DownloadStatus = 'Connect to Server for ScriptDownload'
                 AddTickCallback(function() self:DownloadUpdate() end)
@@ -145,7 +147,7 @@ function ScriptUpdate:GetOnlineVersion()
     end
 end
 
-function ScriptUpdate:DownloadUpdate()
+function AwareUpdate:DownloadUpdate()
     if self.GotScriptUpdate then return end
     self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
     if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
@@ -332,14 +334,58 @@ function MISS:__init()
 		['recallimproved'] = 6.9,
 		['superrecall'] = 3.9,
 	}
+	self.Allies = {}
 	self.Colors = {ARGB(255, 255, 0, 255), COLOR_GREEN, COLOR_RED, ARGB(255, 0, 0, 255), COLOR_YELLOW}
 	self.recallBar = GetMinimap(0, 18000)
 	for i=1, heroManager.iCount do ---??
 		if heroManager:getHero(i).team == TEAM_ENEMY then
 			self.missing[heroManager:getHero(i).networkID] = nil
+		else
+			self.Allies[#self.Allies + 1] = heroManager:getHero(i)
 		end
 	end
+	self.JunglePos = {
+		[0x18BAF78A] = { ['pos'] = GetMinimap(Vector(10950, 60, 7030)), ['name'] = 'SRU_BlueMini7.1.2',	 ['text'] = 'Top Blue',   },
+		[0x18506A40] = { ['pos'] = GetMinimap(Vector(10950, 60, 7030)), ['name'] = 'SRU_BlueMini27.1.3', ['text'] = 'Top Blue',   },
+		[0x1873EAF2] = { ['pos'] = GetMinimap(Vector(10950, 60, 7030)), ['name'] = 'SRU_Blue',			 ['text'] = 'Top Blue',   },
+		[0x8D2D34C]  = { ['pos'] = GetMinimap(Vector(12600, 60, 6400)), ['name'] = 'SRU_Gromp14.1.1',	 ['text'] = 'Top Gromp',  },
+		[0x181611CC] = { ['pos'] = GetMinimap(Vector(11000, 60, 8400)), ['name'] = 'SRU_MurkwolfMini',	 ['text'] = 'Top Wolves', },
+		[0x181960A6] = { ['pos'] = GetMinimap(Vector(11000, 60, 8400)), ['name'] = 'SRU_Murkwolf',		 ['text'] = 'Top Wolves', },
+		[0x1878C95D] = { ['pos'] = GetMinimap(Vector(11000, 60, 8400)), ['name'] = 'SRU_MurkwolfMini',	 ['text'] = 'Top Wolves', },
+		[0x671211E3] = { ['pos'] = GetMinimap(Vector(10500, 60, 5170)), ['name'] = 'Sru_Crab',			 ['text'] = 'Dragon Crab',},
+		[0x181089B1] = { ['pos'] = GetMinimap(Vector(7000, 60, 5400)), 	['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Bot Raptors',},
+		[0x812CDD7]  = { ['pos'] = GetMinimap(Vector(7000, 60, 5400)),  ['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Bot Raptors',},
+		[0x18D09FD7] = { ['pos'] = GetMinimap(Vector(7000, 60, 5400)),  ['name'] = 'SRU_Razorbeak3.1.1', ['text'] = 'Bot Raptors',},
+		[0x38372087] = { ['pos'] = GetMinimap(Vector(7000, 60, 5400)),  ['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Bot Raptors',},
+		[0x8104D77]  = { ['pos'] = GetMinimap(Vector(7800, 60, 4000)),  ['name'] = 'SRU_RedMini4.1.3',	 ['text'] = 'Bot Red',    },
+		[0x58B9012F] = { ['pos'] = GetMinimap(Vector(7800, 60, 4000)),  ['name'] = 'SRU_RedMini4.1.2',	 ['text'] = 'Bot Red',    },
+		[0x89536EC]  = { ['pos'] = GetMinimap(Vector(7800, 60, 4000)),  ['name'] = 'SRU_Red',			 ['text'] = 'Bot Red',    },
+		[0x386AFC10] = { ['pos'] = GetMinimap(Vector(8400, 60, 2700)),  ['name'] = 'SRU_Krug',			 ['text'] = 'Bot Krugs',  },
+		[0x489E7EDA] = { ['pos'] = GetMinimap(Vector(8400, 60, 2700)), 	['name'] = 'SRU_KrugMini',		 ['text'] = 'Bot Krugs',  },
+		[0x289C7352] = { ['pos'] = GetMinimap(Vector(7850, 60, 9500)),  ['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Top Raptors',},
+		[0x18B9AFFB] = { ['pos'] = GetMinimap(Vector(7850, 60, 9500)),  ['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Top Raptors',},
+		[0x8308DEC]  = { ['pos'] = GetMinimap(Vector(7850, 60, 9500)),  ['name'] = 'SRU_Razorbeak9.1.1', ['text'] = 'Top Raptors',},
+		[0x58A9DCDB] = { ['pos'] = GetMinimap(Vector(7850, 60, 9500)),  ['name'] = 'SRU_RazorbeakMini',	 ['text'] = 'Top Raptors',},
+		[0x1810341B] = { ['pos'] = GetMinimap(Vector(7100, 60, 10900)), ['name'] = 'SRU_RedMini10.1.2',  ['text'] = 'Top Red',    },
+		[0x8FD71CB]  = { ['pos'] = GetMinimap(Vector(7100, 60, 10900)), ['name'] = 'SRU_RedMini10.1.3',  ['text'] = 'Top Red',    },
+		[0x18DBB136] = { ['pos'] = GetMinimap(Vector(7100, 60, 10900)), ['name'] = 'SRU_Red',			 ['text'] = 'Top Red',    },
+		[0x18DF6367] = { ['pos'] = GetMinimap(Vector(6400, 60, 12250)), ['name'] = 'SRU_Krug',			 ['text'] = 'Top Krugs',  },
+		[0x28894497] = { ['pos'] = GetMinimap(Vector(6400, 60, 12250)), ['name'] = 'SRU_KrugMini',		 ['text'] = 'Top Krugs',  },
+		[0x47BF0720] = { ['pos'] = GetMinimap(Vector(4400, 60, 9600)),  ['name'] = 'Sru_Crab',			 ['text'] = 'Baron Crab', },
+		[0x83F4FEA]  = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_BlueMini21.1.3', ['text'] = 'Bot Blue',   },
+		[0x8F00A01]  = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_BlueMini1.1.2',	 ['text'] = 'Bot Blue',   },
+		[0x815D369]  = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_Blue',			 ['text'] = 'Bot Blue',   },
+		[0x18105B1D] = { ['pos'] = GetMinimap(Vector(2200, 60, 8500)),  ['name'] = 'SRU_Gromp13.1.1',	 ['text'] = 'Bot Gromp',  },
+		[0x81532A1]  = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_MurkwolfMini',	 ['text'] = 'Bot Wolves', },
+		[0x81618A2]  = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_Murkwolf',		 ['text'] = 'Bot Wolves', },
+		[0x839F3F3]  = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_MurkwolfMini',	 ['text'] = 'Bot Wolves', },
+		[0x183B4426] = { ['pos'] = GetMinimap(Vector(9866, 60, 4414)),  ['name'] = 'SRU_Dragon6.1.1',	 ['text'] = 'Dragon',	  },
+	}
+	self.JungleTracker = {}
 	self.mM = self:Menu()
+	if GetGame().map.shortName == 'summonerRift' then
+		AddRecvPacketCallback(function(p) self:JunglePackets(p) end)
+	end
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	AddDrawCallback(function() self:Draw() end)
 	loadMsg = loadMsg..'MissTimers, '
@@ -351,6 +397,7 @@ function MISS:Menu()
 	mM:addParam('draw', 'Enable Missing Timers', SCRIPT_PARAM_ONOFF, true)
 	mM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	mM:addParam('recall', 'Display Recall Status', SCRIPT_PARAM_ONOFF, true)
+	mM:addParam('jungle', 'Display Jungle Tracker', SCRIPT_PARAM_ONOFF, true)
 	return mM	
 end
 
@@ -421,6 +468,81 @@ function MISS:RecvPacket(p)
 	end
 end
 
+function MISS:JunglePackets(p)
+	if p.header == 0x0058 then		--reset
+		p.pos=2
+		local o = objManager:GetObjectByNetworkId(p:DecodeF())
+		if (not o) or (o.valid and not o.visible) then
+			p.pos=10
+			local d4 = p:Decode4()
+			if self.JunglePos[d4] then
+				for i, camp in ipairs(self.JungleTracker) do
+					if camp.pos.x == self.JunglePos[d4].pos.x then 
+						return 
+					end
+				end
+				if o then
+					for i, ally in ipairs(self.Allies) do
+						if ally.valid and GetDistanceSqr(ally.pos, o.pos) < 2250000 then
+							return
+						end
+					end
+				end
+				self.JungleTracker[#self.JungleTracker + 1] = { ['pos'] = self.JunglePos[d4].pos, ['endTime'] = os.clock() + 10, ['text'] = self.JunglePos[d4].text, }
+			end
+		end
+	elseif p.header == 0x0094 then	--aggro
+		p.pos=2
+		local o = objManager:GetObjectByNetworkId(p:DecodeF())
+		if o and o.valid and not o.visible then
+			local index
+			for _, camp in pairs(self.JunglePos) do
+				if camp.name == o.name then
+					index = _
+				end
+			end
+			if index then
+				for i, camp in ipairs(self.JungleTracker) do
+					if camp.pos.x == self.JunglePos[index].pos.x then
+						return 
+					end
+				end
+				for i, ally in ipairs(self.Allies) do
+					if ally.valid and GetDistanceSqr(ally.pos, o.pos) < 2250000 then
+						return
+					end
+				end
+				self.JungleTracker[#self.JungleTracker + 1] = { ['pos'] = self.JunglePos[index].pos, ['endTime'] = os.clock() + 10, ['text'] = self.JunglePos[index].text, }
+			end
+		end
+	elseif p.header == 0x00C8 then	--missile
+		p.pos=2
+		local o = objManager:GetObjectByNetworkId(p:DecodeF())
+		if o and o.valid and o.team == 300 and not o.visible then
+			local index
+			for i, info in pairs(self.JunglePos) do
+				if info.name == o.name then
+					index = i
+					break
+				end
+			end
+			if index then
+				for i, camp in ipairs(self.JungleTracker) do
+					if camp.pos.x == self.JunglePos[index].pos.x then 
+						return 
+					end
+				end
+				for i, ally in ipairs(self.Allies) do
+					if ally.valid and GetDistanceSqr(ally.pos, o.pos) < 2250000 then
+						return
+					end
+				end
+				self.JungleTracker[#self.JungleTracker + 1] = { ['pos'] = self.JunglePos[index].pos, ['endTime'] = os.clock() + 10, ['text'] = self.JunglePos[index].text, }
+			end
+		end		
+	end
+end
+
 function MISS:Draw()
 	if not self.mM.draw then return end
 	local mCount = 1
@@ -451,6 +573,28 @@ function MISS:Draw()
 				DrawText(text, 12, ((self.recallBar.x + (WINDOW_W - 10)) / 2) - (GetTextArea(text, 12).x / 2), self.recallBar.y - 6 + yOffset, COLOR_WHITE)
 			end
 			count = count + 1
+		end
+	end
+	if self.mM.jungle then
+		for i, camp in ipairs(self.JungleTracker) do
+			if camp.endTime < os.clock() then
+				table.remove(self.JungleTracker, i)
+				return
+			end
+			local hex = {}
+			for theta = 0, (pi2+(pi2/6)), (pi2/6) do
+				hex[#hex + 1] = D3DXVECTOR2(camp.pos.x+(12*cos(theta)), camp.pos.y-(12*sin(theta)))
+			end
+			DrawLines2(hex, 1, COLOR_WHITE)
+		end
+		if #self.JungleTracker == 1 then
+			local x = WINDOW_W/2
+			local y = WINDOW_H/8
+			local area = GetTextArea(self.JungleTracker[1].text, 32)
+			DrawLines2({D3DXVECTOR2(x-100, y-25),D3DXVECTOR2(x+100, y-25),D3DXVECTOR2(x+100, y+25),D3DXVECTOR2(x-100, y+25), D3DXVECTOR2(x-100, y-25)}, 2, COLOR_WHITE)
+			DrawLine(x-100, y, x+100, y, 50, COLOR_TRANS_RED)
+			DrawText(self.JungleTracker[1].text, 32, x - (area.x / 2), y - 10, COLOR_TRANS_WHITE)
+			DrawText('Jungle Tracker', 16, x - 45, y - 25, COLOR_TRANS_WHITE)	
 		end
 	end
 end
@@ -878,15 +1022,15 @@ end
 
 function OTHER:Draw()
 	if self.oM.turret then
-		for i=1, #self.Turrets do
-			if self.Turrets[i] and self.Turrets[i].valid and not self.Turrets[i].dead then
-				local c = WorldToScreen(D3DXVECTOR3(self.Turrets[i].pos.x, self.Turrets[i].pos.y, self.Turrets[i].pos.z))
+		for i, turret in ipairs(self.Turrets) do
+			if turret and turret.valid and not turret.dead then
+				local c = WorldToScreen(D3DXVECTOR3(turret.x, turret.y, turret.z))
 				if c.x > -300 and c.x < WINDOW_W + 200 and c.y > -300 and c.y < WINDOW_H + 300 then
-					local quality =  2 * pi / 36
+					local quality =  pi2 / 28
 					local points = {}
-					for theta = 0, 2 * pi + quality, quality do
-						local c = WorldToScreen(D3DXVECTOR3(self.Turrets[i].pos.x + 850 * cos(theta), self.Turrets[i].pos.y, self.Turrets[i].pos.z - 850 * sin(theta)))
-						points[#points + 1] = D3DXVECTOR2(c.x, c.y)
+					for theta = 0, pi2 + quality, quality do
+						local c2 = WorldToScreen(D3DXVECTOR3(turret.x + 850 * cos(theta), turret.y, turret.z - 850 * sin(theta)))
+						points[#points + 1] = D3DXVECTOR2(c2.x, c2.y)
 					end
 					DrawLines2(points, 2, COLOR_RED)
 				end			
@@ -896,30 +1040,31 @@ function OTHER:Draw()
 		end
 	end
 	if self.oM.path then
-		for i=1, #self.Enemies do
-			local e = self.Enemies[i]
-			if e and not e.dead and e.visible and e.pathCount > 1 then
+		for _, e in ipairs(self.Enemies) do
+			if e and e.valid and not e.dead and e.visible and e.pathCount > 1 then
 				local points = {}
-				local eC = WorldToScreen(D3DXVECTOR3(e.pos.x, e.pos.y, e.pos.z))
+				local eC = WorldToScreen(D3DXVECTOR3(e.x, e.y, e.z))
 				points[1] = D3DXVECTOR2(eC.x, eC.y)
 				local pathLength = 0
-				for j=e.pathIndex, e.pathCount do
-					local p1 = e:GetPath(j)
-					local p2 = e:GetPath(j-1)
-					local c = WorldToScreen(D3DXVECTOR3(p1.x, p1.y, p1.z))
-					points[#points + 1] = D3DXVECTOR2(c.x, c.y)
-					if p1 and p2 then
-						if (j==e.pathIndex) then
-							pathLength = pathLength + GetDistanceSqr(Vector(p1.x, p1.y, p1.z), Vector(e.x, e.y, e.z))
-						else
-							pathLength = pathLength + GetDistanceSqr(Vector(p1.x, p1.y, p1.z), Vector(p2.x, p2.y, p2.z))
+				for i=e.pathIndex, e.pathCount do
+					local p1 = e:GetPath(i)
+					local p2 = e:GetPath(i-1)
+					if p1 then
+						local c = WorldToScreen(D3DXVECTOR3(p1.x, p1.y, p1.z))
+						points[#points + 1] = D3DXVECTOR2(c.x, c.y)
+						if p2 then
+							if (i==e.pathIndex) then
+								pathLength = pathLength + GetDistanceSqr(p1, e.pos)
+							else
+								pathLength = pathLength + GetDistanceSqr(p1, p2)
+							end
 						end
 					end
 				end			
 				if self.oM.type == 1 then
 					local draw = false
-					for j=1, #points do
-						if points[j].x > 0 and points[j].x < WINDOW_W and points[j].y > 0 and points[j].y < WINDOW_H then
+					for i, point in ipairs(points) do
+						if point.x > 0 and point.x < WINDOW_W and point.y > 0 and point.y < WINDOW_H then
 							draw = true
 							break
 						end
@@ -929,7 +1074,8 @@ function OTHER:Draw()
 						DrawText3D(('%.2f'):format(sqrt(pathLength)/(e.ms))..'\n'..e.charName, e.endPath.x, e.endPath.y, e.endPath.z, 12, COLOR_WHITE)
 					end
 				else
-					if points[#points].x > 0 and points[#points].x < WINDOW_W and points[#points].y > 0 and points[#points].y < WINDOW_H then
+					local x, y = points[#points].x, points[#points].y
+					if x > 0 and x < WINDOW_W and y > 0 and y < WINDOW_H then
 						DrawText3D(('%.2f'):format(sqrt(pathLength)/(e.ms))..'\n'..e.charName, e.endPath.x, e.endPath.y, e.endPath.z, 12, COLOR_WHITE)
 					end
 				end
@@ -996,7 +1142,7 @@ function TRINKET:RecvPacket(p)
 	if p.header == 0x00EE then
 		p.pos=2
 		if p:DecodeF() == myHero.networkID then
-			p.pos=8
+			p.pos=13
 			local bytes = {}
 			for i=4, 1, -1 do
 				bytes[i] = IDBytes[p:Decode1()]
@@ -1013,7 +1159,7 @@ function TRINKET:RecvPacket(p)
 				self:BuyItem(3342)
 				return
 			end
-			if self.trM.sweeper and self.trM.sightstone and currentTrinket.id == 3340 and itemID == 2049 then
+			if self.trM.sightstone and currentTrinket.id == 3340 and itemID == 2049 then
 				self:BuyItem(3341)
 				return
 			end
