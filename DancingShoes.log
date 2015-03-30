@@ -2,7 +2,7 @@ Fixes:@
  -Viktor E@
  -Velkoz Q@
  -Completely rewrote evade algorithm,@
- should be much smoother now.
+ should be much smoother now.@
  -Now uses its own Vector and Polygon@
  classes(increased performance a lot)@
 Added:@
