@@ -42,7 +42,7 @@ function OnLoad()
 	TRINKET()
 	OTHER()
 	local Version = 1.03
-	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate.') end, function() Print('An Error Occured in Update.') end)
+	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate') end, function() Print('An Error Occured in Update.') end)
 end
 
 class "AwareUpdate"
@@ -132,7 +132,10 @@ function AwareUpdate:GetOnlineVersion()
                 if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
                     self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
                 end
-				if not MainMenu.update then return end
+				if not MainMenu.update then 
+					self.GotScriptVersion = true
+					return 
+				end
 				AddDrawCallback(function() self:OnDraw() end)
                 self:CreateSocket(self.ScriptPath)
                 self.DownloadStatus = 'Connect to Server for ScriptDownload'
