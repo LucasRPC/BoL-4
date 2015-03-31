@@ -1,10 +1,3 @@
 Fixes:@
- -Viktor E@
- -Velkoz Q@
- -Completely rewrote evade algorithm,@
- should be much smoother now.@
- -Now uses its own Vector and Polygon@
- classes(increased performance a lot)@
-Added:@
- -Option to disable AutoUpdate@
- -Added option to use shields.@
+ -Fixed Load Issues.@
+ -Fixed the stop evade issue.@
