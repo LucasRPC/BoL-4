@@ -1,3 +1,11 @@
 Fixes:@
- -Fixed Load Issues.@
- -Fixed the stop evade issue.@
+ -Shielding when can evade.@
+ -Ziggs R evade timing.@
+ -Janna Q range now scales.@
+ -Cass W radius now scales.@
+ -Ezreal Q in URF mode.@
+Added:@
+ -Diana Q.@
+ -Diana E.@
+ -Jinx E.@
+ -Sivir E to shields.@
