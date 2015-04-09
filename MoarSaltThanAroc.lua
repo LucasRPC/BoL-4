@@ -40,7 +40,7 @@ function OnLoad()
 	TIMERS()
 	TRINKET()
 	OTHER()
-	local Version = 1.04
+	local Version = 1.041
 	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate') end, function() Print('An Error Occured in Update.') end)
 end
 
@@ -843,7 +843,7 @@ function TIMERS:__init()
 	self.checkLastDragon = false
 	self.checkLastBaron = false
 	self.tM = self:Menu()
-	AddTickCallback(function() self:Tick() end)
+	--AddTickCallback(function() self:Tick() end)
 	AddDrawCallback(function() self:Draw() end)
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	AddMsgCallback(function(m,k) self:WndMsg(m,k) end)
