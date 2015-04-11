@@ -40,7 +40,7 @@ function OnLoad()
 	TIMERS()
 	TRINKET()
 	OTHER()
-	local Version = 1.041
+	local Version = 1.042
 	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate') end, function() Print('An Error Occured in Update.') end)
 end
 
@@ -370,7 +370,7 @@ function MISS:__init()
 		[0x6AEA851]  = { ['pos'] = GetMinimap(Vector(7100, 60, 10900)), ['name'] = 'SRU_Red10.1.1',		 	['text'] = 'Top Red',    },
 		[0x2F6F251]  = { ['pos'] = GetMinimap(Vector(6400, 60, 12250)), ['name'] = 'SRU_Krug11.1.2',	 	['text'] = 'Top Krugs',  },
 		[0x5E346251] = { ['pos'] = GetMinimap(Vector(6400, 60, 12250)), ['name'] = 'SRU_KrugMini11.1.1', 	['text'] = 'Top Krugs',  },
-		[0xA5F1D351] = { ['pos'] = GetMinimap(Vector(4400, 60, 9600)),  ['name'] = 'Sru_Crab16.1.1',		['text'] = 'Baron Crab', },
+		[0xA5F1D351] = { ['pos'] = GetMinimap(Vector(4400, 60, 9600)),  ['name'] = 'SRU_Crab16.1.1',		['text'] = 'Baron Crab', },
 		[0x8111D551] = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_BlueMini21.1.3', 	['text'] = 'Bot Blue',   },
 		[0xED5C7D51] = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_BlueMini1.1.2',	 	['text'] = 'Bot Blue',   },
 		[0x6926DE51] = { ['pos'] = GetMinimap(Vector(3850, 60, 7880)),  ['name'] = 'SRU_Blue1.1.1',		 	['text'] = 'Bot Blue',   },
@@ -378,7 +378,7 @@ function MISS:__init()
 		[0x8DE4E451] = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_MurkwolfMini2.1.2',	['text'] = 'Bot Wolves', },
 		[0x6860B751] = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_Murkwolf2.1.1',	 	['text'] = 'Bot Wolves', },
 		[0x69ACBE51] = { ['pos'] = GetMinimap(Vector(3800, 60, 6500)),  ['name'] = 'SRU_MurkwolfMini2.1.3',	['text'] = 'Bot Wolves', },
-		[0x8534B851] = { ['pos'] = GetMinimap(Vector(9866, 60, 4414)),  ['name'] = 'SRU_Dragon6.1.1',	 	['text'] = 'Dragon',	  },
+		[0x8534B851] = { ['pos'] = GetMinimap(Vector(9866, 60, 4414)),  ['name'] = 'SRU_Dragon6.1.1',	 	['text'] = 'Dragon',	 },
 	}
 	
 	self.JungleTracker = {}
@@ -843,7 +843,7 @@ function TIMERS:__init()
 	self.checkLastDragon = false
 	self.checkLastBaron = false
 	self.tM = self:Menu()
-	--AddTickCallback(function() self:Tick() end)
+	AddTickCallback(function() self:Tick() end)
 	AddDrawCallback(function() self:Draw() end)
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	AddMsgCallback(function(m,k) self:WndMsg(m,k) end)
