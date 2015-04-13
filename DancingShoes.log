@@ -1,16 +1,17 @@
-Menu has been changed@
-make sure to check it out.@
 Fixes:@
- -Error spam from JannaQ.@
- -Improved movement blocking(VIP).@
- -Evading when disabled.@
- -Gragas Q.@
- -Lux E.@
- -Orianna W/R.@
- -Little Gnar Q.@
- -Lulu Q.@
- -Spell Priority Menu.@
+ -Zed Shadow E.@
+ -Spell ranges from FoW.@
+ -Improved movement blocking.@
+ -Syndra E Orbs.@
+ -Diana Q end explosion.@
+ -Ziggs Q's now properly remove.@
+ -Heimer turrets energy blasts.@
+ -ThreshR/VeigarE.@
+ -All spells now display in Menu.@
+ -Menu error that sometimes could occur.@
+ -Diana Q triangulation.@
+ -Cone spell triangulation.@
+ -Greatly improved polygon class.@
 Added:@
- -Malphite R.@
- -Summoner Flash.@
- -Extreme Threat Level.@
+ -Added all remaining dashes.@
+ -Added minion collision.@
