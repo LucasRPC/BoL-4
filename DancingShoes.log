@@ -1,17 +1,15 @@
 Fixes:@
- -Zed Shadow E.@
- -Spell ranges from FoW.@
- -Improved movement blocking.@
- -Syndra E Orbs.@
- -Diana Q end explosion.@
- -Ziggs Q's now properly remove.@
- -Heimer turrets energy blasts.@
- -ThreshR/VeigarE.@
- -All spells now display in Menu.@
- -Menu error that sometimes could occur.@
- -Diana Q triangulation.@
- -Cone spell triangulation.@
- -Greatly improved polygon class.@
+ -Using some shields when can evade.@
+ -Dashes reworked.@
+ -Xerath E bug drawing twice.@
+ -Gnar Q return draws properly.@
+ -More evade and movement block improvements.@
 Added:@
- -Added all remaining dashes.@
- -Added minion collision.@
+ Items:@
+  -Zhonyas Hourglass.@
+  -Face of the Mountain.@
+  -Locket of Iron Solari.@
+  -Seraphs Embrace.@
+ -Keys can now be set as toggle or@
+  on key down.@
+ -Complete Kalista dash support.@
