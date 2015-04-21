@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="Windows-1252" ?>
+<NotepadPlus>
+    <Environment ignoreCase="no" startFunc="(" stopFunc=")" paramSeparator="," terminal=";" additionalWordChar = ".:"/>
+    <AutoComplete language="LUA">
+        <KeyWord name="and" func="no" />
+        <KeyWord name="assert(bool,String:[message])" func="no" />
+        <KeyWord name="break" func="no" />
+        <KeyWord name="collectgarbage(string:opt,[arg])" func="no" />
+        <KeyWord name="coroutine.create(function:f)" func="no" />
+        <KeyWord name="coroutine.resume(co,[,val,...])" func="no" />
+        <KeyWord name="coroutine.running()" func="no" />
+        <KeyWord name="coroutine.status(co)" func="no" />
+        <KeyWord name="coroutine.wrap(f)" func="no" />
+        <KeyWord name="coroutine.yield(...)" func="no" />
+        <KeyWord name="do" func="no" />
+        <KeyWord name="dofile(filename)" func="no" />
+        <KeyWord name="else" func="no" />
+        <KeyWord name="elseif" func="no" />
+        <KeyWord name="end" func="no" />
+        <KeyWord name="error(message,[level])" func="no" />
+        <KeyWord name="false" func="no" />
+        <KeyWord name="file:close()" func="no" />
+        <KeyWord name="file:flush()" func="no" />
+        <KeyWord name="file:lines()" func="no" />
+        <KeyWord name="file:read(...)" func="no" />
+        <KeyWord name="file:seek([whence,[offset]])" func="no" />
+        <KeyWord name="file:setvbuf(mode,[size])" func="no" />
+        <KeyWord name="file:write(...)" func="no" />
+        <KeyWord name="for" func="no" />
+        <KeyWord name="function" func="no" />
+        <KeyWord name="getfenv(f)" func="no" />
+        <KeyWord name="getmetatable(object)" func="no" />
+        <KeyWord name="if" func="no" />
+        <KeyWord name="in" func="no" />
+        <KeyWord name="io.close(file)" func="no" />
+        <KeyWord name="io.flush()" func="no" />
+        <KeyWord name="io.input([file])" func="no" />
+        <KeyWord name="io.lines(filename)" func="no" />
+        <KeyWord name="io.open(filename,[mode])" func="no" />
+        <KeyWord name="io.output([file])" func="no" />
+        <KeyWord name="io.popen(prog,[,mode])" func="no" />
+        <KeyWord name="io.read(...)" func="no" />
+        <KeyWord name="io.tmpfile()" func="no" />
+        <KeyWord name="io.type(obj)" func="no" />
+        <KeyWord name="io.write(...)" func="no" />
+        <KeyWord name="ipairs(t)" func="no" />
+        <KeyWord name="load(func,[chunkname])" func="no" />
+        <KeyWord name="loadfile([filename])" func="no" />
+        <KeyWord name="loadstring(string,chunkname)" func="no" />
+        <KeyWord name="local" func="no" />
+        <KeyWord name="math.abs(x)" func="no" />
+        <KeyWord name="math.acos(x)" func="no" />
+        <KeyWord name="math.asin(x)" func="no" />
+        <KeyWord name="math.atan(x)" func="no" />
+        <KeyWord name="math.atan2(x)" func="no" />
+        <KeyWord name="math.ceil(x)" func="no" />
+        <KeyWord name="math.cos(x)" func="no" />
+        <KeyWord name="math.cosh(x)" func="no" />
+        <KeyWord name="math.deg(x)" func="no" />
+        <KeyWord name="math.exp(x)" func="no" />
+        <KeyWord name="math.floor(x)" func="no" />
+        <KeyWord name="math.fmod(x,y)" func="no" />
+        <KeyWord name="math.frexp(x)" func="no" />
+        <KeyWord name="math.huge()" func="no" />
+        <KeyWord name="math.ldexp(m,e)" func="no" />
+        <KeyWord name="math.log(x)" func="no" />
+        <KeyWord name="math.log10(x)" func="no" />
+        <KeyWord name="math.max(x,...)" func="no" />
+        <KeyWord name="math.min(x,...)" func="no" />
+        <KeyWord name="math.modf(x)" func="no" />
+        <KeyWord name="math.pi" func="no" />
+        <KeyWord name="math.pow(x,y)" func="no" />
+        <KeyWord name="math.rad(x)" func="no" />
+        <KeyWord name="math.random(max,min)" func="no" />
+        <KeyWord name="math.randomseed(x)" func="no" />
+        <KeyWord name="math.sin(x)" func="no" />
+        <KeyWord name="math.sinh(x)" func="no" />
+        <KeyWord name="math.sqrt(x)" func="no" />
+        <KeyWord name="math.tan(x)" func="no" />
+        <KeyWord name="math.tanh(x)" func="no" />
+        <KeyWord name="module(name,[...])" func="no" />
+        <KeyWord name="nil" func="no" />
+        <KeyWord name="not" func="no" />
+        <KeyWord name="or" func="no" />
+        <KeyWord name="os.clock()" func="no" />
+        <KeyWord name="os.date([format[,time]])" func="no" />
+        <KeyWord name="os.difftime(t1,t2)" func="no" />
+        <KeyWord name="os.execute([command])" func="no" />
+        <KeyWord name="os.exit([code])" func="no" />
+        <KeyWord name="os.getenv(varname)" func="no" />
+        <KeyWord name="os.remove(filename)" func="no" />
+        <KeyWord name="os.rename(oldname,newname)" func="no" />
+        <KeyWord name="os.tmpname()" func="no" />
+        <KeyWord name="pairs(t)" func="no" />
+        <KeyWord name="pcall(f,arg1,...)" func="no" />
+        <KeyWord name="print(...)" func="no" />
+        <KeyWord name="rawequal(v1,v2)" func="no" />
+        <KeyWord name="rawget(table,index)" func="no" />
+        <KeyWord name="rawset(table,index,value)" func="no" />
+        <KeyWord name="repeat" func="no" />
+        <KeyWord name="require(modname)" func="no" />
+        <KeyWord name="return" func="no" />
+        <KeyWord name="select(index,...)" func="no" />
+        <KeyWord name="setfenv(f,table)" func="no" />
+        <KeyWord name="setmetatable(table,metatable)" func="no" />
+        <KeyWord name="string.byte(s,[,i[,j]])" func="no" />
+        <KeyWord name="string.char(...)" func="no" />
+        <KeyWord name="string.dump(function)" func="no" />
+        <KeyWord name="string.find(s,pattern,[init,[,plain]])" func="no" />
+        <KeyWord name="string.format(formatstring,...)" func="no" />
+        <KeyWord name="string.gmatch(s,pattern)" func="no" />
+        <KeyWord name="string.gsub(s,pattern,repl,[,n])" func="no" />
+        <KeyWord name="string.len(s)" func="no" />
+        <KeyWord name="string.lower(s)" func="no" />
+        <KeyWord name="string.match(s,pattern,[,int])" func="no" />
+        <KeyWord name="string.rep(s,n)" func="no" />
+        <KeyWord name="string.reverse(s)" func="no" />
+        <KeyWord name="string.sub(s,i,[j])" func="no" />
+        <KeyWord name="string.upper(s)" func="no" />
+        <KeyWord name="table.concat(table,sep,[,i[,j]])" func="no" />
+        <KeyWord name="table.insert(table,[pos,],value)" func="no" />
+        <KeyWord name="table.maxn(table)" func="no" />
+        <KeyWord name="table.remove(table,[,pos])" func="no" />
+        <KeyWord name="table.sort(table,[,comp])" func="no" />
+        <KeyWord name="then" func="no" />
+        <KeyWord name="tonumber(e,[,base])" func="no" />
+        <KeyWord name="tostring(e)" func="no" />
+        <KeyWord name="true" func="no" />
+        <KeyWord name="type(v)" func="no" />
+        <KeyWord name="unpack" func="no" />
+        <KeyWord name="until" func="no" />
+        <KeyWord name="while" func="no" />
+        <KeyWord name="xpcall(f,err)" func="no" />
+		<KeyWord name = "myHero.dead" func="no" />
+		<KeyWord name = "myHero.team" func="no" />
+		<KeyWord name = "myHero.valid" func="no" />
+		<KeyWord name = "myHero.index" func="no" />
+		<KeyWord name = "myHero.nextIndex" func="no" />
+		<KeyWord name = "myHero.visible" func="no" />
+		<KeyWord name = "myHero.level" func="no" />
+		<KeyWord name = "myHero.name" func="no" />
+		<KeyWord name = "myHero.charName" func="no" />
+		<KeyWord name = "myHero.type" func="no" />
+		<KeyWord name = "myHero.pos" func="no" />
+		<KeyWord name = "myHero.visionPos" func="no" />
+		<KeyWord name = "myHero.minBBox" func="no" />
+		<KeyWord name = "myHero.maxBBox" func="no" />
+		<KeyWord name = "myHero.buffCount" func="no" />
+		<KeyWord name = "myHero.networkID" func="no" />
+		<KeyWord name = "myHero.bInvulnerable" func="no" />
+		<KeyWord name = "myHero.bPhysImune" func="no" />
+		<KeyWord name = "myHero.bMagicImune" func="no" />
+		<KeyWord name = "myHero.isMelee" func="no" />
+		<KeyWord name = "myHero.isRanged" func="no" />
+		<KeyWord name = "myHero.canAttack" func="no" />
+		<KeyWord name = "myHero.canCast" func="no" />
+		<KeyWord name = "myHero.canMove" func="no" />
+		<KeyWord name = "myHero.isStealthed" func="no" />
+		<KeyWord name = "myHero.isRevealSpecificUnit" func="no" />
+		<KeyWord name = "myHero.isTaunted" func="no" />
+		<KeyWord name = "myHero.isCharmed" func="no" />
+		<KeyWord name = "myHero.isFeared" func="no" />
+		<KeyWord name = "myHero.isAsleep" func="no" />
+		<KeyWord name = "myHero.isNearSight" func="no" />
+		<KeyWord name = "myHero.isGhosted" func="no" />
+		<KeyWord name = "myHero.isNoRender" func="no" />
+		<KeyWord name = "myHero.isFleeing" func="no" />
+		<KeyWord name = "myHero.isForceRenderParticles" func="no" />
+		<KeyWord name = "myHero.bTargetable" func="no" />
+		<KeyWord name = "myHero.bTargetableToTeam" func="no" />
+		<KeyWord name = "myHero.range" func="no" />
+		<KeyWord name = "myHero.deathTimer" func="no" />
+		<KeyWord name = "myHero.minionScore" func="no" />
+		<KeyWord name = "myHero.currentSpell" func="no" />
+		<KeyWord name = "myHero.collisionRadius" func="no" />
+		<KeyWord name = "myHero.collisionHeight" func="no" />
+		<KeyWord name = "myHero.pathCollisionRadius" func="no" />
+		<KeyWord name = "myHero.visionRadius" func="no" />
+		<KeyWord name = "myHero.cdr" func="no" />
+		<KeyWord name = "myHero.health" func="no" />
+		<KeyWord name = "myHero.maxHealth" func="no" />
+		<KeyWord name = "myHero.mana" func="no" />
+		<KeyWord name = "myHero.maxMana" func="no" />
+		<KeyWord name = "myHero.parType" func="no" />
+		<KeyWord name = "myHero.hpPool" func="no" />
+		<KeyWord name = "myHero.hpRegen" func="no" />
+		<KeyWord name = "myHero.mpRegen" func="no" />
+		<KeyWord name = "myHero.critChance" func="no" />
+		<KeyWord name = "myHero.critDmg" func="no" />
+		<KeyWord name = "myHero.attackSpeed" func="no" />
+		<KeyWord name = "myHero.expBonus" func="no" />
+		<KeyWord name = "myHero.lifeSteal" func="no" />
+		<KeyWord name = "myHero.spellVamp" func="no" />
+		<KeyWord name = "myHero.physReduction" func="no" />
+		<KeyWord name = "myHero.magicReduction" func="no" />
+		<KeyWord name = "myHero.armorPen" func="no" />
+		<KeyWord name = "myHero.magicPen" func="no" />
+		<KeyWord name = "myHero.armorPenPercent" func="no" />
+		<KeyWord name = "myHero.magicPenPercent" func="no" />
+		<KeyWord name = "myHero.totalDamage" func="no" />
+		<KeyWord name = "myHero.addDamage" func="no" />
+		<KeyWord name = "myHero.ap" func="no" />
+		<KeyWord name = "myHero.damage" func="no" />
+		<KeyWord name = "myHero.armor" func="no" />
+		<KeyWord name = "myHero.magicArmor" func="no" />
+		<KeyWord name = "myHero.ms" func="no" />
+		<KeyWord name = "myHero.gold" func="no" />
+		<KeyWord name = "dead" func="no" />
+		<KeyWord name = "team" func="no" />
+		<KeyWord name = "valid" func="no" />
+		<KeyWord name = "index" func="no" />
+		<KeyWord name = "nextIndex" func="no" />
+		<KeyWord name = "visible" func="no" />
+		<KeyWord name = "level" func="no" />
+		<KeyWord name = "name" func="no" />
+		<KeyWord name = "charName" func="no" />
+		<KeyWord name = "type" func="no" />
+		<KeyWord name = "pos" func="no" />
+		<KeyWord name = "visionPos" func="no" />
+		<KeyWord name = "minBBox" func="no" />
+		<KeyWord name = "maxBBox" func="no" />
+		<KeyWord name = "buffCount" func="no" />
+		<KeyWord name = "networkID" func="no" />
+		<KeyWord name = "bInvulnerable" func="no" />
+		<KeyWord name = "bPhysImune" func="no" />
+		<KeyWord name = "bMagicImune" func="no" />
+		<KeyWord name = "controlled" func="no" />
+		<KeyWord name = "isMelee" func="no" />
+		<KeyWord name = "isRanged" func="no" />
+		<KeyWord name = "isAI" func="no" />
+		<KeyWord name = "isMe" func="no" />
+		<KeyWord name = "canAttack" func="no" />
+		<KeyWord name = "canCast" func="no" />
+		<KeyWord name = "canMove" func="no" />
+		<KeyWord name = "isStealthed" func="no" />
+		<KeyWord name = "isRevealSpecificUnit" func="no" />
+		<KeyWord name = "isTaunted" func="no" />
+		<KeyWord name = "isCharmed" func="no" />
+		<KeyWord name = "isFeared" func="no" />
+		<KeyWord name = "isAsleep" func="no" />
+		<KeyWord name = "isNearSight" func="no" />
+		<KeyWord name = "isGhosted" func="no" />
+		<KeyWord name = "isNoRender" func="no" />
+		<KeyWord name = "isFleeing" func="no" />
+		<KeyWord name = "isForceRenderParticles" func="no" />
+		<KeyWord name = "bTargetable" func="no" />
+		<KeyWord name = "bTargetableToTeam" func="no" />
+		<KeyWord name = "range" func="no" />
+		<KeyWord name = "deathTimer" func="no" />
+		<KeyWord name = "minionScore" func="no" />
+		<KeyWord name = "currentSpell" func="no" />
+		<KeyWord name = "collisionRadius" func="no" />
+		<KeyWord name = "collisionHeight" func="no" />
+		<KeyWord name = "pathCollisionRadius" func="no" />
+		<KeyWord name = "visionRadius" func="no" />
+		<KeyWord name = "cdr" func="no" />
+		<KeyWord name = "health" func="no" />
+		<KeyWord name = "maxHealth" func="no" />
+		<KeyWord name = "mana" func="no" />
+		<KeyWord name = "maxMana" func="no" />
+		<KeyWord name = "parType" func="no" />
+		<KeyWord name = "hpPool" func="no" />
+		<KeyWord name = "hpRegen" func="no" />
+		<KeyWord name = "mpRegen" func="no" />
+		<KeyWord name = "critChance" func="no" />
+		<KeyWord name = "critDmg" func="no" />
+		<KeyWord name = "attackSpeed" func="no" />
+		<KeyWord name = "expBonus" func="no" />
+		<KeyWord name = "lifeSteal" func="no" />
+		<KeyWord name = "spellVamp" func="no" />
+		<KeyWord name = "physReduction" func="no" />
+		<KeyWord name = "magicReduction" func="no" />
+		<KeyWord name = "armorPen" func="no" />
+		<KeyWord name = "magicPen" func="no" />
+		<KeyWord name = "armorPenPercent" func="no" />
+		<KeyWord name = "magicPenPercent" func="no" />
+		<KeyWord name = "totalDamage" func="no" />
+		<KeyWord name = "addDamage" func="no" />
+		<KeyWord name = "ap" func="no" />
+		<KeyWord name = "damage" func="no" />
+		<KeyWord name = "armor" func="no" />
+		<KeyWord name = "magicArmor" func="no" />
+		<KeyWord name = "ms" func="no" />
+		<KeyWord name = "gold" func="no" />
+        <KeyWord name = "myHero:Attack(target)" func="no" />
+        <KeyWord name = "myHero:MoveTo(x,z)" func="no" />
+		<KeyWord name = "myHero:StopPosition()" func="no" />
+		<KeyWord name = "myHero:HoldPosition()" func="no" />
+        <KeyWord name = "myHero:CanUseSpell(slot)" func="no" />
+        <KeyWord name = "myHero:CalcDamage()" func="no" />
+        <KeyWord name = "myHero:CalcMagicDamage()" func="no" />
+        <KeyWord name = "myHero:getBuff(iBuff)" func="no" />
+        <KeyWord name = "myHero:getInventorySlot(itemID)" func="no" />
+        <KeyWord name = "myHero:getItem(slot)" func="no" />
+		<KeyWord name = "myHero:GetSpellData(slot)" func="no" />
+        <KeyWord name = "unit:getBuff(iBuff)" func="no" />
+        <KeyWord name = "unit:getInventorySlot(itemID)" func="no" />
+        <KeyWord name = "unit:getItem(slot)" func="no" />
+		<KeyWord name = "unit:GetSpellData(slot)" func="no" />
+		<KeyWord name = "spell.startPos" func="no" />
+		<KeyWord name = "spell.endPos" func="no" />
+		<KeyWord name = "spell.projectileID" func="no" />
+		<KeyWord name = "spell.target" func="no" />
+		<KeyWord name = "spell.windUpTime" func="no" />
+		<KeyWord name = "spell.animationTime" func="no" />
+		<KeyWord name = "p.header" func="no" />
+		<KeyWord name = "p.bBlock" func="no" />
+		<KeyWord name = "p.size" func="no" />
+		<KeyWord name = "p.dwArg1" func="no" />
+		<KeyWord name = "p.dwArg2" func="no" />
+		<KeyWord name = "p:Block()" func="no" />
+		<KeyWord name = "p:Hide()" func="no" />
+		<KeyWord name = "p:skip(int)" func="no" />
+		<KeyWord name = "p:getRemaining()" func="no" />
+		<KeyWord name = "p:setPos(int)" func="no" />
+		<KeyWord name = "p:Encode1(byte)" func="no" />
+		<KeyWord name = "p:Encode2(word)" func="no" />
+		<KeyWord name = "p:Encode4(dWord)" func="no" />
+		<KeyWord name = "p:EncodeF(float)" func="no" />
+		<KeyWord name = "p:EncodeStr(string)" func="no" />
+		<KeyWord name = "p:Decode1()" func="no" />
+		<KeyWord name = "p:Decode2()" func="no" />
+		<KeyWord name = "p:Decode4()" func="no" />
+		<KeyWord name = "p:DecodeF()" func="no" />
+		<KeyWord name = "p:DecodeStr()" func="no" />
+		<KeyWord name = "p:Replace1(byte,pos)" func="no" />
+		<KeyWord name = "p:Replace2(word,pos)" func="no" />
+		<KeyWord name = "p:Replace4(dWord,pos)" func="no" />
+		<KeyWord name = "p:ReplaceF(float,pos)" func="no" />
+		<KeyWord name = "p:ReplaceStr(string,pos)" func="no" />
+		<KeyWord name = "D3DXVECTOR4(x,y,z,w)" func="no" />
+		<KeyWord name = "D3DXVECTOR3(x,y,z)" func="no" />
+		<KeyWord name = "D3DXVECTOR2(x,y)" func="no" />
+        <KeyWord name = "LIB_PATH" func="no" />
+        <KeyWord name = "SCRIPT_PATH" func="no" />
+        <KeyWord name = "SPRITE_PATH" func="no" />
+        <KeyWord name = "BOL_PATH" func="no" />
+        <KeyWord name = "GAME_PATH" func="no" />
+        <KeyWord name = "VIP_USER" func="no" />
+        <KeyWord name = "TARGET_LOW_HP" func="no" />
+        <KeyWord name = "TARGET_MOST_AP" func="no" />
+        <KeyWord name = "TARGET_MOST_AD" func="no" />
+        <KeyWord name = "TARGET_LESS_CAST" func="no" />
+        <KeyWord name = "TARGET_NEAR_MOUSE" func="no" />
+        <KeyWord name = "TARGET_PRIORITY" func="no" />
+        <KeyWord name = "TARGET_LOW_HP_PRIORITY" func="no" />
+        <KeyWord name = "TARGET_LESS_CAST_PRIORITY" func="no" />
+        <KeyWord name = "TARGET_DEAD" func="no" />
+        <KeyWord name = "TARGET_CLOSEST" func="no" />
+        <KeyWord name = "DAMAGE_MAGIC" func="no" />
+        <KeyWord name = "DAMAGE_PHYSICAL" func="no" />	
+        <KeyWord name = "MINION_ALL" func="no" />
+        <KeyWord name = "MINION_ENEMY" func="no" />
+        <KeyWord name = "MINION_ALLY" func="no" />
+        <KeyWord name = "MINION_JUNGLE" func="no" />
+        <KeyWord name = "MINION_OTHER" func="no" />
+        <KeyWord name = "MINION_SORT_HEALTH_ASC" func="no" />
+        <KeyWord name = "MINION_SORT_HEALTH_DEC" func="no" />
+        <KeyWord name = "MINION_SORT_MAXHEALTH_DEC" func="no" />
+        <KeyWord name = "MINION_SORT_MAXHEALTH_ASC" func="no" />
+        <KeyWord name = "MINION_SORT_AD_ASC" func="no" />
+        <KeyWord name = "MINION_SORT_AD_DEC" func="no" />
+        <KeyWord name = "SCRIPT_PARAM_ONOFF" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_ONKEYDOWN" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_ONKEYTOGGLE" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_SLICE" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_INFO" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_COLOR" func="no" />	
+        <KeyWord name = "SCRIPT_PARAM_LIST" func="no" />
+		<KeyWord name = "GetDistanceSqr(v1,v2)" func="no" />
+		<KeyWord name = "GetDistance(v1,v2)" func="no" />
+		<KeyWord name = "ValidTarget(target)" func="no" />
+		<KeyWord name = "GetEnemyHeroes()" func="no" />
+		<KeyWord name = "GetAllyHeroes()" func="no" />
+		<KeyWord name = "ReadIni(path)" func="no" />
+		<KeyWord name = "GetGameSettings()" func="no" />
+		<KeyWord name = "GetLocalization()" func="no" />
+		<KeyWord name = "DelayAction(func,delay,args)" func="no" />
+		<KeyWord name = "GetSprite(file,altFile)" func="no" />
+		<KeyWord name = "OnScreen(x,y)" func="no" />
+		<KeyWord name = "DrawCircleMinimap(x,y,z,radius,width,color,quality)" func="no" />
+		<KeyWord name = "DrawCircle2D(x,y,radius,width,color,quality)" func="no" />
+		<KeyWord name = "DrawCircle3D(x,y,z,radius,width,color,quality)" func="no" />
+		<KeyWord name = "DrawLine3D(x1,y1,z1,x2,y2,z2,width,color)" func="no" />
+		<KeyWord name = "DrawLines3D(table,width,color)" func="no" />
+		<KeyWord name = "DrawText3D(x,y,z,size,color,center)" func="no" />
+		<KeyWord name = "scriptConfig(header,name,parent)" func="no" />
+		<KeyWord name = "addSubMenu(header,name)" func="no" />
+		<KeyWord name = "addParam" func="yes">
+			<Overload retVal="void" descr="
+Adds a parameter to a scriptConfig.
+     Type:                  DefaultValue:            Info1:            Info2:            Info3:
+SCRIPT_PARAM_ONOFF               bool                 N/A               N/A               N/A  
+SCRIPT_PARAM_ONKEYDOWN	           bool               number              N/A               N/A  
+SCRIPT_PARAM_ONKEYTOGGLE         bool               nubmer              N/A               N/A  
+SCRIPT_PARAM_SLICE	             number               number            number            number
+SCRIPT_PARAM_INFO                N/A                  N/A               N/A               N/A  
+SCRIPT_PARAM_COLOR              table                 N/A               N/A               N/A  
+SCRIPT_PARAM_LIST               number               table              N/A               N/A  
+			">
+				<Param name="&scriptConfig" />
+				<Param name="string Var" />
+				<Param name="string Text" />
+				<Param name="string Type" />
+				<Param name="defaultValue" />
+				<Param name="paramInfo1" />
+				<Param name="paramInfo2" />
+				<Param name="paramInfo3" />
+			</Overload>
+		</KeyWord>
+		<KeyWord name = "permaShow:(string)" func="no" />
+		<KeyWord name = "minionManager" func="yes">
+			<Overload retVal="minionManager" descr="
+Initiates an instance of minionManager.
+     Mode:                SortMode:
+  MINION_ALL         MINION_SORT_HEALTH_ASC
+  MINION_ENEMY       MINION_SORT_HEALTH_DEC
+  MINION_ALLY        MINION_SORT_MAXHEALTH_DEC
+  MINION_JUNGLE      MINION_SORT_MAXHEALTH_ASC
+  MINION_OTHER       MINION_SORT_AD_ASC
+                     MINION_SORT_AD_DEC
+			">
+				<Param name="string Mode" />
+				<Param name="float Range" />
+				<Param name="object From" />
+				<Param name="string SortMode" />
+			</Overload>
+		</KeyWord>
+		<KeyWord name="objManager.maxObjects" func="no" />
+		<KeyWord name="objManager:getObject(index)" func="no" />
+		<KeyWord name="objManager:GetObjectByNetworkId(networkID)" func="no" />
+		<KeyWord name="heroManager.iCount" func="no" />
+		<KeyWord name="heroManager:getHero(index)" func="no" />
+		<KeyWord name="minionManager:update()" func="no" />
+		<KeyWord name="Vector:__tostring()" func="no" />
+		<KeyWord name="Vector:clone()" func="no" />
+		<KeyWord name="Vector:unpack()" func="no" />
+		<KeyWord name="Vector:len2(v)" func="no" />
+		<KeyWord name="Vector:len()" func="no" />
+		<KeyWord name="Vector:dist(v)" func="no" />
+		<KeyWord name="Vector:normalize()" func="no" />
+		<KeyWord name="Vector:normalized()" func="no" />
+		<KeyWord name="Vector:center(v)" func="no" />
+		<KeyWord name="Vector:crossP(other)" func="no" />
+		<KeyWord name="Vector:dotP(other)" func="no" />
+		<KeyWord name="Vector:projectOn(v)" func="no" />
+		<KeyWord name="Vector:mirrorOn(v)" func="no" />
+		<KeyWord name="Vector:sin(v)" func="no" />
+		<KeyWord name="Vector:cos(v)" func="no" />
+		<KeyWord name="Vector:angle(v)" func="no" />
+		<KeyWord name="Vector:affineArea(v)" func="no" />
+		<KeyWord name="Vector:triangleArea(v)" func="no" />
+		<KeyWord name="Vector:rotateXaxis(phi)" func="no" />
+		<KeyWord name="Vector:rotateYaxis(phi)" func="no" />
+		<KeyWord name="Vector:rotateZaxis(phi)" func="no" />
+		<KeyWord name="Vector:rotate(phiX,phiY,phiZ)" func="no" />
+		<KeyWord name="Vector:rotated(phiX,phiY,phiZ)" func="no" />
+		<KeyWord name="Vector:polar()" func="no" />
+		<KeyWord name="Vector:angleBetween(v1,v2)" func="no" />
+		<KeyWord name="Vector:compare(v)" func="no" />
+		<KeyWord name="Vector:perpendicular()" func="no" />
+		<KeyWord name="Vector:perpendicular2()" func="no" />
+		<KeyWord name="TS_SetFocus(target,enemyTeam)" func="no" />
+		<KeyWord name="TS_SetHeroPriority(priority,target,enemyTeam)" func="no" />
+		<KeyWord name="TS_SetPriority(target1,target2,target3,target4,target5)" func="no" />
+		<KeyWord name="TS_SetPriorityA(target1,target2,target3,target4,target5)" func="no" />
+		<KeyWord name="TS_GetPriority(target,enemyTeam)" func="no" />
+		<KeyWord name="TS_Ignore(target,enemyTeam)" func="no" />
+		<KeyWord name="TargetSelector:__init(mode,range,damageType,targetSelected,enemyTeam)" func="no" />
+		<KeyWord name="TargetSelector:SetDamages(magicDmgBase,physicalDmgBase,trueDmg)" func="no" />
+		<KeyWord name="TargetSelector:SetMinionCollision(castWidth,minionType)" func="no" />
+		<KeyWord name="TargetSelector:SetProjectileSpeed(pSpeed)" func="no" />
+		<KeyWord name="TargetSelector:SetConditional(func)" func="no" />
+		<KeyWord name="TargetSelector:SetBBoxMode(bbMode)" func="no" />
+		<KeyWord name="TargetSelector:update()" func="no" />
+		<KeyWord name="AddTickCallback(function()end)" func="no" />
+		<KeyWord name="AddRecvPacketCallback(function(p)end)" func="no" />
+		<KeyWord name="AddSendPacketCallback(function(p)end)" func="no" />
+		<KeyWord name="AddDrawCallback(function()end)" func="no" />
+		<KeyWord name="AddCreateObjCallback(function(o)end)" func="no" />
+		<KeyWord name="AddDeleteObjCallback(function(o)end)" func="no" />
+		<KeyWord name="AddProcessSpellCallback(function(unit,spell)end)" func="no" />
+		<KeyWord name="AddLoadCallback(function()end)" func="no" />
+		<KeyWord name="AddMsgCallback(function(msg,key)end)" func="no" />	
+		<KeyWord name="AddCastSpellCallback(function(iSlot,startPos,endPos,target)end)" func="no" />	
+		<KeyWord name="AddIssueOrderCallback(function(startP,orderType,endP,target)end)" func="no" />	
+		<KeyWord name="AddApplyBuffCallback(function(source,unit,buff)end)" func="no" />
+		<KeyWord name="AddRemoveBuffCallback(function(unit,buff)end)" func="no" />
+		<KeyWord name="AddUpdateBuffCallback(function(unit,buff,stacks)end)" func="no" />
+		<KeyWord name="AddNewPathCallback(function(unit,startPos,endPos,isDash,dashSpeed,dashGravity,dashDistance)end)" func="no" />
+		<KeyWord name="Point:between(point1,point2)" func="no" />
+		<KeyWord name="Point:normalize()" func="no" />
+		<KeyWord name="Point:clone()" func="no" />
+		<KeyWord name="Point:normalized()" func="no" />
+		<KeyWord name="Point:getPoints()" func="no" />
+		<KeyWord name="Point:getLineSegments()" func="no" />
+		<KeyWord name="Point:perpendicularFoot(line)" func="no" />
+		<KeyWord name="Point:contains(spatialObject)" func="no" />
+		<KeyWord name="Point:polar()" func="no" />
+		<KeyWord name="Point:insideOf(spatialObject)" func="no" />
+		<KeyWord name="Point:distance(spatialObject)" func="no" />
+		<KeyWord name="Line:getPoints()" func="no" />
+		<KeyWord name="Line:getLineSegments()" func="no" />
+		<KeyWord name="Line:direction()" func="no" />
+		<KeyWord name="Line:normal()" func="no" />
+		<KeyWord name="Line:perpendicularFoot(point)" func="no" />
+		<KeyWord name="Line:side(spatialObject)" func="no" />
+		<KeyWord name="Line:contains(spatialObject)" func="no" />
+		<KeyWord name="Line:insideOf(spatialObject)" func="no" />
+		<KeyWord name="Line:distance(spatialObject)" func="no" />
+		<KeyWord name="Circle:getPoints()" func="no" />
+		<KeyWord name="Circle:getLineSegments()" func="no" />
+		<KeyWord name="Circle:contains(spatialObject)" func="no" />
+		<KeyWord name="Circle:insideOf(spatialObject)" func="no" />
+		<KeyWord name="Circle:distance(spatialObject)" func="no" />
+		<KeyWord name="Circle:intersectionPoints(spatialObject)" func="no" />
+		<KeyWord name="Circle:tostring()" func="no" />
+		<KeyWord name="LineSegment:getPoints()" func="no" />
+		<KeyWord name="LineSegment:getLineSegments()" func="no" />
+		<KeyWord name="LineSegment:direction()" func="no" />
+		<KeyWord name="LineSegment:len()" func="no" />
+		<KeyWord name="LineSegment:contains(spatialObject)" func="no" />
+		<KeyWord name="LineSegment:insideOf(spatialObject)" func="no" />
+		<KeyWord name="LineSegment:distance(spatialObject)" func="no" />
+		<KeyWord name="LineSegment:intersects(spatialObject)" func="no" />
+		<KeyWord name="LineSegment:intersectionPoints(spatialObject)" func="no" />
+		<KeyWord name="LineSegment:draw(color,width)" func="no" />
+		<KeyWord name="Polygon:getPoints()" func="no" />
+		<KeyWord name="Polygon:addPoint(point)" func="no" />
+		<KeyWord name="Polygon:getLineSegments()" func="no" />
+		<KeyWord name="Polygon:contains(spatialObject)" func="no" />
+		<KeyWord name="Polygon:insideOf(spatialObject)" func="no" />
+		<KeyWord name="Polygon:direction()" func="no" />
+		<KeyWord name="Polygon:triangulate()" func="no" />
+		<KeyWord name="Polygon:intersects(spatialObject)" func="no" />
+		<KeyWord name="Polygon:distance(spatialObject)" func="no" />
+		<KeyWord name="Polygon:tostring()" func="no" />
+		<KeyWord name="Polygon:draw(color,width)" func="no" />		
+    </AutoComplete>
+</NotepadPlus>
