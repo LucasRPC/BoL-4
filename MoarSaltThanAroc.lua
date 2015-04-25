@@ -2,8 +2,8 @@ local lshift, rshift, band, bxor = bit32.lshift, bit32.rshift, bit32.band, bit32
 local floor, ceil, huge, cos, sin, pi, pi2, abs, sqrt = math.floor, math.ceil, math.huge, math.cos, math.sin, math.pi, math.pi*2, math.abs, math.sqrt
 local clock, pairs, ipairs, tostring = os.clock, pairs, ipairs, tostring
 local TEAM_ENEMY, TEAM_ALLY
-local COLOR_WHITE, COLOR_GREEN, COLOR_RED, COLOR_YELLOW, COLOR_TRANS_WHITE = ARGB(0xFF,0xFF,0xFF,0xFF), ARGB(0xFF,0x00,0xFF,0x00), ARGB(0xFF,0xFF,0x00,0x00), ARGB(0xFF,0xFF,0xFF,0x00), ARGB(0xAA,0xFF,0xFF,0xFF)
-local COLOR_TRANS_GREEN, COLOR_TRANS_RED, COLOR_TRANS_YELLOW = ARGB(0x96,0x00,0xFF,0x00), ARGB(0x96,0xFF,0x00,0x00), ARGB(0x96,0xFF,0xFF,0x00)
+local COLOR_WHITE, COLOR_GREEN, COLOR_RED, COLOR_YELLOW, COLOR_TRANS_WHITE, COLOR_GREY = ARGB(0xFF,0xFF,0xFF,0xFF), ARGB(0xFF,0x00,170,0x00), ARGB(0xFF,0xFF,0x00,0x00), ARGB(0xFF,0xFF,0xFF,0x00), ARGB(0xAA,0xFF,0xFF,0xFF), ARGB(255,128,128,128) 
+local COLOR_TRANS_GREEN, COLOR_TRANS_RED, COLOR_TRANS_YELLOW, COLOR_ORANGE, COLOR_BLACK = ARGB(0x96,0x00,0xFF,0x00), ARGB(0x96,0xFF,0x00,0x00), ARGB(0x96,0xFF,0xFF,0x00), ARGB(255,255,125,000), ARGB(255,0,0,000)
 local IDBytes = {
 	[0x66] = 0x00, [0x65] = 0x01, [0x64] = 0x02, [0x63] = 0x03, [0x62] = 0x04, [0x11] = 0x05, [0x10] = 0x06, [0x1F] = 0x07, [0x1E] = 0x08, [0x1D] = 0x09, [0x1C] = 0x0A, [0x1B] = 0x0B, 
 	[0x1A] = 0x0C, [0x69] = 0x0D, [0x68] = 0x0E, [0x17] = 0x0F, [0x16] = 0x10, [0x15] = 0x11, [0x14] = 0x12, [0x13] = 0x13, [0x12] = 0x14, [0x41] = 0x15, [0x40] = 0x16, [0x4F] = 0x17, 
@@ -40,17 +40,17 @@ function OnLoad()
 	TIMERS()
 	TRINKET()
 	OTHER()
-	local Version = 1.042
-	AwareUpdate(Version, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate') end, function() Print('An Error Occured in Update.') end)
+	local Version = 1.043
+	AwareUpdate(Version, true, 'raw.githubusercontent.com', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.version', '/PewPewPew2/BoL/Danger-Meter/MoarSaltThanAroc.lua', SCRIPT_PATH.._ENV.FILE_NAME, function() Print('Update Complete. Reload(F9 F9)') end, function() Print(loadMsg:sub(1,#loadMsg-2)) end, function() Print(MainMenu.update and 'New Version Found, please wait...' or 'New Version found please download manually or enable AutoUpdate') end, function() Print('An Error Occured in Update.') end)
 end
 
 class "AwareUpdate"
 
-function AwareUpdate:__init(LocalVersion, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
+function AwareUpdate:__init(LocalVersion,UseHttps, Host, VersionPath, ScriptPath, SavePath, CallbackUpdate, CallbackNoUpdate, CallbackNewVersion,CallbackError)
     self.LocalVersion = LocalVersion
     self.Host = Host
-    self.VersionPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
-    self.ScriptPath = '/BoL/TCPUpdater/GetScript3.php?script='..self:Base64Encode(self.Host..ScriptPath)..'&rand='..math.random(99999999)
+    self.VersionPath = '/BoL/TCPUpdater/GetScript'..(UseHttps and '5' or '6')..'.php?script='..self:Base64Encode(self.Host..VersionPath)..'&rand='..math.random(99999999)
+    self.ScriptPath = '/BoL/TCPUpdater/GetScript'..(UseHttps and '5' or '6')..'.php?script='..self:Base64Encode(self.Host..ScriptPath)..'&rand='..math.random(99999999)
     self.SavePath = SavePath
     self.CallbackUpdate = CallbackUpdate
     self.CallbackNoUpdate = CallbackNoUpdate
@@ -65,7 +65,14 @@ function AwareUpdate:OnDraw()
 	local bP = {['x1'] = WINDOW_W - (WINDOW_W - 390),['x2'] = WINDOW_W - (WINDOW_W - 20),['y1'] = WINDOW_H / 2,['y2'] = (WINDOW_H / 2) + 20,}
 	local text = 'Download Status: '..(self.DownloadStatus or 'Unknown')
 	DrawLine(bP.x1, bP.y1 + 10, bP.x2,  bP.y1 + 10, 18, ARGB(0x7D,0xE1,0xE1,0xE1))
-	DrawLine(bP.x2 + ((self.File and self.Size) and (370 * (math.round(100/self.Size*self.File:len(),2)/100)) or 0) + 6, bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
+	local xOff
+	if self.File and self.Size then
+		local c = math.round(100/self.Size*self.File:len(),2)/100
+		xOff = c < 1 and ceil(370 * c) or 370
+	else
+		xOff = 0
+	end
+	DrawLine(bP.x2 + xOff, bP.y1 + 10, bP.x2, bP.y1 + 10, 18, ARGB(0xC8,0xE1,0xE1,0xE1))
 	DrawLines2({D3DXVECTOR2(bP.x1, bP.y1),D3DXVECTOR2(bP.x2, bP.y1),D3DXVECTOR2(bP.x2, bP.y2),D3DXVECTOR2(bP.x1, bP.y2),D3DXVECTOR2(bP.x1, bP.y1),}, 3, ARGB(0xB9, 0x0A, 0x0A, 0x0A))
 	DrawText(text, 16, WINDOW_W - (WINDOW_W - 205) - (GetTextArea(text, 16).x / 2), bP.y1 + 2, ARGB(0xB9,0x0A,0x0A,0x0A))
 end
@@ -79,10 +86,13 @@ function AwareUpdate:CreateSocket(url)
         self.Size = nil
         self.RecvStarted = false
     end
-    self.Socket = self.LuaSocket.connect('sx-bol.eu', 80)
-    self.Socket:send("GET "..url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
+    self.LuaSocket = require("socket")
+    self.Socket = self.LuaSocket.tcp()
     self.Socket:settimeout(0, 'b')
     self.Socket:settimeout(99999999, 't')
+    self.Socket:connect('sx-bol.eu', 80)
+    self.Url = url
+    self.Started = false
     self.LastPrint = ""
     self.File = ""
 end
@@ -103,38 +113,53 @@ end
 
 function AwareUpdate:GetOnlineVersion()
     if self.GotScriptVersion then return end
+
     self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if self.Status == 'timeout' and not self.Started then
+        self.Started = true
+        self.Socket:send("GET "..self.Url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
+    end
     if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
         self.RecvStarted = true
-        local recv,sent,time = self.Socket:getstats()
         self.DownloadStatus = 'Downloading VersionInfo (0%)'
     end
 
     self.File = self.File .. (self.Receive or self.Snipped)
-    if self.File:find('</si'..'ze>') then
+    if self.File:find('</s'..'ize>') then
         if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1)) + self.File:len()
+            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1))
         end
-        self.DownloadStatus = 'Downloading VersionInfo ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+        if self.File:find('<scr'..'ipt>') then
+            local _,ScriptFind = self.File:find('<scr'..'ipt>')
+            local ScriptEnd = self.File:find('</scr'..'ipt>')
+            if ScriptEnd then ScriptEnd = ScriptEnd - 1 end
+            local DownloadedSize = self.File:sub(ScriptFind+1,ScriptEnd or -1):len()
+            self.DownloadStatus = 'Downloading VersionInfo ('..math.round(100/self.Size*DownloadedSize,2)..'%)'
+        end
     end
-    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
+    if self.File:find('</scr'..'ipt>') then
         self.DownloadStatus = 'Downloading VersionInfo (100%)'
+        local a,b = self.File:find('\r\n\r\n')
+        self.File = self.File:sub(a,-1)
+        self.NewFile = ''
+        for line,content in ipairs(self.File:split('\n')) do
+            if content:len() > 5 then
+                self.NewFile = self.NewFile .. content
+            end
+        end
         local HeaderEnd, ContentStart = self.File:find('<scr'..'ipt>')
-        local ContentEnd, _ = self.File:find('</scr'..'ipt>')
+        local ContentEnd, _ = self.File:find('</sc'..'ript>')
         if not ContentStart or not ContentEnd then
             if self.CallbackError and type(self.CallbackError) == 'function' then
                 self.CallbackError()
             end
         else
-            self.OnlineVersion = tonumber(self.File:sub(ContentStart + 1,ContentEnd-1))
+            self.OnlineVersion = (Base64Decode(self.File:sub(ContentStart + 1,ContentEnd-1)))
+            self.OnlineVersion = tonumber(self.OnlineVersion)
             if self.OnlineVersion > self.LocalVersion then
                 if self.CallbackNewVersion and type(self.CallbackNewVersion) == 'function' then
                     self.CallbackNewVersion(self.OnlineVersion,self.LocalVersion)
                 end
-				if not MainMenu.update then 
-					self.GotScriptVersion = true
-					return 
-				end
 				AddDrawCallback(function() self:OnDraw() end)
                 self:CreateSocket(self.ScriptPath)
                 self.DownloadStatus = 'Connect to Server for ScriptDownload'
@@ -152,34 +177,65 @@ end
 function AwareUpdate:DownloadUpdate()
     if self.GotScriptUpdate then return end
     self.Receive, self.Status, self.Snipped = self.Socket:receive(1024)
+    if self.Status == 'timeout' and not self.Started then
+        self.Started = true
+        self.Socket:send("GET "..self.Url.." HTTP/1.1\r\nHost: sx-bol.eu\r\n\r\n")
+    end
     if (self.Receive or (#self.Snipped > 0)) and not self.RecvStarted then
         self.RecvStarted = true
-        local recv,sent,time = self.Socket:getstats()
         self.DownloadStatus = 'Downloading Script (0%)'
     end
 
     self.File = self.File .. (self.Receive or self.Snipped)
     if self.File:find('</si'..'ze>') then
         if not self.Size then
-            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1)) + self.File:len()
+            self.Size = tonumber(self.File:sub(self.File:find('<si'..'ze>')+6,self.File:find('</si'..'ze>')-1))
         end
-        self.DownloadStatus = 'Downloading Script ('..('%.2f'):format(math.round(100/self.Size*self.File:len(),2))..'%)'
+        if self.File:find('<scr'..'ipt>') then
+            local _,ScriptFind = self.File:find('<scr'..'ipt>')
+            local ScriptEnd = self.File:find('</scr'..'ipt>')
+            if ScriptEnd then ScriptEnd = ScriptEnd - 1 end
+            local DownloadedSize = self.File:sub(ScriptFind+1,ScriptEnd or -1):len()
+            self.DownloadStatus = 'Downloading Script ('..math.round(100/self.Size*DownloadedSize,2)..'%)'
+        end
     end
-    if not (self.Receive or (#self.Snipped > 0)) and self.RecvStarted and math.round(100/self.Size*self.File:len(),2) > 95 then
-        self.DownloadStatus = 'Download Complete.'
-        local HeaderEnd, ContentStart = self.File:find('<scr'..'ipt>')
-        local ContentEnd, _ = self.File:find('</scr'..'ipt>')
+    if self.File:find('</scr'..'ipt>') then
+        self.DownloadStatus = 'Downloading Script (100%)'
+        local a,b = self.File:find('\r\n\r\n')
+        self.File = self.File:sub(a,-1)
+        self.NewFile = ''
+        for line,content in ipairs(self.File:split('\n')) do
+            if content:len() > 5 then
+                self.NewFile = self.NewFile .. content
+            end
+        end
+        local HeaderEnd, ContentStart = self.NewFile:find('<sc'..'ript>')
+        local ContentEnd, _ = self.NewFile:find('</scr'..'ipt>')
         if not ContentStart or not ContentEnd then
             if self.CallbackError and type(self.CallbackError) == 'function' then
-				self.DownloadStatus = 'Download Error!'
                 self.CallbackError()
             end
         else
-            local f = io.open(self.SavePath,"w+")
-            f:write(self.File:sub(ContentStart + 1,ContentEnd-1))
-            f:close()
-            if self.CallbackUpdate and type(self.CallbackUpdate) == 'function' then
-                self.CallbackUpdate(self.OnlineVersion,self.LocalVersion)
+            local newf = self.NewFile:sub(ContentStart+1,ContentEnd-1)
+            local newf = newf:gsub('\r','')
+            if newf:len() ~= self.Size then
+                if self.CallbackError and type(self.CallbackError) == 'function' then
+                    self.CallbackError()
+                end
+                return
+            end
+            local newf = Base64Decode(newf)
+            if type(load(newf)) ~= 'function' then
+                if self.CallbackError and type(self.CallbackError) == 'function' then
+                    self.CallbackError()
+                end
+            else
+                local f = io.open(self.SavePath,"w+b")
+                f:write(newf)
+                f:close()
+                if self.CallbackUpdate and type(self.CallbackUpdate) == 'function' then
+                    self.CallbackUpdate(self.OnlineVersion,self.LocalVersion)
+                end
             end
         end
         self.GotScriptUpdate = true
@@ -194,15 +250,15 @@ class 'WARD'
 
 function WARD:__init()
 	self.Types = {
-		['YellowTrinket'] 		 = { color = COLOR_YELLOW,			 	duration = 60,  },
-		['YellowTrinketUpgrade'] = { color = COLOR_YELLOW,				duration = 120, },
-		['SightWard'] 			 = { color = COLOR_GREEN,				duration = 180, },
-		['VisionWard']  		 = { color = ARGB(255, 255, 50, 255), 	duration = huge,},
-		['TeemoMushroom'] 		 = { color = COLOR_RED,					duration = 600, },
-		['CaitlynTrap'] 		 = { color = COLOR_RED,					duration = 240, },
-		['Nidalee_Spear'] 		 = { color = COLOR_RED,					duration = 120, },
-		['ShacoBox'] 			 = { color = COLOR_RED,					duration = 60, 	},
-		['DoABarrelRoll'] 		 = { color = COLOR_RED,					duration = 35, 	},
+		['YellowTrinket'] 		 = { ['color'] = COLOR_YELLOW,			 	['duration'] = 60,   ['isWard'] = true,  },
+		['YellowTrinketUpgrade'] = { ['color'] = COLOR_YELLOW,				['duration'] = 120,  ['isWard'] = true,  },
+		['SightWard'] 			 = { ['color'] = ARGB(255,0,255,0),			['duration'] = 180,  ['isWard'] = true,  },
+		['VisionWard']  		 = { ['color'] = ARGB(255, 255, 50, 255), 	['duration'] = huge, ['isWard'] = true,  },
+		['TeemoMushroom'] 		 = { ['color'] = COLOR_RED,					['duration'] = 600,  ['isWard'] = false, },
+		['CaitlynTrap'] 		 = { ['color'] = COLOR_RED,					['duration'] = 240,  ['isWard'] = false, },
+		['Nidalee_Spear'] 		 = { ['color'] = COLOR_RED,					['duration'] = 120,  ['isWard'] = false, },
+		['ShacoBox'] 			 = { ['color'] = COLOR_RED,					['duration'] = 60, 	 ['isWard'] = false, },
+		['DoABarrelRoll'] 		 = { ['color'] = COLOR_RED,					['duration'] = 35, 	 ['isWard'] = false, },
 	}
 	self.OnSpell = {
 		['sightward'] = self.Types['SightWard'], ['visionward'] = self.Types['VisionWard'], ['itemghostward'] = self.Types['SightWard'], ['trinkettotemlvl2'] =  self.Types['YellowTrinketUpgrade'],
@@ -226,6 +282,7 @@ function WARD:Menu()
 	wM:addParam('size', 'Text Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	wM:addParam('mapsize', 'Minimap Marker Size', SCRIPT_PARAM_SLICE, 12, 2, 24)
 	wM:addParam('maptype', 'Minimap Marker Type', SCRIPT_PARAM_LIST, 1, { 'Marker', 'Timer' })
+	wM:addParam('drawRange', 'Draw Ward Vision Radius', SCRIPT_PARAM_ONKEYDOWN, false, ('G'):byte())
 	return wM
 end
 
@@ -247,6 +304,7 @@ function WARD:CreateObj(o)
 			['color']	 = self.Types[o.charName].color, 
 			['endTime']	 = (self.Types[o.charName].duration ~= huge) and clock()+self.Types[o.charName].duration-timeReduction or clock()+self.Types[o.charName].duration,
 			['charName'] = charName or 'Unkown',
+			['isWard']   = self.Types[o.charName].isWard,
 			['netID']	 = o.networkID,
 		}	
 	end
@@ -266,6 +324,26 @@ end
 function WARD:Draw()
 	if not self.wM.draw then return end
 	for i, ward in ipairs(self.Known) do
+		if ward.isWard and self.wM.drawRange then
+			local wts = WorldToScreen(D3DXVECTOR3(ward.pos.x, ward.pos.y, ward.pos.z))
+			local d32 = D3DXVECTOR2(wts.x,wts.y)
+			if OnScreen(d32.x, d32.y) then
+				local vision = {}
+				for theta = 0, (pi2+(pi2/30)), (pi2/30) do
+					local p
+					for i=20, 1100, 20 do
+						local p2 = D3DXVECTOR3(ward.pos.x+(i*cos(theta)), ward.pos.y, ward.pos.z-(i*sin(theta)))
+						if IsWall(p2) or i==1100 then
+							p = p2
+							break
+						end
+					end
+					local tS = WorldToScreen(p)
+					vision[#vision + 1] = D3DXVECTOR2(tS.x, tS.y)
+				end
+				DrawLines2(vision,2,ward.color)
+			end
+		end
 		local timer = ceil(ward.endTime-clock())
 		local text, mapText
 		if ward.endTime == huge then
@@ -299,6 +377,7 @@ function WARD:ProcessSpell(u, s)
 			['color'] 	 = self.OnSpell[s.name:lower()].color,
 			['endTime']  = clock()+self.OnSpell[s.name:lower()].duration,
 			['charName'] = u.charName or 'Unknown',
+			['isWard']   = self.OnSpell[s.name:lower()].isWard,
 			['netID']	 = 0,
 		}
 	end
@@ -455,12 +534,12 @@ function MISS:RecvPacket(p)
 				self.activeRecalls[o.networkID] = r
 				return
 			elseif self.activeRecalls[o.networkID] then
-				if self.activeRecalls[o.networkID] and self.activeRecalls[o.networkID].endT > clock() then
+				if self.activeRecalls[o.networkID].endT > clock() then
 					self.activeRecalls[o.networkID] = nil
 					return
 				else
 					self.missing[o.networkID] = {pos = self.recallEndPos, name = o.charName, mTime = clock(),}
-					self.activeRecalls[o.networkID] = nil
+					self.activeRecalls[o.networkID].complete = clock() + 3
 					return
 				end
 			end
@@ -559,16 +638,24 @@ function MISS:Draw()
 			local yOffset = count * -30
 			local percent = (info.endT - clock()) / info.duration
 			local x2 = self.recallBar.x + ((WINDOW_W - 10 - self.recallBar.x) * percent)
-			if x2 > self.recallBar.x then
-				DrawLine(self.recallBar.x-1, self.recallBar.y + yOffset, x2, self.recallBar.y + yOffset, 16, ARGB(255, 255 * percent, 255 - (255 * percent), 0))
-				local Lines = {
-					D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y - 8 + yOffset),
-					D3DXVECTOR2(WINDOW_W - 10, 			self.recallBar.y - 8 + yOffset),
-					D3DXVECTOR2(WINDOW_W - 10, 			self.recallBar.y + 8 + yOffset),
-					D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y + 8 + yOffset),
-					D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y - 8 + yOffset),
-				}
-				DrawLines2(Lines, 2, COLOR_WHITE)
+			x2 = x2 > self.recallBar.x and x2 or self.recallBar.x
+			DrawLine(self.recallBar.x-1, self.recallBar.y + yOffset, x2, self.recallBar.y + yOffset, 16, ARGB(255, 255 * percent, 255 - (255 * percent), 0))
+			local Lines = {
+				D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y - 8 + yOffset),
+				D3DXVECTOR2(WINDOW_W - 10, 			self.recallBar.y - 8 + yOffset),
+				D3DXVECTOR2(WINDOW_W - 10, 			self.recallBar.y + 8 + yOffset),
+				D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y + 8 + yOffset),
+				D3DXVECTOR2(self.recallBar.x - 2, 	self.recallBar.y - 8 + yOffset),
+			}
+			DrawLines2(Lines, 2, COLOR_WHITE)
+			if info.complete then
+				local text = info.name..' Completed.'
+				DrawText(text, 12, ((self.recallBar.x + (WINDOW_W - 10)) / 2) - (GetTextArea(text, 12).x / 2), self.recallBar.y - 6 + yOffset, COLOR_WHITE)	
+				if info.complete < clock() then
+					self.activeRecalls[_] = nil
+					return
+				end
+			else
 				local text = info.name..' '..ceil(percent * 100)..'%'
 				DrawText(text, 12, ((self.recallBar.x + (WINDOW_W - 10)) / 2) - (GetTextArea(text, 12).x / 2), self.recallBar.y - 6 + yOffset, COLOR_WHITE)
 			end
@@ -605,22 +692,18 @@ function SKILLS:__init()
 	self.Enemies = {}
 	self.Allies = {}
 	self.SkillText = {
-		[_Q]						= 'Q',
-		[_W]						= 'W',
-		[_E]						= 'E',
-		[_R]						= 'R',
-		['summonerdot']      		= 'Ign',
-		['summonerexhaust']  		= 'Exh',
-		['summonerflash']    		= 'Fla',
-		['summonerheal']     		= 'Hea',
-		['summonersmite']    		= 'Smi',
-		['summonerbarrier']  		= 'Bar',
-		['summonerclairvoyance']    = 'Cla',
-		['summonermana']     		= 'Cla',
-		['summonerteleport']     	= 'TP',
-		['summonerrevive']     		= 'Rev',
-		['summonerhaste']     		= 'Gho',
-		['summonerboost']     		= 'Cle',
+		['summonerdot']      		= 'Ignite',
+		['summonerexhaust']  		= 'Exhaust',
+		['summonerflash']    		= 'Flash',
+		['summonerheal']     		= 'Heal',
+		['summonersmite']    		= 'Smite',
+		['summonerbarrier']  		= 'Barrier',
+		['summonerclairvoyance']    = 'Clairvoyance',
+		['summonermana']     		= 'Clarity',
+		['summonerteleport']     	= 'Teleport',
+		['summonerrevive']     		= 'Revive',
+		['summonerhaste']     		= 'Ghost',
+		['summonerboost']     		= 'Cleanse',
 	}
 	self.HPBarOffsets = {}
 	self.HeroOffsets = {
@@ -666,7 +749,7 @@ function SKILLS:__init()
 	self:HudData()
 	self.AllyHud = {
 		['xLeft']   	= floor((29  * (WINDOW_H / 1080))  * self.HudScale),
-		['xRight']  	= floor((49  * (WINDOW_H / 1080))  * self.HudScale),
+		['xRight']  	= floor((51  * (WINDOW_H / 1080))  * self.HudScale),
 		['yUp']     	= floor((102 * (WINDOW_H / 1080)) * self.HudScale),
 		['size']    	= floor((42  * (WINDOW_H / 1080))  * self.HudScale),
 		['skill']   	= floor((13  * (WINDOW_H / 1080))  * self.HudScale),
@@ -680,75 +763,93 @@ end
 function SKILLS:Menu()
 	MainMenu:addSubMenu('Cooldown Tracker', 'CooldownTracker')
 	local sM = MainMenu.CooldownTracker
-	sM:addParam('draw', 'Enable Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)	
+	sM:addParam('Enemy', 'Enable Enemy Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)	
+	sM:addParam('Ally', 'Enable Ally Cooldown Tracker', SCRIPT_PARAM_ONOFF, true)
+	sM:addParam('Text', 'Enable Cooldown Text', SCRIPT_PARAM_ONOFF, true)
 	return sM
 end
 
-function SKILLS:Draw()	
-	if not self.sM.draw then return end
-	for _, info in ipairs(self.Enemies) do
-		local enemy = info.hero
-		if enemy.valid and enemy.visible and not enemy.dead then
-			local barData = self:BarData(enemy)
-			if OnScreen(barData.x, barData.y) then
-				for i=_Q, SUMMONER_2 do
-					local data = enemy:GetSpellData(i)
-					local color = (data.level>0 and data.currentCd == 0) and COLOR_GREEN or COLOR_RED
-					local text,x,y
-					if i<=_R then
-						x = barData.x-22+(i*27)
-						y = barData.y+6
-						text = data.currentCd == 0 and self.SkillText[i] or tostring(ceil(data.cd-(data.cd-data.currentCd)))
-						DrawText(text, 12, x + 7 - (GetTextArea(text, 12).x / 2), y, color)
-						DrawLines2({D3DXVECTOR2(x-4, y+12), D3DXVECTOR2(x-4, y), D3DXVECTOR2(x+20, y), D3DXVECTOR2(x+20, y+12)}, 2, color)			
-					else
-						text = info['sum'..(i-3)]
-						x = barData.x-76+((i-2)*27)
-						y = barData.y+38
-						if data.currentCd == 0 then
-							DrawLines2({D3DXVECTOR2(x-4, y), D3DXVECTOR2(x-4, y+13), D3DXVECTOR2(x+20, y+13), D3DXVECTOR2(x+20, y)}, 2, color)
+function SKILLS:Draw()
+	if self.sM.Enemy then
+		for _, info in ipairs(self.Enemies) do
+			local enemy = info.hero
+			if enemy.valid and enemy.visible and not enemy.dead then
+				local barData = self:BarData(enemy)
+				if OnScreen(barData.x, barData.y) then
+					for i=_Q, SUMMONER_2 do
+						local data = enemy:GetSpellData(i)
+						if i<=_R then
+							local x = barData.x-27+(i*22)
+							local y = barData.y+44
+							if data.level > 0 then
+								if data.currentCd ~= 0 then
+									local cd = ceil(data.cd-(data.cd-data.currentCd))
+									DrawLine(x, y, x+((cd / data.cd) * 21), y, 12, COLOR_ORANGE)
+									DrawLine(x+((cd / data.cd) * 21), y, x+21, y, 12, COLOR_GREY)
+									if self.sM.Text then
+										local text = tostring(cd)
+										local tA = GetTextArea(text, 14)
+										DrawText(text, 14, x + 11 - (tA.x / 2), y - (tA.y / 2), COLOR_WHITE)
+									end
+								else
+									DrawLine(x,y,x+21,y,12,COLOR_GREEN)							
+								end
+							else
+								DrawLine(x,y,x+21,y,12,COLOR_GREY)							
+							end
+							DrawLines2({D3DXVECTOR2(x, y-6), D3DXVECTOR2(x, y+6), D3DXVECTOR2(x+21, y+6), D3DXVECTOR2(x+21, y-6)}, 2, COLOR_TRANS_WHITE)						
 						else
-							local Lines = {}
-							local cd = ceil(data.currentCd*100/data.cd/2)
-							for j=1, 13 do Lines[#Lines+1] = D3DXVECTOR2(x-4, y+j) end
-							for j=1, 24 do Lines[#Lines+1] = D3DXVECTOR2(x-4+j, y+13) end
-							for j=1, 13 do Lines[#Lines+1] = D3DXVECTOR2(x+20, y+13-j) end
-							local LinesRed, LinesYellow = {}, {}
-							for j=1, cd do LinesRed[#LinesRed+1] = Lines[j] end
-							for j=cd, #Lines do LinesYellow[#LinesYellow+1] = Lines[j] end
-							DrawLines2(LinesYellow, 2, COLOR_YELLOW)
-							DrawLines2(LinesRed, 2, COLOR_RED)
+							local x = barData.x-27+((i-4)*44) - ((i-4)*1)
+							local y = barData.y+47
+							if data.currentCd ~= 0 then
+								local cd = ceil(data.cd-(data.cd-data.currentCd))
+								DrawLine(x, y+11, x+((cd / data.cd) * 44), y+11, 12, COLOR_ORANGE)
+								DrawLine(x+((cd / data.cd) * 44), y+11, x+44, y+11, 12, COLOR_GREY)
+							else
+								DrawLine(x, y+11, x+44, y+11, 12, COLOR_GREEN)								
+							end
+							DrawLines2({D3DXVECTOR2(x, y+5), D3DXVECTOR2(x, y+17), D3DXVECTOR2(x+44, y+17), D3DXVECTOR2(x+44, y+5), D3DXVECTOR2(x, y+5),}, 2, COLOR_TRANS_WHITE)
+							local text = info['sum'..(i-3)]
+							local tA = GetTextArea(text, 11)
+							if self.sM.Text then
+								DrawText(text, 11, x + 22 - (tA.x / 2), y + 11 - (tA.y / 2), COLOR_WHITE)
+							end
 						end
-						DrawText(text, 12, x + 8 - (GetTextArea(text, 12).x / 2), y, color)
 					end
 				end
 			end
 		end
 	end
-	for i, info in ipairs(self.Allies) do
-		if info.hero.valid then
-			for j=_R, SUMMONER_2 do
-				local data = info.hero:GetSpellData(j)
-				local y = ((j - 3) * self.AllyHud.skill) + (self.AllyHud.yUp + (self.AllyHud.size * (i - 1)))
-				local rSize = ((y + self.AllyHud.lineOffset) - (y - self.AllyHud.lineOffset))
-				local Lines = {
-					D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset), 
-					D3DXVECTOR2(self.AllyHud.xRight, y + self.AllyHud.lineOffset),
-					D3DXVECTOR2(self.AllyHud.xRight, y - self.AllyHud.lineOffset),
-					D3DXVECTOR2(self.AllyHud.xLeft,  y - self.AllyHud.lineOffset),
-					D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset),
-				}
-				local offset = floor(self.HudScale*0.75)
-				DrawLines2(Lines, 1+offset, COLOR_TRANS_WHITE)
-				if data.currentCd == 0 then
-					DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xRight, y, rSize, COLOR_TRANS_GREEN)
-				else
-					local cd = data.currentCd/data.cd
-					DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, rSize, COLOR_TRANS_RED)
-					DrawLine(self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, self.AllyHud.xRight, y, rSize, COLOR_TRANS_YELLOW)				
-				end
-				if j ~= _R then
-					DrawText(info['sum'..j-3], rSize, self.AllyHud.xLeft + self.AllyHud.lineOffset, y - self.AllyHud.lineOffset, COLOR_WHITE)
+	if self.sM.Ally then
+		for i, info in ipairs(self.Allies) do
+			if info.hero.valid then
+				for j=_R, SUMMONER_2 do
+					local data = info.hero:GetSpellData(j)
+					local y = ((j - 3) * self.AllyHud.skill) + (self.AllyHud.yUp + (self.AllyHud.size * (i - 1)))
+					local rSize = ((y + self.AllyHud.lineOffset) - (y - self.AllyHud.lineOffset))
+					local Lines = {
+						D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset), 
+						D3DXVECTOR2(self.AllyHud.xRight, y + self.AllyHud.lineOffset),
+						D3DXVECTOR2(self.AllyHud.xRight, y - self.AllyHud.lineOffset),
+						D3DXVECTOR2(self.AllyHud.xLeft,  y - self.AllyHud.lineOffset),
+						D3DXVECTOR2(self.AllyHud.xLeft,  y + self.AllyHud.lineOffset),
+					}
+					local offset = floor(self.HudScale*0.75)
+					DrawLines2(Lines, 1+offset, COLOR_TRANS_WHITE)
+					if data.currentCd == 0 then
+						DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xRight, y, rSize, COLOR_TRANS_GREEN)
+					else
+						local cd = data.currentCd/data.cd
+						DrawLine(self.AllyHud.xLeft + offset, y, self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, rSize, COLOR_ORANGE)
+						DrawLine(self.AllyHud.xLeft + ((self.AllyHud.xRight - self.AllyHud.xLeft) * cd), y, self.AllyHud.xRight, y, rSize, COLOR_GREY)				
+					end
+					if j ~= _R and self.sM.Text then
+						local text = info['sum'..j-3]
+						local tA = GetTextArea(text, rSize-4)
+						local cX = (self.AllyHud.xLeft + self.AllyHud.xRight) / 2
+						local cY = (y + y) / 2
+						DrawText(text, rSize-4, cX - (tA.x / 2), cY - (tA.y / 2), COLOR_WHITE)
+					end
 				end
 			end
 		end
@@ -801,6 +902,7 @@ function TIMERS:__init()
 			[0xFFFF8F1F] = { ['pos'] = Vector(11598, 89, 11667), ['time'] = 300, ['mapPos'] = GetMinimap(Vector(11598, 89, 11667)), }, --Red Middle Inhibitor
 			[0xFF26AC0F] = { ['pos'] = Vector(13604, 89, 11316), ['time'] = 300, ['mapPos'] = GetMinimap(Vector(13604, 89, 11316)), }, --Red Bottom Inhibitor
 		}
+		AddApplyBuffCallback(function(s,u,b) self:ApplyBuff(s,u,b) end)
 	elseif self.map == 'twistedTreeline' then
 		self.MapInfo = {
 			[0x45] = { ['pos'] =  Vector(4414, 60, 5774), ['time'] =  75, ['mapPos'] = GetMinimap(Vector(4414, 60, 5774)),  },
@@ -843,7 +945,6 @@ function TIMERS:__init()
 	self.checkLastDragon = false
 	self.checkLastBaron = false
 	self.tM = self:Menu()
-	AddTickCallback(function() self:Tick() end)
 	AddDrawCallback(function() self:Draw() end)
 	AddRecvPacketCallback(function(p) self:RecvPacket(p) end)
 	AddMsgCallback(function(m,k) self:WndMsg(m,k) end)
@@ -878,57 +979,32 @@ function TIMERS:Draw()
 	end
 end
 
-function TIMERS:Tick()
-	if self.checkLastDragon then
-		local hD = {['h'] = nil, ['d'] = 0, ['b'] = 0,}
-		for i=1, heroManager.iCount do
-			local h = heroManager:getHero(i)
-			if h and h.valid and h.team == TEAM_ENEMY and h.visible then
-				for j=1, h.buffCount do
-					local b = h:getBuff(j)
-					if b and b.name and b.name:lower():find('dragonslayerbuff') then
-						for d=5,1,-1 do
-							if b.name:lower():find('v'..d) and d>hD.d then
-								hD.d=d
-								hD.b=j
-								hD.h=h
-							end
-						end
-					end
+function TIMERS:ApplyBuff(s,u,b)
+	if u.valid and u.team == TEAM_ENEMY and u.type == 'AIHeroClient' then
+		if b.name:find('dragonslayerbuff') then
+			for i, timer in ipairs(self.activeTimers) do
+				if timer.pos == self.MapInfo[0xC6].pos then
+					table.remove(self.activeTimers, i)
 				end
 			end
-		end
-		if hD.h then
-			local b = hD.h:getBuff(hD.b)
-			if b.startT+356 > clock() then
-				for i, timer in ipairs(self.activeTimers) do
-					if timer.pos == self.MapInfo[0xC6].pos then
-						table.remove(self.activeTimers, i)
-					end
-				end
-				self.activeTimers[#self.activeTimers + 1] = {spawnTime = b.startT+350, pos = self.MapInfo[0xC6].pos, minimap = self.MapInfo[0xC6].mapPos,}
-				self.checkLastDragon = false
-			end
-		end
-	end
-	if self.checkLastBaron then
-		for i=1, heroManager.iCount do
-			local h = heroManager:getHero(i)
-			if h and h.valid and h.team == TEAM_ENEMY and h.visible then
-				for j=1, h.buffCount do
-					local b = h:getBuff(j)
-					if b and b.name and b.name:lower():find('exaltedwithbaronnashor') then
-						for i, timer in ipairs(self.activeTimers) do
-							if timer.pos == self.MapInfo[0xCB].pos then
-								table.remove(self.activeTimers, i)
-							end
-						end
-						self.activeTimers[#self.activeTimers + 1] = {spawnTime = b.startT+410, pos = self.MapInfo[0xCB].pos, minimap = self.MapInfo[0xCB].mapPos,}
-						self.checkLastBaron = false
-						return
-					end
+			self.activeTimers[#self.activeTimers + 1] = {
+				['spawnTime'] = b.startTime + 360 + (clock() - GetGameTimer()), 
+				['pos'] = self.MapInfo[0xC6].pos, 
+				['minimap'] = self.MapInfo[0xC6].mapPos,
+				['valid'] = true,
+			}
+		elseif b.name:lower():find('exaltedwithbaronnashor') then
+			for i, timer in ipairs(self.activeTimers) do
+				if timer.pos == self.MapInfo[0xCB].pos then
+					table.remove(self.activeTimers, i)
 				end
 			end
+			self.activeTimers[#self.activeTimers + 1] = {
+				['spawnTime'] = b.startTime + 410 + (clock() - GetGameTimer()), 
+				['pos'] = self.MapInfo[0xCB].pos, 
+				['minimap'] = self.MapInfo[0xCB].mapPos,
+				['valid'] = true,
+			}			
 		end
 	end
 end
@@ -943,22 +1019,19 @@ function TIMERS:RecvPacket(p)
 			for i=4, 1, -1 do
 				bytes[i] = IDBytes[p:Decode1()]
 			end
-			local netID = bxor(lshift(band(bytes[1],0xFF),24),lshift(band(bytes[2],0xFF),16),lshift(band(bytes[3],0xFF),8),band(bytes[4],0xFF))
-			local o = objManager:GetObjectByNetworkId(DwordToFloat(netID))
-			if not o then 
-				if camp == 0xC6 and self.map == 'summonerRift' then
-					self.checkLastDragon = true
-				elseif camp == 0xCB and self.map == 'summonerRift' then
-					self.checkLastBaron = true
-				end
-				return
-			end
+			local o = objManager:GetObjectByNetworkId(DwordToFloat(bxor(lshift(band(bytes[1],0xFF),24),lshift(band(bytes[2],0xFF),16),lshift(band(bytes[3],0xFF),8),band(bytes[4],0xFF))))
+			if not o then return end
 			for i, timer in ipairs(self.activeTimers) do
 				if timer.pos == self.MapInfo[camp].pos then
 					table.remove(self.activeTimers, i)
 				end
 			end
-			self.activeTimers[#self.activeTimers + 1] = {spawnTime = clock()+self.MapInfo[camp].time, pos = self.MapInfo[camp].pos, minimap = self.MapInfo[camp].mapPos,}
+			self.activeTimers[#self.activeTimers + 1] = {
+				['spawnTime'] = clock()+self.MapInfo[camp].time, 
+				['pos'] = self.MapInfo[camp].pos, 
+				['minimap'] = self.MapInfo[camp].mapPos,
+				['valid'] = true,
+			}
 		end
 		return
 	end
@@ -966,7 +1039,11 @@ function TIMERS:RecvPacket(p)
 		p.pos=2
 		local inhib = p:Decode4()
 		if self.MapInfo[inhib] then
-			self.activeTimers[#self.activeTimers + 1] = {spawnTime = clock()+self.MapInfo[inhib].time, pos = self.MapInfo[inhib].pos, minimap = self.MapInfo[inhib].mapPos,}
+			self.activeTimers[#self.activeTimers + 1] = {
+				['spawnTime'] = clock()+self.MapInfo[inhib].time, 
+				['pos'] = self.MapInfo[inhib].pos, 
+				['minimap'] = self.MapInfo[inhib].mapPos,
+			}
 		end
 		return
 	end
@@ -976,15 +1053,23 @@ function TIMERS:WndMsg(m,k)
 	if m == 513 and k == 1 and IsKeyDown(self.tM._param[7].key) then --17 ctrl
 		local cP = GetCursorPos()
 		for _, info in pairs(self.MapInfo) do
-			local miniMap = info.mapPos
-			if abs(cP.x-miniMap.x) < 17 and abs(cP.y-miniMap.y) < 17 then
-				for i, timer in ipairs(self.activeTimers) do
-					if timer.pos == info.pos then
-						table.remove(self.activeTimers, i)
+			if _ <= 0xFF then
+				local miniMap = info.mapPos
+				if abs(cP.x-miniMap.x) < 17 and abs(cP.y-miniMap.y) < 17 then
+					for i, timer in ipairs(self.activeTimers) do
+						if timer.pos == info.pos then
+							if timer.valid then return end
+							table.remove(self.activeTimers, i)					
+						end
 					end
+					self.activeTimers[#self.activeTimers + 1] = {
+						['spawnTime'] = clock()+info.time, 
+						['pos'] = info.pos, 
+						['minimap'] = info.mapPos,
+						['valid'] = false,
+					}
+					return
 				end
-				self.activeTimers[#self.activeTimers + 1] = {spawnTime = clock()+info.time, pos = info.pos, minimap = info.mapPos,}
-				return
 			end
 		end
 	end
@@ -1033,7 +1118,7 @@ function OTHER:Draw()
 						points[#points + 1] = D3DXVECTOR2(c2.x, c2.y)
 					end
 					DrawLines2(points, 2, COLOR_RED)
-				end			
+				end
 			else
 				table.remove(self.Turrets, i)
 			end
@@ -1087,6 +1172,7 @@ end
 class 'TRINKET'
 
 function TRINKET:__init()
+	if GetGame().map.shortName ~= 'summonerRift' then return end
 	self.trinketID = { 
 		['TrinketTotemLvl2'] = 3350,
 		['TrinketTotemLvl1'] = 3340,
@@ -1098,7 +1184,7 @@ function TRINKET:__init()
 		['TrinketSweeperLvl3'] = 3364,
 	}
 	self.trM = self:Menu()
-	if self.trM.ward and GetGame().map.shortName == 'summonerRift' and clock()/60 < 1.1 then 
+	if self.trM.ward and clock()/60 < 1.1 then 
 		DelayAction(
 		function() 
 			if not myHero:getItem(ITEM_7) then
