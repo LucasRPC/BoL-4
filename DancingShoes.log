@@ -1,17 +1,13 @@
+WARNING!!@
 MUST UPDATE MANUALLY!!@
+THIS UPDATE WILL FAIL!!@
 
 Fixes:@
- -Using some shields when can evade.@
- -Dashes reworked.@
- -Xerath E bug drawing twice.@
- -Gnar Q return draws properly.@
- -More evade and movement block improvements.@
-Added:@
- Items:@
-  -Zhonyas Hourglass.@
-  -Face of the Mountain.@
-  -Locket of Iron Solari.@
-  -Seraphs Embrace.@
- -Keys can now be set as toggle or@
-  on key down.@
- -Complete Kalista dash support.@
+ -Hotkey Menu has changed!!!!@
+ -Ziggs Q now properly removes.@
+ -Jinx E Delay.@
+ -Sivir/Nocturne Shields@
+ -An issue with delay of all spells.@
+ -Unnecessary attack blocking.@
+ -Shields reworked.@
+ -AutoUpdate repairs.@
