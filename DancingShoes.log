@@ -1,13 +1,4 @@
-WARNING!!@
-MUST UPDATE MANUALLY!!@
-THIS UPDATE WILL FAIL!!@
 
 Fixes:@
- -Hotkey Menu has changed!!!!@
- -Ziggs Q now properly removes.@
- -Jinx E Delay.@
- -Sivir/Nocturne Shields@
- -An issue with delay of all spells.@
- -Unnecessary attack blocking.@
- -Shields reworked.@
- -AutoUpdate repairs.@
+ -Packets for 5.8 patch.@
+ -Item cast fix.@
