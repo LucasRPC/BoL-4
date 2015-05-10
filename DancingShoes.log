@@ -1,2 +1,18 @@
 Fixes:@
- -Fixed Varus E Removal error.@
+ -Some random errors on load that@
+ could sometimes occur.@
+ -Sometimes sticking to an evade point.@
+Added:@
+ -Zhonya Hourglass Extreme Spells.@
+ -Option to turn off Fog of War spells.@
+ -Added AoE effects to the following linear spells:@
+   -Anivia Q@
+   -Corki R@
+   -Fizz R@
+   -Jayce Q@
+   -Karma Q@
+   -Khazix W@
+   -Orianna Q@
+   -Quinn Q@
+   -RekSai Q@
+   -Sejuani R@
