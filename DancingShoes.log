@@ -1,18 +1,9 @@
 Fixes:@
- -Some random errors on load that@
- could sometimes occur.@
- -Sometimes sticking to an evade point.@
-Added:@
- -Zhonya Hourglass Extreme Spells.@
- -Option to turn off Fog of War spells.@
- -Added AoE effects to the following linear spells:@
-   -Anivia Q@
-   -Corki R@
-   -Fizz R@
-   -Jayce Q@
-   -Karma Q@
-   -Khazix W@
-   -Orianna Q@
-   -Quinn Q@
-   -RekSai Q@
-   -Sejuani R@
+ -Packets for 5.9.@
+ -All AoE(circular) skills have had their radii@
+ corrected and hitboxes removed.@
+ -Fixed a bug that could occur in which the script@
+ would attempt to dodge to two points at the same time.@
+ -Rewrote Ziggs W/E@
+ -Added Heimer Q/W/E ultimates.@
+ -Fixed a few spells that were not being triggered from FoW.@
