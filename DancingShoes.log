@@ -3,7 +3,9 @@ Fixes:@
  -All AoE(circular) skills have had their radii@
  corrected and hitboxes removed.@
  -Fixed a bug that could occur in which the script@
- would attempt to dodge to two points at the same time.@
+ would attempt to dodge to two points at the same@
+ time.@
  -Rewrote Ziggs W/E@
  -Added Heimer Q/W/E ultimates.@
- -Fixed a few spells that were not being triggered from FoW.@
+ -Fixed a few spells that were not being triggered@
+ from FoW.@
