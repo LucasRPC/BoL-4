@@ -1,11 +1,7 @@
 Fixes:@
- -Packets for 5.9.@
- -All AoE(circular) skills have had their radii@
- corrected and hitboxes removed.@
- -Fixed a bug that could occur in which the script@
- would attempt to dodge to two points at the same@
- time.@
- -Rewrote Ziggs W/E@
- -Added Heimer Q/W/E ultimates.@
- -Fixed a few spells that were not being triggered@
- from FoW.@
+ -Lux E Removal.@
+ -Lux E from FoW.@
+ -Lux R from FoW.@
+Added:@
+ -Disable Hotkey, default 'Z', disables@
+ all evasion.@
