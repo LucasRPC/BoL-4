@@ -1,7 +1,9 @@
+-IMPORTANT-@
+IF SPELLS DO NOT DRAW, RELOAD!!@
 Fixes:@
- -Lux E Removal.@
- -Lux E from FoW.@
- -Lux R from FoW.@
-Added:@
- -Disable Hotkey, default 'Z', disables@
- all evasion.@
+ -Viktor W radius@
+ -Viktor E Width@
+ -Fixed a few spells that were@
+ not calculating hitboxes correctly.@
+ -Reworked Azir Q@
+ -Reworked Oriana Q@
