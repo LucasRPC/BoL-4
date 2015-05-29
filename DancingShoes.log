@@ -1,10 +1,5 @@
--IMPORTANT-@
-IF SPELLS DO NOT DRAW, RELOAD!!@
 Fixes:@
- -Found and fixed two major timing bugs.@
- -Viktor W radius@
- -Viktor E Width@
- -Fixed a few spells that were@
- not calculating hitboxes correctly.@
- -Reworked Azir Q@
- -Reworked Oriana Q@
+ -Fixed a long standing bug that could@
+ prevents spells from drawing, finally!!@
+Added:@
+ -Ekko Q@
