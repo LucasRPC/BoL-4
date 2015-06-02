@@ -1,2 +1,10 @@
+I've decreased the angle in which@
+the script attemts to pathfind,@
+this should increase performance@
+and will make the script less likely@
+to dodge away from your mouse.@
 Fixes:@
- -Removed Error Spam@
+ -Should never get stuck anymore.@
+Added:@
+ -Ekko E to Dashes.@
+ -Viktor Augmented E.@
