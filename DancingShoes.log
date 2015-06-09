@@ -1,10 +1,25 @@
-I've decreased the angle in which@
-the script attemts to pathfind,@
-this should increase performance@
-and will make the script less likely@
-to dodge away from your mouse.@
 Fixes:@
- -Should never get stuck anymore.@
+ -Fixed a bug that was preventing shields@
+ to be cast on allies@
+ -Corrected about 1/3 of linear skillshots,@
+ this is a work in progress and will take@
+ a few patches to complete.@
+ -Menu should now save correctly!@
+Changes:@
+ -The Shield and Dash menus are now specific@
+ to each hero, for example, setting Jannas@
+ Minimum Shield damage to 60, will not affect@
+ any other characters shields.@
 Added:@
- -Ekko E to Dashes.@
- -Viktor Augmented E.@
+ -Advanced Drawings, if you expierence FPS loss@
+ with the new drawings you may turn them off@
+ in the Drawing sub menu.@
+ -Added the following 'homing' spells to Auto-@
+ Shield:@
+   -Ahri W@
+   -Fiddlesticks E bounce@
+   -Nami W bounce@
+   -Sona Q@
+   -Vladimir E@
+   -Miss Fortune Q bounce@
+   -Master Yi Q bounce@
