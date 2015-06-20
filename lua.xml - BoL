@@ -331,7 +331,25 @@
 		<KeyWord name = "D3DXVECTOR4(x,y,z,w)" func="no" />
 		<KeyWord name = "D3DXVECTOR3(x,y,z)" func="no" />
 		<KeyWord name = "D3DXVECTOR2(x,y)" func="no" />
-        <KeyWord name = "LIB_PATH" func="no" />
+	    <KeyWord name = "MissileClient" func="no" />
+	    <KeyWord name = "SpellLineMissileClient" func="no" />
+        <KeyWord name = "DrawFX" func="no" />
+        <KeyWord name = "obj_AI_Minion" func="no" />
+        <KeyWord name = "NeutralMinionCamp" func="no" />
+        <KeyWord name = "LevelPropGameObject" func="no" />
+        <KeyWord name = "AIHeroClient" func="no" />
+        <KeyWord name = "obj_AI_Turret" func="no" />
+        <KeyWord name = "obj_Shop" func="no" />
+        <KeyWord name = "obj_SpawnPoint" func="no" />
+        <KeyWord name = "obj_HQ" func="no" />
+        <KeyWord name = "obj_Barracks" func="no" />
+        <KeyWord name = "obj_Turret" func="no" />
+        <KeyWord name = "obj_BarracksDampener" func="no" />
+        <KeyWord name = "LevelPropSpawnerPoint" func="no" />
+        <KeyWord name = "GrassObject" func="no" />
+        <KeyWord name = "obj_GeneralParticleEmitter" func="no" />
+        <KeyWord name = "obj_LampBulb" func="no" />   
+	    <KeyWord name = "LIB_PATH" func="no" />
         <KeyWord name = "SCRIPT_PATH" func="no" />
         <KeyWord name = "SPRITE_PATH" func="no" />
         <KeyWord name = "BOL_PATH" func="no" />
@@ -373,6 +391,7 @@
 		<KeyWord name = "GetEnemyHeroes()" func="no" />
 		<KeyWord name = "GetAllyHeroes()" func="no" />
 		<KeyWord name = "ReadIni(path)" func="no" />
+		<KeyWord name = "GetTarget()" func="no" />
 		<KeyWord name = "GetGameSettings()" func="no" />
 		<KeyWord name = "GetLocalization()" func="no" />
 		<KeyWord name = "DelayAction(func,delay,args)" func="no" />
@@ -382,8 +401,11 @@
 		<KeyWord name = "DrawCircle2D(x,y,radius,width,color,quality)" func="no" />
 		<KeyWord name = "DrawCircle3D(x,y,z,radius,width,color,quality)" func="no" />
 		<KeyWord name = "DrawLine3D(x1,y1,z1,x2,y2,z2,width,color)" func="no" />
+		<KeyWord name = "DrawLine(x1,y1,x2,y2,width,color)" func="no" />
 		<KeyWord name = "DrawLines3D(table,width,color)" func="no" />
-		<KeyWord name = "DrawText3D(x,y,z,size,color,center)" func="no" />
+		<KeyWord name = "DrawLines2(table,width,color)" func="no" />
+		<KeyWord name = "DrawText3D(str,x,y,z,size,color,center)" func="no" />
+		<KeyWord name = "DrawText(str,size,x,y,color)" func="no" />
 		<KeyWord name = "scriptConfig(header,name,parent)" func="no" />
 		<KeyWord name = "addSubMenu(header,name)" func="no" />
 		<KeyWord name = "addParam" func="yes">
@@ -427,10 +449,10 @@ Initiates an instance of minionManager.
 			</Overload>
 		</KeyWord>
 		<KeyWord name="objManager.maxObjects" func="no" />
-		<KeyWord name="objManager:getObject(index)" func="no" />
+		<KeyWord name="objManager:getObject(i)" func="no" />
 		<KeyWord name="objManager:GetObjectByNetworkId(networkID)" func="no" />
 		<KeyWord name="heroManager.iCount" func="no" />
-		<KeyWord name="heroManager:getHero(index)" func="no" />
+		<KeyWord name="heroManager:getHero(i)" func="no" />
 		<KeyWord name="minionManager:update()" func="no" />
 		<KeyWord name="Vector:__tostring()" func="no" />
 		<KeyWord name="Vector:clone()" func="no" />
@@ -481,7 +503,7 @@ Initiates an instance of minionManager.
 		<KeyWord name="AddDeleteObjCallback(function(o)end)" func="no" />
 		<KeyWord name="AddProcessSpellCallback(function(unit,spell)end)" func="no" />
 		<KeyWord name="AddLoadCallback(function()end)" func="no" />
-		<KeyWord name="AddMsgCallback(function(msg,key)end)" func="no" />	
+		<KeyWord name="AddMsgCallback(function(m,k)end)" func="no" />	
 		<KeyWord name="AddCastSpellCallback(function(iSlot,startPos,endPos,target)end)" func="no" />	
 		<KeyWord name="AddIssueOrderCallback(function(startP,orderType,endP,target)end)" func="no" />	
 		<KeyWord name="AddApplyBuffCallback(function(source,unit,buff)end)" func="no" />
