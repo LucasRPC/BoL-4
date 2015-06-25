@@ -1,4 +1,7 @@
--Hopefully the final Authorization@
-tests.@
--Fixed Item Shields, including@
-Zhonyas Hourglass.@
+-Updated packets for 5.12, if you@
+are playing on 5.11 make sure to set@
+the menu correctly.@
+-Fixed a bug that was causing the script@
+to think your path was intersecting@
+dangerous areas when it really was not,@
+this should smoothen evasion a lot.@
